@@ -110,8 +110,7 @@ func (s *SyncService) SyncPRByID(ctx context.Context, prID int) error {
 	}
 
 	// Save PR using existing savePR method (handles comments, diffs, and analysis)
-	_, _, err = s.savePR(ctx, repoID, pr)
-	if err != nil {
+	if _, _, err = s.savePR(ctx, repoID, pr); err != nil {
 		return fmt.Errorf("PRの保存に失敗しました: %w", err)
 	}
 

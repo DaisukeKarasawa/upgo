@@ -87,6 +87,8 @@ func BenchmarkAnalysisService_AnalyzePR(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		_ = service.AnalyzePR(ctx, 1)
+		if err := service.AnalyzePR(ctx, 1); err != nil {
+			b.Fatalf("AnalyzePR failed: %v", err)
+		}
 	}
 }

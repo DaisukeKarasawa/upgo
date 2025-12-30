@@ -1,4 +1,4 @@
-.PHONY: dev dev-backend dev-frontend run build test clean backup bench bench-verbose perf-test
+.PHONY: dev dev-backend dev-frontend run build test clean backup bench bench-verbose perf-test test-all
 
 dev:
 	@echo "Starting development servers..."

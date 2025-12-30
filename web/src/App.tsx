@@ -8,8 +8,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/pr/:id" element={<Detail type="pr" />} />
-        <Route path="/issue/:id" element={<Detail type="issue" />} />
+        <Route path="/pr/:id" element={<Detail />} />
         <Route path="/mental-model" element={<MentalModel />} />
       </Routes>
     </BrowserRouter>

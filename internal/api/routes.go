@@ -21,9 +21,6 @@ func SetupRoutes(router *gin.Engine, db *sql.DB, syncService *service.SyncServic
 		api.GET("/prs", handlers.GetPRs)
 		api.GET("/prs/:id", handlers.GetPR)
 
-		api.GET("/issues", handlers.GetIssues)
-		api.GET("/issues/:id", handlers.GetIssue)
-
 		api.POST("/sync", syncHandler.Sync)
 		api.GET("/sync/status", syncHandler.GetSyncStatus)
 

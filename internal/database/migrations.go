@@ -13,9 +13,6 @@ func RunMigrations(logger *zap.Logger) error {
 		createPullRequestSummariesTable,
 		createPullRequestCommentsTable,
 		createPullRequestDiffsTable,
-		createIssuesTable,
-		createIssueSummariesTable,
-		createIssueCommentsTable,
 		createMentalModelAnalysesTable,
 		createSyncJobsTable,
 	}
@@ -101,53 +98,6 @@ CREATE TABLE IF NOT EXISTS pull_request_diffs (
     file_path TEXT NOT NULL,
     created_at DATETIME NOT NULL,
     FOREIGN KEY (pr_id) REFERENCES pull_requests(id) ON DELETE CASCADE
-);
-`
-
-const createIssuesTable = `
-CREATE TABLE IF NOT EXISTS issues (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    repository_id INTEGER NOT NULL,
-    github_id INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    body TEXT,
-    state TEXT NOT NULL,
-    previous_state TEXT,
-    author TEXT NOT NULL,
-    created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL,
-    closed_at DATETIME,
-    url TEXT NOT NULL,
-    last_synced_at DATETIME,
-    UNIQUE(repository_id, github_id),
-    FOREIGN KEY (repository_id) REFERENCES repositories(id)
-);
-`
-
-const createIssueSummariesTable = `
-CREATE TABLE IF NOT EXISTS issue_summaries (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    issue_id INTEGER NOT NULL,
-    description_summary TEXT,
-    comments_summary TEXT,
-    discussion_summary TEXT,
-    updated_at DATETIME NOT NULL,
-    FOREIGN KEY (issue_id) REFERENCES issues(id) ON DELETE CASCADE,
-    UNIQUE(issue_id)
-);
-`
-
-const createIssueCommentsTable = `
-CREATE TABLE IF NOT EXISTS issue_comments (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    issue_id INTEGER NOT NULL,
-    github_id INTEGER NOT NULL,
-    body TEXT NOT NULL,
-    author TEXT NOT NULL,
-    created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL,
-    FOREIGN KEY (issue_id) REFERENCES issues(id) ON DELETE CASCADE,
-    UNIQUE(issue_id, github_id)
 );
 `
 

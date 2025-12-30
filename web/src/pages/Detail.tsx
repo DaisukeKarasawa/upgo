@@ -1,11 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getPR, getIssue } from '../services/api'
+import { getPR } from '../services/api'
 import StatusBadge from '../components/StatusBadge'
-
-interface DetailProps {
-  type: 'pr' | 'issue'
-}
 
 interface Summary {
   description_summary?: string
@@ -44,7 +40,7 @@ interface DetailData {
   comments?: Comment[]
 }
 
-export default function Detail({ type }: DetailProps) {
+export default function Detail() {
   const { id } = useParams<{ id: string }>()
   const [data, setData] = useState<DetailData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -58,7 +54,7 @@ export default function Detail({ type }: DetailProps) {
     if (!id) return
     setLoading(true)
     try {
-      const result = type === 'pr' ? await getPR(parseInt(id)) : await getIssue(parseInt(id))
+      const result = await getPR(parseInt(id))
       setData(result as DetailData)
     } catch (error) {
       console.error('データの取得に失敗しました', error)
@@ -128,7 +124,7 @@ export default function Detail({ type }: DetailProps) {
                 )}
               </button>
             )}
-            {type === 'pr' && hasDiffs && (
+            {hasDiffs && (
               <button
                 onClick={() => setActiveTab('diffs')}
                 className={`pb-3 text-sm font-light transition-all duration-300 ease-out relative ${
@@ -158,7 +154,7 @@ export default function Detail({ type }: DetailProps) {
                 )}
               </button>
             )}
-            {type === 'pr' && (data.state === 'merged' || data.state === 'closed') && (
+            {(data.state === 'merged' || data.state === 'closed') && (
               <button
                 onClick={() => setActiveTab('analysis')}
                 className={`pb-3 text-sm font-light transition-all duration-300 ease-out relative ${
@@ -188,23 +184,23 @@ export default function Detail({ type }: DetailProps) {
                   </div>
                 )}
 
-                {type === 'pr' && data.summary?.diff_summary && (
-                  <div>
-                    <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">差分の要約</h3>
-                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
-                      {data.summary.diff_summary}
-                    </div>
-                  </div>
-                )}
+            {data.summary?.diff_summary && (
+              <div>
+                <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">差分の要約</h3>
+                <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
+                  {data.summary.diff_summary}
+                </div>
+              </div>
+            )}
 
-                {type === 'pr' && data.summary?.diff_explanation && (
-                  <div>
-                    <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">差分の解説</h3>
-                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
-                      {data.summary.diff_explanation}
-                    </div>
-                  </div>
-                )}
+            {data.summary?.diff_explanation && (
+              <div>
+                <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">差分の解説</h3>
+                <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
+                  {data.summary.diff_explanation}
+                </div>
+              </div>
+            )}
 
                 {data.summary?.comments_summary && (
                   <div>
@@ -233,7 +229,7 @@ export default function Detail({ type }: DetailProps) {
             )}
 
             {/* 差分タブ */}
-            {activeTab === 'diffs' && type === 'pr' && (
+            {activeTab === 'diffs' && (
               <div className="space-y-8">
                 {hasDiffs ? (
                   data.diffs?.map((diff, index) => (
@@ -280,7 +276,7 @@ export default function Detail({ type }: DetailProps) {
             )}
 
             {/* 分析結果タブ */}
-            {activeTab === 'analysis' && type === 'pr' && (
+            {activeTab === 'analysis' && (
               <div className="space-y-10">
                 {data.state === 'merged' && data.summary?.merge_reason && (
                   <div>

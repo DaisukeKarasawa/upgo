@@ -14,7 +14,7 @@ GitHubリポジトリ（Go言語プロジェクト）のPR/Issueを監視し、�
 
 ## 必要な環境
 
-- Go 1.21以上
+- Go 1.24以上（`go.mod`で`toolchain go1.24.11`が指定されています）
 - Node.js 18以上
 - Ollama（https://ollama.ai/）
 
@@ -47,6 +47,7 @@ export GITHUB_TOKEN=your_github_token_here
 ```
 
 GitHubトークンは以下の権限が必要です：
+
 - `repo` (プライベートリポジトリの場合)
 - `public_repo` (パブリックリポジトリの場合)
 

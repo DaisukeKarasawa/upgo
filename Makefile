@@ -2,7 +2,7 @@
 
 dev:
 	@echo "Starting development servers..."
-	@echo "Backend: http://localhost:8080"
+	@echo "Backend: http://localhost:8081"
 	@echo "Frontend: http://localhost:5173"
 	@make -j2 dev-backend dev-frontend
 
@@ -51,4 +51,4 @@ clean:
 	@rm -rf bin/ dist/ web/dist/
 
 backup:
-	@curl -X POST http://localhost:8080/api/v1/backup
+	@curl -X POST http://localhost:8081/api/v1/backup

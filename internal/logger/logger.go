@@ -2,6 +2,7 @@ package logger
 
 import (
 	"os"
+	"path/filepath"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -39,7 +40,8 @@ func Init(level string, output string, filePath string) error {
 	var writeSyncer zapcore.WriteSyncer
 	if output == "file" {
 		// ログディレクトリの作成
-		if err := os.MkdirAll(filePath[:len(filePath)-len("/upgo.log")], 0755); err != nil {
+		logDir := filepath.Dir(filePath)
+		if err := os.MkdirAll(logDir, 0755); err != nil {
 			return err
 		}
 

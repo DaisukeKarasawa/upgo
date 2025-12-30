@@ -91,7 +91,15 @@ func (a *Analyzer) RetryWithBackoff(ctx context.Context, fn func() (string, erro
 		}
 
 		if i < maxRetries-1 {
-			waitTime := backoff[i]
+			// バックオフ時間の取得: 配列の範囲内の場合は配列の値を使用し、
+			// 範囲外の場合は指数バックオフで計算（最後の値の2倍）
+			var waitTime time.Duration
+			if i < len(backoff) {
+				waitTime = backoff[i]
+			} else {
+				// 配列の範囲外の場合は、最後の値の2倍を繰り返し使用
+				waitTime = backoff[len(backoff)-1] * time.Duration(1<<uint(i-len(backoff)+1))
+			}
 			a.logger.Warn("リトライします", zap.Int("attempt", i+1), zap.Duration("wait", waitTime), zap.Error(err))
 			time.Sleep(waitTime)
 		}

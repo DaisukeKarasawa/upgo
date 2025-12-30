@@ -2,10 +2,8 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
@@ -84,27 +82,6 @@ func (h *UpdateHandler) CheckPRUpdates(c *gin.Context) {
 		})
 		return
 	}
-
-	// #region agent log
-	if f, ferr := os.OpenFile("/Users/daisuke/dev/upgo/.cursor/debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); ferr == nil {
-		entry := map[string]interface{}{
-			"sessionId":    "debug-session",
-			"runId":        "pre-fix",
-			"hypothesisId": "H1",
-			"location":     "api/update_handler.go:91",
-			"message":      "CheckPRUpdates start",
-			"data": map[string]interface{}{
-				"prIDStr": prIDStr,
-				"prID":    prID,
-			},
-			"timestamp": time.Now().UnixMilli(),
-		}
-		if b, merr := json.Marshal(entry); merr == nil {
-			_, _ = f.Write(append(b, '\n'))
-		}
-		_ = f.Close()
-	}
-	// #endregion agent log
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

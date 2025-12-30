@@ -3,9 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
-	"os"
 	"sync"
 	"time"
 
@@ -247,54 +245,12 @@ func (s *UpdateCheckService) checkDashboardUpdates(ctx context.Context) (*Dashbo
 // CheckPRUpdates checks if a specific PR has been updated on GitHub since its last_synced_at.
 // Uses caching to avoid excessive GitHub API calls.
 func (s *UpdateCheckService) CheckPRUpdates(ctx context.Context, prID int) (*PRUpdateResult, error) {
-	// #region agent log
-	if f, ferr := os.OpenFile("/Users/daisuke/dev/upgo/.cursor/debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); ferr == nil {
-		entry := map[string]interface{}{
-			"sessionId":    "debug-session",
-			"runId":        "pre-fix",
-			"hypothesisId": "H1",
-			"location":     "service/update_check_service.go:252",
-			"message":      "CheckPRUpdates entry",
-			"data": map[string]interface{}{
-				"prID": prID,
-			},
-			"timestamp": time.Now().UnixMilli(),
-		}
-		if b, merr := json.Marshal(entry); merr == nil {
-			_, _ = f.Write(append(b, '\n'))
-		}
-		_ = f.Close()
-	}
-	// #endregion agent log
-
 	// Check cache first
 	s.prCache.mu.RLock()
 	if cached, ok := s.prCache.results[prID]; ok {
 		if time.Since(cached.LastCheckedAt) < s.prCache.cacheTTL {
 			result := *cached
 			s.prCache.mu.RUnlock()
-
-			// #region agent log
-			if f, ferr := os.OpenFile("/Users/daisuke/dev/upgo/.cursor/debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); ferr == nil {
-				entry := map[string]interface{}{
-					"sessionId":    "debug-session",
-					"runId":        "pre-fix",
-					"hypothesisId": "H2",
-					"location":     "service/update_check_service.go:270",
-					"message":      "CheckPRUpdates cache hit",
-					"data": map[string]interface{}{
-						"prID":          prID,
-						"lastCheckedAt": cached.LastCheckedAt.Format(time.RFC3339Nano),
-					},
-					"timestamp": time.Now().UnixMilli(),
-				}
-				if b, merr := json.Marshal(entry); merr == nil {
-					_, _ = f.Write(append(b, '\n'))
-				}
-				_ = f.Close()
-			}
-			// #endregion agent log
-
 			return &result, nil
 		}
 	}
@@ -324,30 +280,6 @@ func (s *UpdateCheckService) checkPRUpdates(ctx context.Context, prID int) (*PRU
 		prID,
 	).Scan(&githubID, &lastSyncedAt)
 
-	// #region agent log
-	if f, ferr := os.OpenFile("/Users/daisuke/dev/upgo/.cursor/debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); ferr == nil {
-		entry := map[string]interface{}{
-			"sessionId":    "debug-session",
-			"runId":        "pre-fix",
-			"hypothesisId": "H3",
-			"location":     "service/update_check_service.go:294",
-			"message":      "DB lookup result",
-			"data": map[string]interface{}{
-				"prID":        prID,
-				"githubID":    githubID,
-				"lastSynced":  lastSyncedAt.Time.Format(time.RFC3339Nano),
-				"lastSyncedValid": lastSyncedAt.Valid,
-				"err":         fmt.Sprint(err),
-			},
-			"timestamp": time.Now().UnixMilli(),
-		}
-		if b, merr := json.Marshal(entry); merr == nil {
-			_, _ = f.Write(append(b, '\n'))
-		}
-		_ = f.Close()
-	}
-	// #endregion agent log
-
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("PRが見つかりません: pr_id=%d", prID)
 	}
@@ -375,31 +307,6 @@ func (s *UpdateCheckService) checkPRUpdates(ctx context.Context, prID int) (*PRU
 	if lastSyncedAt.Valid {
 		lastSyncedAtPtr = &lastSyncedAt.Time
 	}
-
-	// #region agent log
-	if f, ferr := os.OpenFile("/Users/daisuke/dev/upgo/.cursor/debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); ferr == nil {
-		entry := map[string]interface{}{
-			"sessionId":    "debug-session",
-			"runId":        "pre-fix",
-			"hypothesisId": "H4",
-			"location":     "service/update_check_service.go:332",
-			"message":      "GitHub comparison",
-			"data": map[string]interface{}{
-				"prID":                prID,
-				"githubID":            githubID,
-				"githubUpdatedAt":     githubUpdatedAt.Format(time.RFC3339Nano),
-				"lastSyncedValid":     lastSyncedAt.Valid,
-				"lastSyncedAt":        lastSyncedAt.Time.Format(time.RFC3339Nano),
-				"updatedSinceLastSync": updatedSinceLastSync,
-			},
-			"timestamp": time.Now().UnixMilli(),
-		}
-		if b, merr := json.Marshal(entry); merr == nil {
-			_, _ = f.Write(append(b, '\n'))
-		}
-		_ = f.Close()
-	}
-	// #endregion agent log
 
 	return &PRUpdateResult{
 		UpdatedSinceLastSync: updatedSinceLastSync,

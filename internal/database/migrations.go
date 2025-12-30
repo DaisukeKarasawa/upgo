@@ -129,14 +129,18 @@ CREATE TABLE IF NOT EXISTS sync_jobs (
 // This effectively clears all data from the database
 func ClearAllTables(logger *zap.Logger) error {
 	// Drop tables in reverse order of dependencies to avoid foreign key constraint errors
+	// Order: dependent tables first, then parent tables
+	// - pull_request_diffs, pull_request_comments, pull_request_summaries depend on pull_requests
+	// - mental_model_analyses depends on repositories
+	// - pull_requests depends on repositories
 	tables := []string{
-		"pull_request_diffs",
-		"pull_request_comments",
-		"pull_request_summaries",
-		"pull_requests",
-		"mental_model_analyses",
-		"repositories",
-		"sync_jobs",
+		"pull_request_diffs",        // Dependent table
+		"pull_request_comments",     // Dependent table
+		"pull_request_summaries",    // Dependent table
+		"mental_model_analyses",     // Dependent table (depends on repositories)
+		"pull_requests",             // Parent table (depends on repositories)
+		"repositories",              // Parent table
+		"sync_jobs",                 // Independent table
 	}
 
 	logger.Info("データベースの全テーブルを削除しています...")

@@ -22,7 +22,7 @@ database:
   prd: "./data/upgo.db"       # 本番環境用
 
 server:
-  port: 8080
+  port: 8081
   host: "localhost"
 
 logging:

@@ -22,8 +22,24 @@ func NewHandlers(db *sql.DB, logger *zap.Logger) *Handlers {
 }
 
 func (h *Handlers) GetPRs(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	// page パラメータの解析と検証
+	pageStr := c.DefaultQuery("page", "1")
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	// limit パラメータの解析と検証
+	limitStr := c.DefaultQuery("limit", "20")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 {
+		limit = 20
+	}
+	// limit の最大値を制限（100件まで）
+	if limit > 100 {
+		limit = 100
+	}
+
 	state := c.Query("state")
 	author := c.Query("author")
 	search := c.Query("search")
@@ -266,8 +282,24 @@ func (h *Handlers) GetPR(c *gin.Context) {
 }
 
 func (h *Handlers) GetIssues(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	// page パラメータの解析と検証
+	pageStr := c.DefaultQuery("page", "1")
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	// limit パラメータの解析と検証
+	limitStr := c.DefaultQuery("limit", "20")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 {
+		limit = 20
+	}
+	// limit の最大値を制限（100件まで）
+	if limit > 100 {
+		limit = 100
+	}
+
 	state := c.Query("state")
 	author := c.Query("author")
 	search := c.Query("search")

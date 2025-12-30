@@ -248,9 +248,17 @@ database:
   prd: "./data/upgo.db" # 本番環境用
 ```
 
+#### 使用技術
+
+この機能は以下の技術を使用して実装されています：
+
+- **SQLite**: データベースエンジン（[SQLite Documentation](https://www.sqlite.org/docs.html)）
+- **Viper**: 設定管理ライブラリ（[github.com/spf13/viper](https://github.com/spf13/viper)）
+- **環境変数**: Goの`os.Getenv`を使用してUPGO_ENVを読み取り、適切なデータベースパスを選択（[os package](https://pkg.go.dev/os#Getenv)）
+
 #### 環境の切り替え
 
-**開発環境（デフォルト）**
+##### 開発環境（デフォルト）
 
 環境変数を設定しない場合、自動的に`database.dev`が使用されます：
 
@@ -258,7 +266,7 @@ database:
 make dev
 ```
 
-**本番環境**
+##### 本番環境
 
 環境変数`UPGO_ENV=production`または`UPGO_ENV=prod`を設定すると、`database.prd`が使用されます：
 

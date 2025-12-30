@@ -25,10 +25,10 @@ func (a *Analyzer) AnalyzeMergeReason(ctx context.Context, prInfo, comments, dis
 	content := fmt.Sprintf("PR情報:\n%s\n\nコメント:\n%s\n\n議論:\n%s", prInfo, comments, discussion)
 	prompt := fmt.Sprintf(PromptMergeReason, content)
 	
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(a.client.timeout)*time.Second)
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(a.client.timeout)*time.Second)
 	defer cancel()
 
-	result, err := a.client.Generate(ctx, prompt)
+	result, err := a.client.Generate(timeoutCtx, prompt)
 	if err != nil {
 		return "", fmt.Errorf("Merge理由の分析に失敗しました: %w", err)
 	}
@@ -40,10 +40,10 @@ func (a *Analyzer) AnalyzeCloseReason(ctx context.Context, prInfo, comments, dis
 	content := fmt.Sprintf("PR情報:\n%s\n\nコメント:\n%s\n\n議論:\n%s", prInfo, comments, discussion)
 	prompt := fmt.Sprintf(PromptCloseReason, content)
 	
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(a.client.timeout)*time.Second)
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(a.client.timeout)*time.Second)
 	defer cancel()
 
-	result, err := a.client.Generate(ctx, prompt)
+	result, err := a.client.Generate(timeoutCtx, prompt)
 	if err != nil {
 		return "", fmt.Errorf("Close理由の分析に失敗しました: %w", err)
 	}
@@ -62,10 +62,10 @@ func (a *Analyzer) AnalyzeMentalModel(ctx context.Context, analysisType string, 
 	
 	fullPrompt := fmt.Sprintf(prompt, content)
 	
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(a.client.timeout)*time.Second*2) // メンタルモデル分析は時間がかかるため
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(a.client.timeout)*time.Second*2) // メンタルモデル分析は時間がかかるため
 	defer cancel()
 
-	result, err := a.client.Generate(ctx, fullPrompt)
+	result, err := a.client.Generate(timeoutCtx, fullPrompt)
 	if err != nil {
 		return "", fmt.Errorf("メンタルモデル分析に失敗しました: %w", err)
 	}

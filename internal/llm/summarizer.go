@@ -27,10 +27,10 @@ func (s *Summarizer) SummarizeDescription(ctx context.Context, description strin
 
 	prompt := fmt.Sprintf(PromptPRDescriptionSummary, description)
 	
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(s.client.timeout)*time.Second)
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(s.client.timeout)*time.Second)
 	defer cancel()
 
-	result, err := s.client.Generate(ctx, prompt)
+	result, err := s.client.Generate(timeoutCtx, prompt)
 	if err != nil {
 		return "", fmt.Errorf("説明の要約に失敗しました: %w", err)
 	}
@@ -45,10 +45,10 @@ func (s *Summarizer) SummarizeDiff(ctx context.Context, diff string) (string, st
 
 	prompt := fmt.Sprintf(PromptDiffSummary, diff)
 	
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(s.client.timeout)*time.Second)
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(s.client.timeout)*time.Second)
 	defer cancel()
 
-	result, err := s.client.Generate(ctx, prompt)
+	result, err := s.client.Generate(timeoutCtx, prompt)
 	if err != nil {
 		return "", "", fmt.Errorf("差分の要約に失敗しました: %w", err)
 	}
@@ -73,10 +73,10 @@ func (s *Summarizer) SummarizeComments(ctx context.Context, comments []string) (
 
 	prompt := fmt.Sprintf(PromptCommentsSummary, commentsText)
 	
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(s.client.timeout)*time.Second)
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(s.client.timeout)*time.Second)
 	defer cancel()
 
-	result, err := s.client.Generate(ctx, prompt)
+	result, err := s.client.Generate(timeoutCtx, prompt)
 	if err != nil {
 		return "", "", fmt.Errorf("コメントの要約に失敗しました: %w", err)
 	}

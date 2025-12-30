@@ -42,7 +42,7 @@ export default function Dashboard() {
               UpGo
             </h1>
             <p className="text-sm text-gray-400 font-light">
-              Goリポジトリ監視システム
+              Go Repository Monitoring System
             </p>
           </div>
           <ManualSyncButton onSync={handleSync} />

@@ -182,7 +182,7 @@ export default function Detail() {
                     : "text-gray-400 hover:text-gray-600"
                 }`}
               >
-                コメント ({data.comments?.length || 0})
+                Comments ({data.comments?.length || 0})
                 {activeTab === "comments" && (
                   <span className="absolute bottom-0 left-0 right-0 h-px bg-gray-900 animate-[slideIn_0.3s_ease-out]" />
                 )}

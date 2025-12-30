@@ -1,8 +1,16 @@
-.PHONY: dev run build test clean backup
+.PHONY: dev dev-backend dev-frontend run build test clean backup
 
 dev:
-	@echo "Starting development server..."
+	@echo "Starting development servers..."
+	@echo "Backend: http://localhost:8080"
+	@echo "Frontend: http://localhost:5173"
+	@make -j2 dev-backend dev-frontend
+
+dev-backend:
 	@go run cmd/server/main.go
+
+dev-frontend:
+	@cd web && npm run dev
 
 run:
 	@echo "Building frontend..."

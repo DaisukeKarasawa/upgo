@@ -343,22 +343,6 @@ export default function Detail() {
                       key={comment.github_id}
                       className="pb-8 border-b border-gray-100 last:border-0 group transition-all duration-300 ease-out relative rounded-lg overflow-hidden"
                     >
-<<<<<<< Updated upstream
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm text-gray-900 font-light group-hover:text-gray-700 transition-colors duration-300">
-                          {comment.author}
-                        </span>
-                        <span className="text-xs text-gray-400 font-light">
-                          {new Date(comment.created_at).toLocaleString(
-                            "en-US"
-                          )}
-                        </span>
-                      </div>
-                      <div className="prose max-w-none">
-                        <p className="text-gray-700 whitespace-pre-wrap leading-relaxed text-sm font-light group-hover:text-gray-800 transition-colors duration-300">
-                          {comment.body}
-                        </p>
-=======
                       <div className="p-4 group-hover:px-6 group-hover:py-5 transition-all duration-300 ease-out">
                         {/* Animation 1: Top-left → Top-right → Bottom-right */}
                         {/* Top edge (left → right) */}
@@ -386,7 +370,6 @@ export default function Detail() {
                             {comment.body}
                           </p>
                         </div>
->>>>>>> Stashed changes
                       </div>
                     </div>
                   ))

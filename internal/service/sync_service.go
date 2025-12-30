@@ -131,7 +131,7 @@ func (s *SyncService) getOrCreateRepository() (int, error) {
 	if err == sql.ErrNoRows {
 		result, err := s.db.Exec(
 			"INSERT INTO repositories (owner, name, last_synced_at) VALUES (?, ?, ?)",
-			s.owner, s.repo, time.Now(),
+			s.owner, s.repo, nil, // NULL for first sync to allow 30-day initial sync
 		)
 		if err != nil {
 			return 0, err

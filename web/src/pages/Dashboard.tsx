@@ -1,37 +1,58 @@
-import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { getPRs, sync } from '../services/api'
-import StatusBadge from '../components/StatusBadge'
-import ManualSyncButton from '../components/ManualSyncButton'
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { getPRs, sync, getDashboardUpdateStatus } from "../services/api";
+import StatusBadge from "../components/StatusBadge";
+import ManualSyncButton from "../components/ManualSyncButton";
 
 export default function Dashboard() {
-  const [prs, setPRs] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
+  const [prs, setPRs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [hasUpdates, setHasUpdates] = useState(false);
 
   useEffect(() => {
-    loadData()
-  }, [])
+    loadData();
+    checkUpdates();
+
+    // Poll for updates every 30 seconds
+    const interval = setInterval(() => {
+      checkUpdates();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const checkUpdates = async () => {
+    try {
+      const status = await getDashboardUpdateStatus();
+      setHasUpdates(status.has_missing_recent_prs || false);
+    } catch (error) {
+      console.error("更新チェックに失敗しました", error);
+    }
+  };
 
   const loadData = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const prsData = await getPRs({ limit: 50 })
-      setPRs(prsData.data || [])
+      const prsData = await getPRs({ limit: 50 });
+      setPRs(prsData.data || []);
     } catch (error) {
-      console.error('データの取得に失敗しました', error)
+      console.error("データの取得に失敗しました", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleSync = async () => {
     try {
-      await sync()
-      setTimeout(loadData, 2000) // 2秒後に再読み込み
+      await sync();
+      setTimeout(() => {
+        loadData();
+        checkUpdates(); // 同期後に更新チェックも実行
+      }, 2000); // 2秒後に再読み込み
     } catch (error) {
-      console.error('同期に失敗しました', error)
+      console.error("同期に失敗しました", error);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -45,13 +66,15 @@ export default function Dashboard() {
               Go Repository Monitoring System
             </p>
           </div>
-          <ManualSyncButton onSync={handleSync} />
+          <ManualSyncButton onSync={handleSync} hasUpdates={hasUpdates} />
         </div>
 
         <div>
           <div>
             {loading ? (
-              <div className="text-center py-20 text-gray-400 text-sm font-light">読み込み中...</div>
+              <div className="text-center py-20 text-gray-400 text-sm font-light">
+                読み込み中...
+              </div>
             ) : (
               <div className="space-y-1">
                 {prs.map((pr) => (
@@ -71,7 +94,8 @@ export default function Dashboard() {
                           {pr.body?.substring(0, 200)}...
                         </p>
                         <div className="text-xs text-gray-400 font-light">
-                          {pr.author} • {new Date(pr.created_at).toLocaleDateString('ja-JP')}
+                          {pr.author} •{" "}
+                          {new Date(pr.created_at).toLocaleDateString("ja-JP")}
                         </div>
                       </div>
                     </div>
@@ -83,5 +107,5 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
-  )
+  );
 }

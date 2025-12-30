@@ -93,9 +93,9 @@ func (c *Client) checkRateLimit(ctx context.Context) error {
 
 	// Cache expired or not set, fetch fresh data
 	c.rateLimitCache.Lock()
-	defer c.rateLimitCache.Unlock()
 
 	// Double-check after acquiring write lock (another goroutine might have updated it)
+	now = time.Now()
 	if !c.rateLimitCache.lastCheck.IsZero() &&
 		now.Sub(c.rateLimitCache.lastCheck) < c.rateLimitCache.cacheExpiry {
 		remaining := c.rateLimitCache.remaining
@@ -117,6 +117,7 @@ func (c *Client) checkRateLimit(ctx context.Context) error {
 	// Fetch fresh rate limit info
 	rateLimit, _, err := c.client.RateLimits(ctx)
 	if err != nil {
+		c.rateLimitCache.Unlock()
 		return fmt.Errorf("レート制限の確認に失敗しました: %w", err)
 	}
 
@@ -125,6 +126,7 @@ func (c *Client) checkRateLimit(ctx context.Context) error {
 	c.rateLimitCache.lastCheck = now
 	c.rateLimitCache.remaining = core.Remaining
 	c.rateLimitCache.resetTime = core.Reset.Time
+	c.rateLimitCache.Unlock()
 
 	if core.Remaining < 100 {
 		resetTime := core.Reset.Time

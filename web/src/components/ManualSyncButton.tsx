@@ -2,9 +2,10 @@ import { useState } from "react";
 
 interface ManualSyncButtonProps {
   onSync: () => Promise<void>;
+  hasUpdates?: boolean;
 }
 
-export default function ManualSyncButton({ onSync }: ManualSyncButtonProps) {
+export default function ManualSyncButton({ onSync, hasUpdates = false }: ManualSyncButtonProps) {
   const [syncing, setSyncing] = useState(false);
 
   const handleClick = async () => {
@@ -34,6 +35,12 @@ export default function ManualSyncButton({ onSync }: ManualSyncButtonProps) {
       `}
       title="同期"
     >
+      {hasUpdates && !syncing && (
+        <span
+          className="absolute top-0 left-0 w-2.5 h-2.5 bg-red-500 rounded-full z-10"
+          aria-label="更新あり"
+        />
+      )}
       {syncing ? (
         <svg
           className="animate-spin h-4 w-4 text-gray-300"

@@ -8,11 +8,11 @@ interface MarkdownProps {
   className?: string;
 }
 
-// サニタイズスキーマ: 許可するタグと属性をホワイトリスト形式で定義
+// Sanitization schema: Define allowed tags and attributes in whitelist format
 const sanitizeSchema = {
   ...defaultSchema,
   tagNames: [
-    ...(defaultSchema.tagNames || []),
+    ...(defaultSchema.tagNames || []).filter((tag: string) => tag !== 'img'),
     'details',
     'summary',
     'kbd',
@@ -26,13 +26,6 @@ const sanitizeSchema = {
       ['target', '_blank'],
       ['rel', 'noopener noreferrer nofollow'],
     ],
-    img: [
-      ['src'],
-      ['alt'],
-      ['title'],
-      ['width'],
-      ['height'],
-    ],
     code: [
       ['className'],
     ],
@@ -43,7 +36,6 @@ const sanitizeSchema = {
   protocols: {
     ...defaultSchema.protocols,
     href: ['http', 'https', 'mailto'],
-    src: ['http', 'https'],
   },
 };
 

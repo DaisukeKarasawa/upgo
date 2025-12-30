@@ -9,18 +9,28 @@ import (
 	"go.uber.org/zap"
 )
 
+// PRFetcher provides methods to fetch pull request data from GitHub.
+// It wraps the GitHub client and handles rate limiting and pagination automatically.
 type PRFetcher struct {
 	client *Client
 	logger *zap.Logger
 }
 
+// NewPRFetcher creates a new PRFetcher instance with the given GitHub client and logger.
+// Returns nil if either client or logger is nil.
 func NewPRFetcher(client *Client, logger *zap.Logger) *PRFetcher {
+	if client == nil || logger == nil {
+		return nil
+	}
 	return &PRFetcher{
 		client: client,
 		logger: logger,
 	}
 }
 
+// FetchPRs retrieves all pull requests for a repository with the specified state.
+// State can be "open", "closed", or "all". Returns all PRs across paginated results.
+// Returns an error if rate limiting fails or the API call encounters an error.
 func (f *PRFetcher) FetchPRs(ctx context.Context, owner, repo string, state string) ([]*github.PullRequest, error) {
 	if err := f.client.waitForRateLimit(ctx); err != nil {
 		return nil, err
@@ -56,6 +66,8 @@ func (f *PRFetcher) FetchPRs(ctx context.Context, owner, repo string, state stri
 	return allPRs, nil
 }
 
+// FetchPR retrieves a single pull request by its number.
+// Returns an error if rate limiting fails or the API call encounters an error.
 func (f *PRFetcher) FetchPR(ctx context.Context, owner, repo string, number int) (*github.PullRequest, error) {
 	if err := f.client.waitForRateLimit(ctx); err != nil {
 		return nil, err
@@ -73,6 +85,9 @@ func (f *PRFetcher) FetchPR(ctx context.Context, owner, repo string, number int)
 	return pr, nil
 }
 
+// FetchPRComments retrieves all comments for a pull request.
+// Returns all comments across paginated results.
+// Returns an error if rate limiting fails or the API call encounters an error.
 func (f *PRFetcher) FetchPRComments(ctx context.Context, owner, repo string, number int) ([]*github.IssueComment, error) {
 	if err := f.client.waitForRateLimit(ctx); err != nil {
 		return nil, err
@@ -103,9 +118,13 @@ func (f *PRFetcher) FetchPRComments(ctx context.Context, owner, repo string, num
 		opts.Page = resp.NextPage
 	}
 
+	f.logger.Info("PRコメントを取得しました", zap.Int("count", len(allComments)))
 	return allComments, nil
 }
 
+// FetchPRDiff retrieves the unified diff for a pull request.
+// Returns the diff as a string in unified diff format.
+// Returns an error if rate limiting fails or the API call encounters an error.
 func (f *PRFetcher) FetchPRDiff(ctx context.Context, owner, repo string, number int) (string, error) {
 	if err := f.client.waitForRateLimit(ctx); err != nil {
 		return "", err
@@ -126,6 +145,9 @@ func (f *PRFetcher) FetchPRDiff(ctx context.Context, owner, repo string, number 
 	return diff, nil
 }
 
+// FetchMergedCommits retrieves all commits to a repository since the specified time.
+// Returns all commits across paginated results.
+// Returns an error if rate limiting fails or the API call encounters an error.
 func (f *PRFetcher) FetchMergedCommits(ctx context.Context, owner, repo string, since time.Time) ([]*github.RepositoryCommit, error) {
 	if err := f.client.waitForRateLimit(ctx); err != nil {
 		return nil, err

@@ -76,6 +76,11 @@ func (s *AnalysisService) AnalyzePR(ctx context.Context, prID int) error {
 		"SELECT diff_text FROM pull_request_diffs WHERE pr_id = ? LIMIT 1",
 		prID,
 	).Scan(&diff)
+	if err != nil && err != sql.ErrNoRows {
+		s.logger.Warn("差分の取得に失敗しました", zap.Error(err))
+		// エラーが発生しても処理を続行（diffは空文字列のまま）
+	}
+	// sql.ErrNoRowsの場合は差分がないため、diffは空文字列のまま
 
 	// 要約の生成
 	descriptionSummary, err := s.summarizer.SummarizeDescription(ctx, pr.Body)

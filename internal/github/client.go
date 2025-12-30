@@ -100,6 +100,7 @@ func (c *Client) checkRateLimit(ctx context.Context) error {
 		now.Sub(c.rateLimitCache.lastCheck) < c.rateLimitCache.cacheExpiry {
 		remaining := c.rateLimitCache.remaining
 		resetTime := c.rateLimitCache.resetTime
+		c.rateLimitCache.Unlock()
 		if remaining < 100 {
 			waitTime := time.Until(resetTime)
 			if waitTime > 0 {

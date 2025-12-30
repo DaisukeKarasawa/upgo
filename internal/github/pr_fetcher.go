@@ -66,6 +66,65 @@ func (f *PRFetcher) FetchPRs(ctx context.Context, owner, repo string, state stri
 	return allPRs, nil
 }
 
+// FetchPRsUpdatedSince retrieves pull requests updated since the given time.
+//
+// Implementation notes:
+// - GitHub's Pull Requests List API doesn't support a "since" parameter.
+// - Instead, we sort by "updated" in descending order and stop pagination once we
+//   hit PRs older than the threshold. This prevents fetching older PR pages.
+func (f *PRFetcher) FetchPRsUpdatedSince(ctx context.Context, owner, repo string, state string, since time.Time) ([]*github.PullRequest, error) {
+	if err := f.client.waitForRateLimit(ctx); err != nil {
+		return nil, err
+	}
+
+	if err := f.client.checkRateLimit(ctx); err != nil {
+		return nil, err
+	}
+
+	opts := &github.PullRequestListOptions{
+		State:     state,
+		Sort:      "updated",
+		Direction: "desc",
+		ListOptions: github.ListOptions{
+			PerPage: 100,
+		},
+	}
+
+	var recentPRs []*github.PullRequest
+	for {
+		prs, resp, err := f.client.GetClient().PullRequests.List(ctx, owner, repo, opts)
+		if err != nil {
+			return nil, fmt.Errorf("PR一覧の取得に失敗しました: %w", err)
+		}
+
+		// Because results are sorted by updated desc, once updated_at is older than
+		// "since", everything after is also older, and we can stop pagination.
+		for _, pr := range prs {
+			if pr.GetUpdatedAt().Time.Before(since) {
+				f.logger.Info(
+					"PR一覧を取得しました（期間で打ち切り）",
+					zap.Int("count", len(recentPRs)),
+					zap.Time("since", since),
+				)
+				return recentPRs, nil
+			}
+			recentPRs = append(recentPRs, pr)
+		}
+
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+
+	f.logger.Info(
+		"PR一覧を取得しました（全ページ走査完了）",
+		zap.Int("count", len(recentPRs)),
+		zap.Time("since", since),
+	)
+	return recentPRs, nil
+}
+
 // FetchPR retrieves a single pull request by its number.
 // Returns an error if rate limiting fails or the API call encounters an error.
 func (f *PRFetcher) FetchPR(ctx context.Context, owner, repo string, number int) (*github.PullRequest, error) {

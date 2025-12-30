@@ -30,6 +30,11 @@ export const sync = async () => {
   return response.data
 }
 
+export const syncPR = async (id: number) => {
+  const response = await api.post(`/prs/${id}/sync`)
+  return response.data
+}
+
 export const getSyncStatus = async () => {
   const response = await api.get('/sync/status')
   return response.data

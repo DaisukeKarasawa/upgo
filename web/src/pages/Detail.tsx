@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getPR } from "../services/api";
+import { getPR, syncPR } from "../services/api";
 import StatusBadge from "../components/StatusBadge";
+import ManualSyncButton from "../components/ManualSyncButton";
 
 interface Summary {
   description_summary?: string;
@@ -65,6 +66,16 @@ export default function Detail() {
     }
   };
 
+  const handleSync = async () => {
+    if (!id) return;
+    try {
+      await syncPR(parseInt(id));
+      setTimeout(loadData, 2000); // 2秒後に再読み込み
+    } catch (error) {
+      console.error("同期に失敗しました", error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -103,9 +114,12 @@ export default function Detail() {
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-6">
             <StatusBadge state={data.state} alwaysColored={true} />
-            <h1 className="text-3xl font-light text-gray-900 tracking-tight">
+            <h1 className="text-3xl font-light text-gray-900 tracking-tight flex-1">
               {data.title}
             </h1>
+            <div className="flex-shrink-0">
+              <ManualSyncButton onSync={handleSync} />
+            </div>
           </div>
 
           <div className="prose max-w-none mb-8">

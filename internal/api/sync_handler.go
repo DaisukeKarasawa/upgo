@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -82,6 +83,63 @@ func (h *SyncHandler) Sync(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "同期を開始しました",
+	})
+}
+
+// SyncPR triggers an asynchronous synchronization of a single PR by its database ID.
+// The operation runs in a background goroutine to avoid blocking the HTTP response,
+// allowing the client to receive an immediate acknowledgment while the potentially
+// long-running sync operation proceeds. A 10-minute timeout is enforced to prevent
+// runaway operations. Concurrent sync operations are limited by maxConcurrency.
+func (h *SyncHandler) SyncPR(c *gin.Context) {
+	// Parse PR ID from URL parameter
+	prIDStr := c.Param("id")
+	prID, err := strconv.Atoi(prIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "無効なPR IDです",
+		})
+		return
+	}
+
+	// Check if we can start a new sync operation
+	select {
+	case h.semaphore <- struct{}{}:
+		// Acquired semaphore, proceed with sync
+	default:
+		// Too many concurrent syncs, reject request
+		c.JSON(http.StatusTooManyRequests, gin.H{
+			"message": "同時実行数の上限に達しています。しばらく待ってから再試行してください。",
+		})
+		return
+	}
+
+	h.wg.Add(1)
+	go func() {
+		// Create context from Background so sync outlives the HTTP request
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		defer func() {
+			cancel() // Cancel context when goroutine exits
+			<-h.semaphore // Release semaphore
+			h.wg.Done()
+		}()
+
+		if err := h.syncService.SyncPRByID(ctx, prID); err != nil {
+			switch ctx.Err() {
+			case context.Canceled:
+				h.logger.Info("PR同期がキャンセルされました", zap.Int("pr_id", prID))
+			case context.DeadlineExceeded:
+				h.logger.Warn("PR同期がタイムアウトしました", zap.Int("pr_id", prID), zap.Error(err))
+			default:
+				h.logger.Error("PR同期に失敗しました", zap.Int("pr_id", prID), zap.Error(err))
+			}
+		} else {
+			h.logger.Info("PR同期が完了しました", zap.Int("pr_id", prID))
+		}
+	}()
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "PR同期を開始しました",
 	})
 }
 

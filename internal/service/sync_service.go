@@ -76,6 +76,42 @@ func (s *SyncService) Sync(ctx context.Context) error {
 	return nil
 }
 
+// SyncPRByID synchronizes a single PR by its database ID.
+// It retrieves the PR's github_id and repository_id from the database,
+// fetches the latest PR data from GitHub, and saves it using the existing savePR method.
+// This ensures that comments, diffs, and analysis are also updated for the PR.
+func (s *SyncService) SyncPRByID(ctx context.Context, prID int) error {
+	s.logger.Info("PR同期を開始しました", zap.Int("pr_id", prID))
+
+	// Get PR information from database
+	var githubID, repoID int
+	err := s.db.QueryRow(
+		"SELECT github_id, repository_id FROM pull_requests WHERE id = ?",
+		prID,
+	).Scan(&githubID, &repoID)
+
+	if err == sql.ErrNoRows {
+		return fmt.Errorf("PRが見つかりません: pr_id=%d", prID)
+	}
+	if err != nil {
+		return fmt.Errorf("PR情報の取得に失敗しました: %w", err)
+	}
+
+	// Fetch PR from GitHub
+	pr, err := s.prFetcher.FetchPR(ctx, s.owner, s.repo, githubID)
+	if err != nil {
+		return fmt.Errorf("GitHubからのPR取得に失敗しました: %w", err)
+	}
+
+	// Save PR using existing savePR method (handles comments, diffs, and analysis)
+	if err := s.savePR(ctx, repoID, pr); err != nil {
+		return fmt.Errorf("PRの保存に失敗しました: %w", err)
+	}
+
+	s.logger.Info("PR同期が完了しました", zap.Int("pr_id", prID), zap.Int("github_id", githubID))
+	return nil
+}
+
 // getOrCreateRepository retrieves the repository ID from the database, creating
 // a new record if it doesn't exist. This ensures we have a valid repository ID
 // for foreign key relationships before syncing PRs.

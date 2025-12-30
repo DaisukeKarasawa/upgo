@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"time"
 
+	"upgo/internal/service"
+
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	"upgo/internal/service"
 )
 
 type SyncHandler struct {
@@ -23,10 +24,11 @@ func NewSyncHandler(syncService *service.SyncService, logger *zap.Logger) *SyncH
 }
 
 func (h *SyncHandler) Sync(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	defer cancel()
-
 	go func() {
+		// goroutine内でコンテキストを作成し、完了時にキャンセルする
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		defer cancel()
+
 		if err := h.syncService.Sync(ctx); err != nil {
 			h.logger.Error("同期に失敗しました", zap.Error(err))
 		}

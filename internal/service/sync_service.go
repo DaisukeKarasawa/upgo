@@ -256,7 +256,18 @@ func (s *SyncService) savePR(ctx context.Context, repoID int, pr *ghub.PullReque
 		repoID, pr.GetNumber(),
 	).Scan(&prID, &dbUpdatedAt, &dbHeadSha, &dbState)
 
-	isNewPR := err == sql.ErrNoRows
+	// Handle database errors properly
+	var isNewPR bool
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// PR doesn't exist yet, this is expected for new PRs
+			isNewPR = true
+			err = nil // Reset error since this is a valid case
+		} else {
+			// Other database errors (connection issues, SQL errors, etc.)
+			return 0, 0, fmt.Errorf("既存PR情報の取得に失敗しました: %w", err)
+		}
+	}
 	prUpdatedAt := pr.GetUpdatedAt().Time
 	prHeadSha := pr.GetHead().GetSHA()
 

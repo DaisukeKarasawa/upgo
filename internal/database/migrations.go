@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"strings"
 
 	"go.uber.org/zap"
 )
@@ -21,14 +22,13 @@ func RunMigrations(logger *zap.Logger) error {
 
 	for i, migration := range migrations {
 		_, err := DB.Exec(migration)
-		// Ignore error for ALTER TABLE ADD COLUMN if column already exists
-		// (SQLite doesn't support IF NOT EXISTS for ALTER TABLE)
-		if err != nil && i < len(migrations)-1 {
-			return fmt.Errorf("マイグレーション %d の実行に失敗しました: %w", i+1, err)
-		}
 		if err != nil {
-			// Last migration (addHeadShaToPullRequests) might fail if column already exists
-			logger.Debug("マイグレーションをスキップしました（カラムが既に存在する可能性があります）", zap.Int("number", i+1))
+			// SQLite returns "duplicate column name" when column already exists
+			if strings.Contains(err.Error(), "duplicate column name") {
+				logger.Debug("マイグレーションをスキップしました（カラムが既に存在します）", zap.Int("number", i+1))
+			} else {
+				return fmt.Errorf("マイグレーション %d の実行に失敗しました: %w", i+1, err)
+			}
 		} else {
 			logger.Info("マイグレーションを実行しました", zap.Int("number", i+1))
 		}

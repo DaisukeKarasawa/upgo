@@ -68,11 +68,11 @@ export default function Detail({ type }: DetailProps) {
   }
 
   if (loading) {
-    return <div className="container mx-auto px-4 py-8">読み込み中...</div>
+    return <div className="min-h-screen bg-white flex items-center justify-center"><div className="text-gray-400 text-sm font-light">読み込み中...</div></div>
   }
 
   if (!data) {
-    return <div className="container mx-auto px-4 py-8">データが見つかりません</div>
+    return <div className="min-h-screen bg-white flex items-center justify-center"><div className="text-gray-400 text-sm font-light">データが見つかりません</div></div>
   }
 
   const hasSummary = data.summary && Object.keys(data.summary).length > 0
@@ -80,30 +80,30 @@ export default function Detail({ type }: DetailProps) {
   const hasComments = data.comments && data.comments.length > 0
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <Link to="/" className="text-blue-600 hover:underline mb-4 inline-block">
-          ← ダッシュボードに戻る
+    <div className="min-h-screen bg-white">
+      <div className="max-w-5xl mx-auto px-6 py-12">
+        <Link to="/" className="text-gray-400 hover:text-gray-900 transition-all duration-300 ease-out mb-8 inline-block text-sm font-light group">
+          <span className="inline-block transition-transform duration-300 ease-out group-hover:-translate-x-1">←</span> ダッシュボードに戻る
         </Link>
 
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="flex items-center gap-2 mb-4">
+        <div className="mb-12">
+          <div className="flex items-center gap-3 mb-6">
             <StatusBadge state={data.state} />
-            <h1 className="text-2xl font-bold text-gray-900">{data.title}</h1>
+            <h1 className="text-3xl font-light text-gray-900 tracking-tight">{data.title}</h1>
           </div>
 
-          <div className="prose max-w-none mb-6">
-            <p className="text-gray-700 whitespace-pre-wrap">{data.body}</p>
+          <div className="prose max-w-none mb-8">
+            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">{data.body}</p>
           </div>
 
-          <div className="border-t border-gray-200 pt-4 mt-6">
-            <div className="text-sm text-gray-600">
+          <div className="border-t border-gray-100 pt-6">
+            <div className="text-sm text-gray-400 space-y-1 font-light">
               <p>作成者: {data.author}</p>
               <p>作成日時: {new Date(data.created_at).toLocaleString('ja-JP')}</p>
               <p>更新日時: {new Date(data.updated_at).toLocaleString('ja-JP')}</p>
               {data.url && (
-                <a href={data.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                  GitHubで開く
+                <a href={data.url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-900 transition-all duration-300 ease-out inline-block mt-3 group">
+                  GitHubで開く <span className="inline-block transition-transform duration-300 ease-out group-hover:translate-x-1">→</span>
                 </a>
               )}
             </div>
@@ -111,111 +111,121 @@ export default function Detail({ type }: DetailProps) {
         </div>
 
         {/* タブナビゲーション */}
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="flex -mb-px">
-              {hasSummary && (
-                <button
-                  onClick={() => setActiveTab('summary')}
-                  className={`px-6 py-3 text-sm font-medium ${
-                    activeTab === 'summary'
-                      ? 'border-b-2 border-blue-500 text-blue-600'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  要約
-                </button>
-              )}
-              {type === 'pr' && hasDiffs && (
-                <button
-                  onClick={() => setActiveTab('diffs')}
-                  className={`px-6 py-3 text-sm font-medium ${
-                    activeTab === 'diffs'
-                      ? 'border-b-2 border-blue-500 text-blue-600'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  差分
-                </button>
-              )}
-              {hasComments && (
-                <button
-                  onClick={() => setActiveTab('comments')}
-                  className={`px-6 py-3 text-sm font-medium ${
-                    activeTab === 'comments'
-                      ? 'border-b-2 border-blue-500 text-blue-600'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  コメント ({data.comments?.length || 0})
-                </button>
-              )}
-              {type === 'pr' && (data.state === 'merged' || data.state === 'closed') && (
-                <button
-                  onClick={() => setActiveTab('analysis')}
-                  className={`px-6 py-3 text-sm font-medium ${
-                    activeTab === 'analysis'
-                      ? 'border-b-2 border-blue-500 text-blue-600'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  分析結果
-                </button>
-              )}
-            </nav>
-          </div>
+        <div>
+          <nav className="flex gap-8 mb-8 border-b border-gray-100">
+            {hasSummary && (
+              <button
+                onClick={() => setActiveTab('summary')}
+                className={`pb-3 text-sm font-light transition-all duration-300 ease-out relative ${
+                  activeTab === 'summary'
+                    ? 'text-gray-900'
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                要約
+                {activeTab === 'summary' && (
+                  <span className="absolute bottom-0 left-0 right-0 h-px bg-gray-900 animate-[slideIn_0.3s_ease-out]" />
+                )}
+              </button>
+            )}
+            {type === 'pr' && hasDiffs && (
+              <button
+                onClick={() => setActiveTab('diffs')}
+                className={`pb-3 text-sm font-light transition-all duration-300 ease-out relative ${
+                  activeTab === 'diffs'
+                    ? 'text-gray-900'
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                差分
+                {activeTab === 'diffs' && (
+                  <span className="absolute bottom-0 left-0 right-0 h-px bg-gray-900 animate-[slideIn_0.3s_ease-out]" />
+                )}
+              </button>
+            )}
+            {hasComments && (
+              <button
+                onClick={() => setActiveTab('comments')}
+                className={`pb-3 text-sm font-light transition-all duration-300 ease-out relative ${
+                  activeTab === 'comments'
+                    ? 'text-gray-900'
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                コメント ({data.comments?.length || 0})
+                {activeTab === 'comments' && (
+                  <span className="absolute bottom-0 left-0 right-0 h-px bg-gray-900 animate-[slideIn_0.3s_ease-out]" />
+                )}
+              </button>
+            )}
+            {type === 'pr' && (data.state === 'merged' || data.state === 'closed') && (
+              <button
+                onClick={() => setActiveTab('analysis')}
+                className={`pb-3 text-sm font-light transition-all duration-300 ease-out relative ${
+                  activeTab === 'analysis'
+                    ? 'text-gray-900'
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                分析結果
+                {activeTab === 'analysis' && (
+                  <span className="absolute bottom-0 left-0 right-0 h-px bg-gray-900 animate-[slideIn_0.3s_ease-out]" />
+                )}
+              </button>
+            )}
+          </nav>
 
-          <div className="p-6">
+          <div>
             {/* 要約タブ */}
             {activeTab === 'summary' && hasSummary && (
-              <div className="space-y-6">
+              <div className="space-y-10">
                 {data.summary?.description_summary && (
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">説明の要約</h3>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-gray-700 whitespace-pre-wrap">{data.summary.description_summary}</p>
+                    <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">説明の要約</h3>
+                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
+                      {data.summary.description_summary}
                     </div>
                   </div>
                 )}
 
                 {type === 'pr' && data.summary?.diff_summary && (
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">差分の要約</h3>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-gray-700 whitespace-pre-wrap">{data.summary.diff_summary}</p>
+                    <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">差分の要約</h3>
+                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
+                      {data.summary.diff_summary}
                     </div>
                   </div>
                 )}
 
                 {type === 'pr' && data.summary?.diff_explanation && (
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">差分の解説</h3>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-gray-700 whitespace-pre-wrap">{data.summary.diff_explanation}</p>
+                    <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">差分の解説</h3>
+                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
+                      {data.summary.diff_explanation}
                     </div>
                   </div>
                 )}
 
                 {data.summary?.comments_summary && (
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">コメントの要約</h3>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-gray-700 whitespace-pre-wrap">{data.summary.comments_summary}</p>
+                    <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">コメントの要約</h3>
+                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
+                      {data.summary.comments_summary}
                     </div>
                   </div>
                 )}
 
                 {data.summary?.discussion_summary && (
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">議論の要約</h3>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-gray-700 whitespace-pre-wrap">{data.summary.discussion_summary}</p>
+                    <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">議論の要約</h3>
+                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
+                      {data.summary.discussion_summary}
                     </div>
                   </div>
                 )}
 
                 {!hasSummary && (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-20 text-gray-400 text-sm font-light">
                     要約データがまだ生成されていません。しばらくお待ちください。
                   </div>
                 )}
@@ -224,22 +234,20 @@ export default function Detail({ type }: DetailProps) {
 
             {/* 差分タブ */}
             {activeTab === 'diffs' && type === 'pr' && (
-              <div className="space-y-4">
+              <div className="space-y-8">
                 {hasDiffs ? (
                   data.diffs?.map((diff, index) => (
-                    <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
-                      <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
-                        <h4 className="text-sm font-semibold text-gray-900">{diff.file_path}</h4>
-                      </div>
-                      <div className="p-4">
-                        <pre className="text-sm overflow-x-auto">
-                          <code className="whitespace-pre-wrap">{diff.diff_text}</code>
+                    <div key={index}>
+                      <h4 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-3">{diff.file_path}</h4>
+                      <div className="bg-gray-50 p-4 rounded">
+                        <pre className="text-xs overflow-x-auto font-mono">
+                          <code className="whitespace-pre-wrap text-gray-700">{diff.diff_text}</code>
                         </pre>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-20 text-gray-400 text-sm font-light">
                     差分データがありません。
                   </div>
                 )}
@@ -248,23 +256,23 @@ export default function Detail({ type }: DetailProps) {
 
             {/* コメントタブ */}
             {activeTab === 'comments' && (
-              <div className="space-y-4">
+              <div className="space-y-8">
                 {hasComments ? (
                   data.comments?.map((comment) => (
-                    <div key={comment.github_id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-semibold text-gray-900">{comment.author}</span>
-                        <span className="text-sm text-gray-500">
+                    <div key={comment.github_id} className="pb-8 border-b border-gray-100 last:border-0 group hover:pl-2 transition-all duration-300 ease-out">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm text-gray-900 font-light group-hover:text-gray-700 transition-colors duration-300">{comment.author}</span>
+                        <span className="text-xs text-gray-400 font-light">
                           {new Date(comment.created_at).toLocaleString('ja-JP')}
                         </span>
                       </div>
                       <div className="prose max-w-none">
-                        <p className="text-gray-700 whitespace-pre-wrap">{comment.body}</p>
+                        <p className="text-gray-700 whitespace-pre-wrap leading-relaxed text-sm font-light group-hover:text-gray-800 transition-colors duration-300">{comment.body}</p>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-20 text-gray-400 text-sm font-light">
                     コメントがありません。
                   </div>
                 )}
@@ -273,27 +281,27 @@ export default function Detail({ type }: DetailProps) {
 
             {/* 分析結果タブ */}
             {activeTab === 'analysis' && type === 'pr' && (
-              <div className="space-y-6">
+              <div className="space-y-10">
                 {data.state === 'merged' && data.summary?.merge_reason && (
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Merge理由の分析</h3>
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <p className="text-gray-700 whitespace-pre-wrap">{data.summary.merge_reason}</p>
+                    <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">Merge理由の分析</h3>
+                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
+                      {data.summary.merge_reason}
                     </div>
                   </div>
                 )}
 
                 {data.state === 'closed' && data.summary?.close_reason && (
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Close理由の分析</h3>
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                      <p className="text-gray-700 whitespace-pre-wrap">{data.summary.close_reason}</p>
+                    <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">Close理由の分析</h3>
+                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
+                      {data.summary.close_reason}
                     </div>
                   </div>
                 )}
 
                 {!data.summary?.merge_reason && !data.summary?.close_reason && (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-20 text-gray-400 text-sm font-light">
                     分析結果がまだ生成されていません。
                   </div>
                 )}

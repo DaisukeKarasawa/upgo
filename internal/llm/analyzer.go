@@ -22,7 +22,11 @@ func NewAnalyzer(client *Client, logger *zap.Logger) *Analyzer {
 }
 
 func (a *Analyzer) AnalyzeMergeReason(ctx context.Context, prInfo, comments, discussion string) (string, error) {
-	content := fmt.Sprintf("PR情報:\n%s\n\nコメント:\n%s\n\n議論:\n%s", prInfo, comments, discussion)
+	// Sanitize all inputs to prevent prompt injection
+	sanitizedPRInfo := sanitizeInput(prInfo)
+	sanitizedComments := sanitizeInput(comments)
+	sanitizedDiscussion := sanitizeInput(discussion)
+	content := fmt.Sprintf("PR情報:\n%s\n\nコメント:\n%s\n\n議論:\n%s", sanitizedPRInfo, sanitizedComments, sanitizedDiscussion)
 	prompt := fmt.Sprintf(PromptMergeReason, content)
 	
 	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(a.client.timeout)*time.Second)
@@ -37,7 +41,11 @@ func (a *Analyzer) AnalyzeMergeReason(ctx context.Context, prInfo, comments, dis
 }
 
 func (a *Analyzer) AnalyzeCloseReason(ctx context.Context, prInfo, comments, discussion string) (string, error) {
-	content := fmt.Sprintf("PR情報:\n%s\n\nコメント:\n%s\n\n議論:\n%s", prInfo, comments, discussion)
+	// Sanitize all inputs to prevent prompt injection
+	sanitizedPRInfo := sanitizeInput(prInfo)
+	sanitizedComments := sanitizeInput(comments)
+	sanitizedDiscussion := sanitizeInput(discussion)
+	content := fmt.Sprintf("PR情報:\n%s\n\nコメント:\n%s\n\n議論:\n%s", sanitizedPRInfo, sanitizedComments, sanitizedDiscussion)
 	prompt := fmt.Sprintf(PromptCloseReason, content)
 	
 	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(a.client.timeout)*time.Second)
@@ -52,14 +60,19 @@ func (a *Analyzer) AnalyzeCloseReason(ctx context.Context, prInfo, comments, dis
 }
 
 func (a *Analyzer) AnalyzeMentalModel(ctx context.Context, analysisType string, prsData, issuesData string) (string, error) {
-	content := fmt.Sprintf("PRデータ:\n%s\n\nIssueデータ:\n%s", prsData, issuesData)
+	// Sanitize all inputs to prevent prompt injection
+	sanitizedPRsData := sanitizeInput(prsData)
+	sanitizedIssuesData := sanitizeInput(issuesData)
+	sanitizedAnalysisType := sanitizeInput(analysisType)
+	
+	content := fmt.Sprintf("PRデータ:\n%s\n\nIssueデータ:\n%s", sanitizedPRsData, sanitizedIssuesData)
 	
 	// Customize prompt based on analysis type
 	// First, format the base prompt with content
 	fullPrompt := fmt.Sprintf(PromptMentalModel, content)
-	if analysisType != "" {
+	if sanitizedAnalysisType != "" {
 		// Then append the analysis type instruction
-		fullPrompt = fmt.Sprintf("%s\n\n特に以下の観点に焦点を当ててください: %s", fullPrompt, analysisType)
+		fullPrompt = fmt.Sprintf("%s\n\n特に以下の観点に焦点を当ててください: %s", fullPrompt, sanitizedAnalysisType)
 	}
 	
 	// Mental model analysis takes longer, so use double timeout

@@ -26,7 +26,9 @@ func (s *Summarizer) SummarizeDescription(ctx context.Context, description strin
 		return "", nil
 	}
 
-	prompt := fmt.Sprintf(PromptPRDescriptionSummary, description)
+	// Sanitize input to prevent prompt injection
+	sanitizedDescription := sanitizeInput(description)
+	prompt := fmt.Sprintf(PromptPRDescriptionSummary, sanitizedDescription)
 	
 	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(s.client.timeout)*time.Second)
 	defer cancel()
@@ -44,7 +46,9 @@ func (s *Summarizer) SummarizeDiff(ctx context.Context, diff string) (string, st
 		return "", "", nil
 	}
 
-	prompt := fmt.Sprintf(PromptDiffSummary, diff)
+	// Sanitize input to prevent prompt injection
+	sanitizedDiff := sanitizeInput(diff)
+	prompt := fmt.Sprintf(PromptDiffSummary, sanitizedDiff)
 	
 	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(s.client.timeout)*time.Second)
 	defer cancel()
@@ -67,7 +71,9 @@ func (s *Summarizer) SummarizeComments(ctx context.Context, comments []string) (
 
 	commentsText := ""
 	for i, comment := range comments {
-		commentsText += fmt.Sprintf("コメント%d: %s\n\n", i+1, comment)
+		// Sanitize each comment to prevent prompt injection
+		sanitizedComment := sanitizeInput(comment)
+		commentsText += fmt.Sprintf("コメント%d: %s\n\n", i+1, sanitizedComment)
 	}
 
 	prompt := fmt.Sprintf(PromptCommentsSummary, commentsText)

@@ -23,37 +23,37 @@ body {
 /* アニメーション1: 左上 → 右上 → 右下 */
 @keyframes drawLineTop {
   from {
-    width: 0;
+    transform: scaleX(0);
   }
   to {
-    width: 100%;
+    transform: scaleX(1);
   }
 }
 
 @keyframes drawLineRight {
   from {
-    height: 0;
+    transform: scaleY(0);
   }
   to {
-    height: 100%;
+    transform: scaleY(1);
   }
 }
 
 /* アニメーション2: 右下 → 左下 → 左上 */
 @keyframes drawLineBottom {
   from {
-    width: 0;
+    transform: scaleX(0);
   }
   to {
-    width: 100%;
+    transform: scaleX(1);
   }
 }
 
 @keyframes drawLineLeft {
   from {
-    height: 0;
+    transform: scaleY(0);
   }
   to {
-    height: 100%;
+    transform: scaleY(1);
   }
 }

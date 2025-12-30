@@ -58,8 +58,8 @@ func (h *SyncHandler) Sync(c *gin.Context) {
 
 	h.wg.Add(1)
 	go func() {
-		// Create context inside goroutine so it lives for the operation duration
-		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Minute)
+		// Create context from Background so sync outlives the HTTP request
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 		defer func() {
 			cancel() // Cancel context when goroutine exits
 			<-h.semaphore // Release semaphore
@@ -67,9 +67,12 @@ func (h *SyncHandler) Sync(c *gin.Context) {
 		}()
 
 		if err := h.syncService.Sync(ctx); err != nil {
-			if ctx.Err() == context.Canceled {
+			switch ctx.Err() {
+			case context.Canceled:
 				h.logger.Info("同期がキャンセルされました")
-			} else {
+			case context.DeadlineExceeded:
+				h.logger.Warn("同期がタイムアウトしました", zap.Error(err))
+			default:
 				h.logger.Error("同期に失敗しました", zap.Error(err))
 			}
 		} else {

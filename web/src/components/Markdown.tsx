@@ -7,7 +7,7 @@ interface MarkdownProps {
   className?: string;
 }
 
-// Reactノードからテキストコンテンツを抽出するヘルパー関数
+// Helper function to extract text content from React nodes
 function extractTextContent(node: ReactNode): string {
   if (typeof node === "string" || typeof node === "number") {
     return String(node);

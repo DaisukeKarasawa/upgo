@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"strings"
 
 	"go.uber.org/zap"
 )
@@ -15,13 +16,22 @@ func RunMigrations(logger *zap.Logger) error {
 		createPullRequestDiffsTable,
 		createMentalModelAnalysesTable,
 		createSyncJobsTable,
+		// Add head_sha column to pull_requests table (if not exists)
+		addHeadShaToPullRequests,
 	}
 
 	for i, migration := range migrations {
-		if _, err := DB.Exec(migration); err != nil {
-			return fmt.Errorf("マイグレーション %d の実行に失敗しました: %w", i+1, err)
+		_, err := DB.Exec(migration)
+		if err != nil {
+			// SQLite returns "duplicate column name" when column already exists
+			if strings.Contains(err.Error(), "duplicate column name") {
+				logger.Debug("マイグレーションをスキップしました（カラムが既に存在します）", zap.Int("number", i+1))
+			} else {
+				return fmt.Errorf("マイグレーション %d の実行に失敗しました: %w", i+1, err)
+			}
+		} else {
+			logger.Info("マイグレーションを実行しました", zap.Int("number", i+1))
 		}
-		logger.Info("マイグレーションを実行しました", zap.Int("number", i+1))
 	}
 
 	logger.Info("すべてのマイグレーションが完了しました")
@@ -54,9 +64,14 @@ CREATE TABLE IF NOT EXISTS pull_requests (
     closed_at DATETIME,
     url TEXT NOT NULL,
     last_synced_at DATETIME,
+    head_sha TEXT,
     UNIQUE(repository_id, github_id),
     FOREIGN KEY (repository_id) REFERENCES repositories(id)
 );
+`
+
+const addHeadShaToPullRequests = `
+ALTER TABLE pull_requests ADD COLUMN head_sha TEXT;
 `
 
 const createPullRequestSummariesTable = `

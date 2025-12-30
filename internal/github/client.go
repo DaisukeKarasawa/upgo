@@ -5,6 +5,7 @@ package github
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/google/go-github/v60/github"
@@ -19,6 +20,15 @@ type Client struct {
 	client  *github.Client
 	logger  *zap.Logger
 	limiter *rate.Limiter
+
+	// Rate limit cache to reduce API calls
+	rateLimitCache struct {
+		sync.RWMutex
+		lastCheck    time.Time
+		remaining    int
+		resetTime    time.Time
+		cacheExpiry  time.Duration // How long to cache rate limit info
+	}
 }
 
 // NewClient creates a new GitHub client with rate limiting configured.
@@ -30,11 +40,15 @@ func NewClient(token string, logger *zap.Logger) *Client {
 	// 4500 requests/hour = 1.25 requests/second, with burst of 10
 	limiter := rate.NewLimiter(rate.Limit(float64(4500)/3600), 10)
 
-	return &Client{
+	c := &Client{
 		client:  client,
 		logger:  logger,
 		limiter: limiter,
 	}
+	// Cache rate limit info for 60 seconds to reduce API calls
+	c.rateLimitCache.cacheExpiry = 60 * time.Second
+
+	return c
 }
 
 // waitForRateLimit blocks until the rate limiter allows the next request.
@@ -50,13 +64,68 @@ func (c *Client) waitForRateLimit(ctx context.Context) error {
 // The threshold of 100 remaining requests is chosen to provide a safety buffer
 // while still allowing reasonable throughput. Waiting proactively avoids the
 // more disruptive scenario of hitting the limit mid-operation.
+//
+// Uses caching to reduce API calls: rate limit info is cached for 60 seconds.
 func (c *Client) checkRateLimit(ctx context.Context) error {
+	c.rateLimitCache.RLock()
+	now := time.Now()
+	// Check if cached data is still valid
+	if !c.rateLimitCache.lastCheck.IsZero() &&
+		now.Sub(c.rateLimitCache.lastCheck) < c.rateLimitCache.cacheExpiry {
+		// Use cached data
+		remaining := c.rateLimitCache.remaining
+		resetTime := c.rateLimitCache.resetTime
+		c.rateLimitCache.RUnlock()
+
+		if remaining < 100 {
+			waitTime := time.Until(resetTime)
+			if waitTime > 0 {
+				c.logger.Warn("レート制限に近づいています（キャッシュ情報）。待機します",
+					zap.Int("remaining", remaining),
+					zap.Duration("wait_time", waitTime),
+				)
+				time.Sleep(waitTime)
+			}
+		}
+		return nil
+	}
+	c.rateLimitCache.RUnlock()
+
+	// Cache expired or not set, fetch fresh data
+	c.rateLimitCache.Lock()
+	defer c.rateLimitCache.Unlock()
+
+	// Double-check after acquiring write lock (another goroutine might have updated it)
+	if !c.rateLimitCache.lastCheck.IsZero() &&
+		now.Sub(c.rateLimitCache.lastCheck) < c.rateLimitCache.cacheExpiry {
+		remaining := c.rateLimitCache.remaining
+		resetTime := c.rateLimitCache.resetTime
+		c.rateLimitCache.Unlock()
+		if remaining < 100 {
+			waitTime := time.Until(resetTime)
+			if waitTime > 0 {
+				c.logger.Warn("レート制限に近づいています（キャッシュ情報）。待機します",
+					zap.Int("remaining", remaining),
+					zap.Duration("wait_time", waitTime),
+				)
+				time.Sleep(waitTime)
+			}
+		}
+		return nil
+	}
+
+	// Fetch fresh rate limit info
 	rateLimit, _, err := c.client.RateLimits(ctx)
 	if err != nil {
 		return fmt.Errorf("レート制限の確認に失敗しました: %w", err)
 	}
 
 	core := rateLimit.Core
+	// Update cache
+	c.rateLimitCache.lastCheck = now
+	c.rateLimitCache.remaining = core.Remaining
+	c.rateLimitCache.resetTime = core.Reset.Time
+
 	if core.Remaining < 100 {
 		resetTime := core.Reset.Time
 		waitTime := time.Until(resetTime)

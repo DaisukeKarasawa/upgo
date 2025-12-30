@@ -154,6 +154,7 @@ func main() {
 	})
 
 	// スケジューラーの初期化と起動
+	var schedulerCancel context.CancelFunc
 	if cfg.Scheduler.Enabled {
 		sched, err := scheduler.NewScheduler(
 			cfg.Scheduler.Interval,
@@ -167,10 +168,10 @@ func main() {
 			log.Fatal("スケジューラーの初期化に失敗しました", zap.Error(err))
 		}
 
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		var schedulerCtx context.Context
+		schedulerCtx, schedulerCancel = context.WithCancel(context.Background())
 
-		go sched.Start(ctx)
+		go sched.Start(schedulerCtx)
 		log.Info("スケジューラーを起動しました", zap.String("interval", cfg.Scheduler.Interval))
 	}
 
@@ -196,6 +197,12 @@ func main() {
 	<-quit
 
 	log.Info("サーバーをシャットダウンしています...")
+
+	// スケジューラーの停止
+	if schedulerCancel != nil {
+		schedulerCancel()
+		log.Info("スケジューラーの停止を要求しました")
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

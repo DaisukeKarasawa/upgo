@@ -84,7 +84,6 @@ func main() {
 
 	githubClient := github.NewClient(cfg.GitHub.Token, log)
 	prFetcher := github.NewPRFetcher(githubClient, log)
-	issueFetcher := github.NewIssueFetcher(githubClient, log)
 	statusTracker := tracker.NewStatusTracker(database.Get(), log)
 
 	llmClient := llm.NewClient(cfg.LLM.BaseURL, cfg.LLM.Model, cfg.LLM.Timeout, log)
@@ -118,7 +117,6 @@ func main() {
 		database.Get(),
 		githubClient,
 		prFetcher,
-		issueFetcher,
 		statusTracker,
 		analysisService,
 		log,

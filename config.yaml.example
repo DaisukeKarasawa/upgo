@@ -17,7 +17,9 @@ llm:
   timeout: 300        # タイムアウト（秒）
 
 database:
-  path: "./data/upgo.db"
+  # 環境に応じて自動選択される（UPGO_ENV=production で本番環境）
+  dev: "./data/upgo-dev.db"   # 開発環境用
+  prd: "./data/upgo.db"       # 本番環境用
 
 server:
   port: 8080

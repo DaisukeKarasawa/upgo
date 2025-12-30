@@ -45,8 +45,12 @@ func Validate(cfg *Config) error {
 	}
 
 	// Validate Database settings
-	if cfg.Database.Path == "" {
-		errors = append(errors, "database.path が設定されていません")
+	// devとprdの両方が設定されている必要がある
+	if cfg.Database.Dev == "" {
+		errors = append(errors, "database.dev が設定されていません")
+	}
+	if cfg.Database.Prd == "" {
+		errors = append(errors, "database.prd が設定されていません")
 	}
 
 	// Validate Server settings

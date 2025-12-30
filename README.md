@@ -232,6 +232,51 @@ curl http://localhost:8080/health
 
 詳細は `config.yaml.example` を参照してください。
 
+### 環境ごとのデータベース設定
+
+本番環境と開発環境で異なるデータベースファイルを使用することを強く推奨します。
+
+`config.yaml`で`database.dev`と`database.prd`の両方を設定すると、環境変数`UPGO_ENV`に基づいて自動的に適切なパスが選択されます。
+
+#### 設定方法
+
+`config.yaml`で以下のように設定：
+
+```yaml
+database:
+  dev: "./data/upgo-dev.db" # 開発環境用
+  prd: "./data/upgo.db" # 本番環境用
+```
+
+#### 使用技術
+
+この機能は以下の技術を使用して実装されています：
+
+- **SQLite**: データベースエンジン（[SQLite Documentation](https://www.sqlite.org/docs.html)）
+- **Viper**: 設定管理ライブラリ（[github.com/spf13/viper](https://github.com/spf13/viper)）
+- **環境変数**: Goの`os.Getenv`を使用してUPGO_ENVを読み取り、適切なデータベースパスを選択（[os package](https://pkg.go.dev/os#Getenv)）
+
+#### 環境の切り替え
+
+##### 開発環境（デフォルト）
+
+環境変数を設定しない場合、自動的に`database.dev`が使用されます：
+
+```bash
+make dev
+```
+
+##### 本番環境
+
+環境変数`UPGO_ENV=production`または`UPGO_ENV=prod`を設定すると、`database.prd`が使用されます：
+
+```bash
+export UPGO_ENV=production
+make run
+```
+
+**注意**: 本番環境と開発環境で同じデータベースファイルを使用すると、開発中の操作が本番データに影響を与える可能性があります。必ず別々のデータベースファイルを使用してください。
+
 ## 開発
 
 ### 開発サーバーの起動

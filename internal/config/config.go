@@ -42,7 +42,9 @@ type LLMConfig struct {
 }
 
 type DatabaseConfig struct {
-	Path string `mapstructure:"path"`
+	Path string `mapstructure:"-"` // 内部で使用（dev/prdから自動設定）
+	Dev  string `mapstructure:"dev"`   // 開発環境用パス
+	Prd  string `mapstructure:"prd"`  // 本番環境用パス
 }
 
 type ServerConfig struct {
@@ -98,6 +100,17 @@ func Load(configPath string) (*Config, error) {
 	var config Config
 	if err := viper.Unmarshal(&config); err != nil {
 		return nil, fmt.Errorf("設定の解析に失敗しました: %w", err)
+	}
+
+	// 環境に応じてデータベースパスを設定
+	// 環境変数UPGO_ENVに基づいて自動選択
+	env := os.Getenv("UPGO_ENV")
+	isProduction := env == "production" || env == "prod"
+	
+	if isProduction {
+		config.Database.Path = config.Database.Prd
+	} else {
+		config.Database.Path = config.Database.Dev
 	}
 
 	if err := Validate(&config); err != nil {

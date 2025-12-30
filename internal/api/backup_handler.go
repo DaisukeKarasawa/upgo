@@ -39,7 +39,6 @@ func (h *BackupHandler) Backup(c *gin.Context) {
 
 	if err := database.Backup(
 		h.cfg.Backup.Path,
-		h.cfg.Database.Path,
 		h.cfg.Backup.MaxBackups,
 		h.logger,
 	); err != nil {

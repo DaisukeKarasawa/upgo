@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func Backup(backupPath string, dbPath string, maxBackups int, logger *zap.Logger) error {
+func Backup(backupPath string, maxBackups int, logger *zap.Logger) error {
 	// Validate and normalize backup path to prevent path traversal attacks
 	absBackupPath, err := filepath.Abs(backupPath)
 	if err != nil {
@@ -48,7 +48,7 @@ func Backup(backupPath string, dbPath string, maxBackups int, logger *zap.Logger
 
 	// Delete old backups
 	if maxBackups > 0 {
-		if err := cleanupOldBackups(backupPath, maxBackups, logger); err != nil {
+		if err := cleanupOldBackups(absBackupPath, maxBackups, logger); err != nil {
 			logger.Warn("古いバックアップの削除に失敗しました", zap.Error(err))
 		}
 	}
@@ -65,7 +65,7 @@ func validateBackupPath(path string) error {
 	}
 	// Check for control characters and other suspicious patterns
 	for _, char := range path {
-		if char < 32 && char != '\t' && char != '\n' && char != '\r' {
+		if char < 32 {
 			return fmt.Errorf("不正な文字が検出されました: %s", path)
 		}
 	}
@@ -93,25 +93,26 @@ func cleanupOldBackups(backupPath string, maxBackups int, logger *zap.Logger) er
 		return err
 	}
 
+	// Filter out files that fail stat and log warnings
+	var statableFiles []string
+	for _, file := range files {
+		if _, err := os.Stat(file); err != nil {
+			logger.Warn("バックアップファイルの状態確認に失敗しました", zap.String("file", file), zap.Error(err))
+		} else {
+			statableFiles = append(statableFiles, file)
+		}
+	}
+	files = statableFiles
+
 	if len(files) <= maxBackups {
 		return nil
 	}
 
 	// Sort files by modification time (oldest first)
-	// Files with errors are placed at the end
+	// At this point all files should have successful stat
 	sort.Slice(files, func(i, j int) bool {
-		infoI, errI := os.Stat(files[i])
-		infoJ, errJ := os.Stat(files[j])
-		
-		// If an error occurs, place the file with error at the end
-		if errI != nil {
-			return false
-		}
-		if errJ != nil {
-			return true
-		}
-		
-		// Compare only when both file info are successfully retrieved
+		infoI, _ := os.Stat(files[i])
+		infoJ, _ := os.Stat(files[j])
 		return infoI.ModTime().Before(infoJ.ModTime())
 	})
 

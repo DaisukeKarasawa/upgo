@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"testing"
 
-	"upgo/internal/github"
+	"upgo/internal/llm"
 	"upgo/internal/tracker"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -54,16 +54,19 @@ func BenchmarkSyncService_Sync(b *testing.B) {
 	}
 
 	logger := zap.NewNop()
-	// Create properly initialized GitHub client (with dummy token for testing)
-	githubClient := github.NewClient("dummy-token", logger)
-	prFetcher := github.NewPRFetcher(githubClient, logger)
+	// Use mock PRFetcher to avoid actual GitHub API calls
+	mockPRFetcher := &mockPRFetcher{}
 	statusTracker := tracker.NewStatusTracker(db, logger)
-	analysisService := &AnalysisService{}
+	// Initialize AnalysisService with test doubles to avoid nil pointer dereference
+	llmClient := llm.NewClient("http://localhost:11434", "llama3.2", 30, logger)
+	summarizer := llm.NewSummarizer(llmClient, logger)
+	analyzer := llm.NewAnalyzer(llmClient, logger)
+	analysisService := NewAnalysisService(db, summarizer, analyzer, logger)
 
 	service := NewSyncService(
 		db,
-		githubClient,
-		prFetcher,
+		nil, // githubClient not needed with mock PRFetcher
+		mockPRFetcher,
 		statusTracker,
 		analysisService,
 		logger,
@@ -73,9 +76,7 @@ func BenchmarkSyncService_Sync(b *testing.B) {
 
 	ctx := context.Background()
 
-	// Note: This benchmark will fail if GitHub API is not accessible
-	// For a real benchmark, you'd want to mock the GitHub API calls
-	b.Skip("Skipping Sync benchmark - requires GitHub API or proper mocking")
+	// Benchmark Sync with mock PRFetcher (no network calls)
 	
 	b.ResetTimer()
 	b.ReportAllocs()
@@ -131,15 +132,19 @@ func BenchmarkSyncService_savePR(b *testing.B) {
 	}
 
 	logger := zap.NewNop()
-	githubClient := github.NewClient("dummy-token", logger)
-	prFetcher := github.NewPRFetcher(githubClient, logger)
+	// Use mock PRFetcher to avoid actual GitHub API calls
+	mockPRFetcher := &mockPRFetcher{}
 	statusTracker := tracker.NewStatusTracker(db, logger)
-	analysisService := &AnalysisService{}
+	// Initialize AnalysisService with test doubles to avoid nil pointer dereference
+	llmClient := llm.NewClient("http://localhost:11434", "llama3.2", 30, logger)
+	summarizer := llm.NewSummarizer(llmClient, logger)
+	analyzer := llm.NewAnalyzer(llmClient, logger)
+	analysisService := NewAnalysisService(db, summarizer, analyzer, logger)
 
 	service := NewSyncService(
 		db,
-		githubClient,
-		prFetcher,
+		nil, // githubClient not needed with mock PRFetcher
+		mockPRFetcher,
 		statusTracker,
 		analysisService,
 		logger,

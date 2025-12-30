@@ -9,12 +9,27 @@ import (
 	"go.uber.org/zap"
 )
 
+// PRFetcherInterface defines the interface for fetching pull request data.
+// This interface allows for mocking in tests.
+type PRFetcherInterface interface {
+	FetchPRs(ctx context.Context, owner, repo string, state string) ([]*github.PullRequest, error)
+	FetchPRsUpdatedSince(ctx context.Context, owner, repo string, state string, since time.Time) ([]*github.PullRequest, error)
+	FetchPR(ctx context.Context, owner, repo string, number int) (*github.PullRequest, error)
+	FetchPRComments(ctx context.Context, owner, repo string, number int) ([]*github.IssueComment, error)
+	FetchPRCommentsSince(ctx context.Context, owner, repo string, number int, since time.Time) ([]*github.IssueComment, error)
+	FetchPRDiff(ctx context.Context, owner, repo string, number int) (string, error)
+	FetchMergedCommits(ctx context.Context, owner, repo string, since time.Time) ([]*github.RepositoryCommit, error)
+}
+
 // PRFetcher provides methods to fetch pull request data from GitHub.
 // It wraps the GitHub client and handles rate limiting and pagination automatically.
 type PRFetcher struct {
 	client *Client
 	logger *zap.Logger
 }
+
+// Ensure PRFetcher implements PRFetcherInterface
+var _ PRFetcherInterface = (*PRFetcher)(nil)
 
 // NewPRFetcher creates a new PRFetcher instance with the given GitHub client and logger.
 // Returns nil if either client or logger is nil.

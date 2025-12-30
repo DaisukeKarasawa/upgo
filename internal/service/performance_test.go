@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// mockPRFetcher is a mock implementation of PRFetcher for testing
+// mockPRFetcher is a mock implementation of PRFetcherInterface for testing
 // that returns empty PR lists without making actual API calls
 type mockPRFetcher struct{}
 
@@ -111,27 +111,32 @@ func TestSyncService_Performance(t *testing.T) {
 	}
 
 	logger := zap.NewNop()
-	// NOTE: This test currently makes actual GitHub API calls because SyncService
-	// uses *github.PRFetcher directly. To properly mock this, SyncService would need
-	// to use an interface instead of a concrete type. For now, we skip this test
-	// to avoid non-deterministic behavior and network dependencies.
-	// TODO: Refactor SyncService to use a PRFetcher interface to enable proper mocking
-	t.Skip("Skipping Sync performance test - requires GitHub API mocking (see TODO above)")
-
+	// Use mock PRFetcher to avoid actual GitHub API calls
+	mockPRFetcher := &mockPRFetcher{}
 	statusTracker := tracker.NewStatusTracker(db, logger)
 	// Initialize AnalysisService with test doubles to avoid nil pointer dereference
+	// For performance testing, we use Nop logger and skip LLM operations
 	llmClient := llm.NewClient("http://localhost:11434", "llama3.2", 30, logger)
 	summarizer := llm.NewSummarizer(llmClient, logger)
 	analyzer := llm.NewAnalyzer(llmClient, logger)
 	analysisService := NewAnalysisService(db, summarizer, analyzer, logger)
 
-	// This code is unreachable due to t.Skip above, but kept for reference
-	_ = analysisService
-	_ = statusTracker
+	service := NewSyncService(
+		db,
+		nil, // githubClient not needed with mock PRFetcher
+		mockPRFetcher,
+		statusTracker,
+		analysisService,
+		logger,
+		"test-owner",
+		"test-repo",
+	)
 
-	// Measure Sync performance (unreachable due to t.Skip)
+	ctx := context.Background()
+
+	// Measure Sync performance with mock PRFetcher (no network calls)
 	metrics, err := measurePerformance("Sync", func() error {
-		return nil // Unreachable
+		return service.Sync(ctx)
 	})
 
 	if err != nil {

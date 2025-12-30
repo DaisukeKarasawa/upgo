@@ -20,7 +20,7 @@ import (
 type SyncService struct {
 	db              *sql.DB
 	githubClient    *github.Client
-	prFetcher       *github.PRFetcher
+	prFetcher       github.PRFetcherInterface
 	statusTracker   *tracker.StatusTracker
 	analysisService *AnalysisService
 	logger          *zap.Logger
@@ -31,7 +31,7 @@ type SyncService struct {
 func NewSyncService(
 	db *sql.DB,
 	githubClient *github.Client,
-	prFetcher *github.PRFetcher,
+	prFetcher github.PRFetcherInterface,
 	statusTracker *tracker.StatusTracker,
 	analysisService *AnalysisService,
 	logger *zap.Logger,

@@ -1,53 +1,17 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
-import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 
 interface MarkdownProps {
   children: string;
   className?: string;
 }
 
-// Sanitization schema: Define allowed tags and attributes in whitelist format
-const sanitizeSchema = {
-  ...defaultSchema,
-  tagNames: [
-    ...(defaultSchema.tagNames || []).filter((tag: string) => tag !== 'img'),
-    'details',
-    'summary',
-    'kbd',
-    'sup',
-    'sub',
-  ],
-  attributes: {
-    ...defaultSchema.attributes,
-    a: [
-      ...(defaultSchema.attributes?.a || []),
-      ['target', '_blank'],
-      ['rel', 'noopener noreferrer nofollow'],
-    ],
-    code: [
-      ['className'],
-    ],
-    pre: [
-      ['className'],
-    ],
-  },
-  protocols: {
-    ...defaultSchema.protocols,
-    href: ['http', 'https', 'mailto'],
-  },
-};
-
 export default function Markdown({ children, className = '' }: MarkdownProps) {
   return (
     <div className={`prose prose-sm max-w-none ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[
-          rehypeRaw,
-          [rehypeSanitize, sanitizeSchema],
-        ]}
+        skipHtml={true}
         components={{
           a: ({ node, ...props }) => (
             <a

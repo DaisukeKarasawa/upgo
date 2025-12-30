@@ -13,9 +13,8 @@ func sanitizeInput(input string) string {
 		return input
 	}
 
-	// Step 1: Escape formatting tokens that could be used in fmt.Sprintf
-	// Replace % with %% to prevent format string injection
-	input = strings.ReplaceAll(input, "%", "%%")
+	// Step 1: Escape formatting tokens that could be used in template systems
+	// Note: % escaping is not needed when sanitized content is used as %s arguments in fmt.Sprintf
 	// Escape curly braces that might be used in template systems
 	input = strings.ReplaceAll(input, "{", "\\{")
 	input = strings.ReplaceAll(input, "}", "\\}")

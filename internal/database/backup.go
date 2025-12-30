@@ -11,19 +11,36 @@ import (
 )
 
 func Backup(backupPath string, dbPath string, maxBackups int, logger *zap.Logger) error {
+	// Validate and normalize backup path to prevent path traversal attacks
+	absBackupPath, err := filepath.Abs(backupPath)
+	if err != nil {
+		return fmt.Errorf("バックアップパスの正規化に失敗しました: %w", err)
+	}
+	// Ensure the path doesn't contain any suspicious characters or patterns
+	if err := validateBackupPath(absBackupPath); err != nil {
+		return fmt.Errorf("バックアップパスの検証に失敗しました: %w", err)
+	}
+
 	// Create backup directory
-	if err := os.MkdirAll(backupPath, 0755); err != nil {
+	if err := os.MkdirAll(absBackupPath, 0755); err != nil {
 		return fmt.Errorf("バックアップディレクトリの作成に失敗しました: %w", err)
 	}
 
 	// Backup file name with timestamp
 	timestamp := time.Now().Format("20060102_150405")
 	backupFileName := fmt.Sprintf("upgo_%s.db", timestamp)
-	backupFilePath := filepath.Join(backupPath, backupFileName)
+	backupFilePath := filepath.Join(absBackupPath, backupFileName)
+
+	// Validate the final backup file path
+	if err := validateBackupPath(backupFilePath); err != nil {
+		return fmt.Errorf("バックアップファイルパスの検証に失敗しました: %w", err)
+	}
 
 	// Use SQLite's VACUUM INTO for safe backup of active database
 	// This ensures consistency even when the database is in use
-	if _, err := DB.Exec(fmt.Sprintf("VACUUM INTO '%s'", backupFilePath)); err != nil {
+	// Escape single quotes in the path to prevent SQL injection
+	escapedPath := escapeSQLString(backupFilePath)
+	if _, err := DB.Exec(fmt.Sprintf("VACUUM INTO '%s'", escapedPath)); err != nil {
 		return fmt.Errorf("バックアップの作成に失敗しました: %w", err)
 	}
 
@@ -37,6 +54,37 @@ func Backup(backupPath string, dbPath string, maxBackups int, logger *zap.Logger
 	}
 
 	return nil
+}
+
+// validateBackupPath validates the backup path to prevent path traversal attacks.
+// It checks that the path doesn't contain suspicious patterns like ".." or control characters.
+func validateBackupPath(path string) error {
+	// Check for path traversal attempts
+	if filepath.Clean(path) != path {
+		return fmt.Errorf("パストラバーサルが検出されました: %s", path)
+	}
+	// Check for control characters and other suspicious patterns
+	for _, char := range path {
+		if char < 32 && char != '\t' && char != '\n' && char != '\r' {
+			return fmt.Errorf("不正な文字が検出されました: %s", path)
+		}
+	}
+	return nil
+}
+
+// escapeSQLString escapes single quotes in a string for use in SQL.
+// This prevents SQL injection when using the path in VACUUM INTO.
+func escapeSQLString(s string) string {
+	// Replace single quotes with two single quotes (SQL escape)
+	result := ""
+	for _, char := range s {
+		if char == '\'' {
+			result += "''"
+		} else {
+			result += string(char)
+		}
+	}
+	return result
 }
 
 func cleanupOldBackups(backupPath string, maxBackups int, logger *zap.Logger) error {

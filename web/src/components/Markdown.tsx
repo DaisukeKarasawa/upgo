@@ -31,7 +31,6 @@ export default function Markdown({ children, className = "" }: MarkdownProps) {
     <div className={`prose prose-sm max-w-none ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        skipHtml={true}
         components={{
           a: ({ ...props }) => {
             const href = props.href || "";

@@ -25,7 +25,6 @@ func NewSyncHandler(syncService *service.SyncService, logger *zap.Logger) *SyncH
 
 func (h *SyncHandler) Sync(c *gin.Context) {
 	go func() {
-		// goroutine内でコンテキストを作成し、完了時にキャンセルする
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 		defer cancel()
 

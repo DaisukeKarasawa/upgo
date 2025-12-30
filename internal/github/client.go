@@ -18,10 +18,7 @@ type Client struct {
 
 func NewClient(token string, logger *zap.Logger) *Client {
 	client := github.NewClient(nil).WithAuthToken(token)
-
-	// レート制限: 認証済みリクエストは5000リクエスト/時間
-	// 安全のため、4500リクエスト/時間に制限
-	limiter := rate.NewLimiter(rate.Limit(4500/3600), 10)
+	limiter := rate.NewLimiter(rate.Limit(float64(4500)/3600), 10)
 
 	return &Client{
 		client:  client,

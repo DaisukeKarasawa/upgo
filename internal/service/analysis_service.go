@@ -107,7 +107,12 @@ func (s *AnalysisService) AnalyzePR(ctx context.Context, prID int) error {
 
 	if pr.State == "merged" {
 		prInfo := fmt.Sprintf("タイトル: %s\n説明: %s\n作成者: %s", pr.Title, pr.Body, pr.Author)
-		mergeReason, err := s.analyzer.AnalyzeMergeReason(ctx, prInfo, fmt.Sprintf("%v", comments), discussionSummary)
+		// Format comments with indexed structure for better LLM understanding
+		commentsText := ""
+		for i, comment := range comments {
+			commentsText += fmt.Sprintf("コメント%d: %s\n\n", i+1, comment)
+		}
+		mergeReason, err := s.analyzer.AnalyzeMergeReason(ctx, prInfo, commentsText, discussionSummary)
 		if err != nil {
 			s.logger.Warn("Merge理由の分析に失敗しました", zap.Error(err))
 		} else {
@@ -121,7 +126,12 @@ func (s *AnalysisService) AnalyzePR(ctx context.Context, prID int) error {
 		}
 	} else if pr.State == "closed" {
 		prInfo := fmt.Sprintf("タイトル: %s\n説明: %s\n作成者: %s", pr.Title, pr.Body, pr.Author)
-		closeReason, err := s.analyzer.AnalyzeCloseReason(ctx, prInfo, fmt.Sprintf("%v", comments), discussionSummary)
+		// Format comments with indexed structure for better LLM understanding
+		commentsText := ""
+		for i, comment := range comments {
+			commentsText += fmt.Sprintf("コメント%d: %s\n\n", i+1, comment)
+		}
+		closeReason, err := s.analyzer.AnalyzeCloseReason(ctx, prInfo, commentsText, discussionSummary)
 		if err != nil {
 			s.logger.Warn("Close理由の分析に失敗しました", zap.Error(err))
 		} else {

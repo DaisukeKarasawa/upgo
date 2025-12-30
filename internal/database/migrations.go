@@ -124,3 +124,34 @@ CREATE TABLE IF NOT EXISTS sync_jobs (
     error_message TEXT
 );
 `
+
+// ClearAllTables drops all tables and recreates them by running migrations
+// This effectively clears all data from the database
+func ClearAllTables(logger *zap.Logger) error {
+	// Drop tables in reverse order of dependencies to avoid foreign key constraint errors
+	// Order: dependent tables first, then parent tables
+	// - pull_request_diffs, pull_request_comments, pull_request_summaries depend on pull_requests
+	// - mental_model_analyses depends on repositories
+	// - pull_requests depends on repositories
+	tables := []string{
+		"pull_request_diffs",        // Dependent table
+		"pull_request_comments",     // Dependent table
+		"pull_request_summaries",    // Dependent table
+		"mental_model_analyses",     // Dependent table (depends on repositories)
+		"pull_requests",             // Parent table (depends on repositories)
+		"repositories",              // Parent table
+		"sync_jobs",                 // Independent table
+	}
+
+	logger.Info("データベースの全テーブルを削除しています...")
+	for _, table := range tables {
+		if _, err := DB.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", table)); err != nil {
+			return fmt.Errorf("テーブル %s の削除に失敗しました: %w", table, err)
+		}
+		logger.Info("テーブルを削除しました", zap.String("table", table))
+	}
+
+	logger.Info("マイグレーションを再実行してテーブルを再作成しています...")
+	// Recreate all tables by running migrations
+	return RunMigrations(logger)
+}

@@ -15,6 +15,7 @@ func SetupRoutes(router *gin.Engine, db *sql.DB, syncService *service.SyncServic
 	// Default to 3 concurrent sync operations
 	syncHandler := NewSyncHandler(syncService, logger, 3)
 	backupHandler := NewBackupHandler(cfg, logger)
+	clearHandler := NewClearHandler(logger, syncHandler)
 
 	api := router.Group("/api/v1")
 	{
@@ -25,6 +26,7 @@ func SetupRoutes(router *gin.Engine, db *sql.DB, syncService *service.SyncServic
 		api.GET("/sync/status", syncHandler.GetSyncStatus)
 
 		api.POST("/backup", backupHandler.Backup)
+		api.POST("/clear", clearHandler.Clear)
 	}
 
 	return syncHandler

@@ -148,6 +148,14 @@ func (f *PRFetcher) FetchPR(ctx context.Context, owner, repo string, number int)
 // Returns all comments across paginated results.
 // Returns an error if rate limiting fails or the API call encounters an error.
 func (f *PRFetcher) FetchPRComments(ctx context.Context, owner, repo string, number int) ([]*github.IssueComment, error) {
+	return f.FetchPRCommentsSince(ctx, owner, repo, number, time.Time{})
+}
+
+// FetchPRCommentsSince retrieves comments for a pull request updated since the given time.
+// If since is zero time, retrieves all comments (same as FetchPRComments).
+// Returns all comments across paginated results.
+// Returns an error if rate limiting fails or the API call encounters an error.
+func (f *PRFetcher) FetchPRCommentsSince(ctx context.Context, owner, repo string, number int, since time.Time) ([]*github.IssueComment, error) {
 	if err := f.client.waitForRateLimit(ctx); err != nil {
 		return nil, err
 	}
@@ -160,6 +168,9 @@ func (f *PRFetcher) FetchPRComments(ctx context.Context, owner, repo string, num
 		ListOptions: github.ListOptions{
 			PerPage: 100,
 		},
+	}
+	if !since.IsZero() {
+		opts.Since = &since
 	}
 
 	var allComments []*github.IssueComment

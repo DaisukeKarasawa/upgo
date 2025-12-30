@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sync"
 	"time"
 
 	"upgo/internal/github"
@@ -53,6 +54,7 @@ func NewSyncService(
 // then updates the last_synced_at timestamp. Errors in individual sync operations
 // are logged but don't stop the overall process, allowing partial success.
 func (s *SyncService) Sync(ctx context.Context) error {
+	syncStart := time.Now()
 	s.logger.Info("同期を開始しました")
 
 	repoID, err := s.getOrCreateRepository()
@@ -62,6 +64,7 @@ func (s *SyncService) Sync(ctx context.Context) error {
 
 	if err := s.syncPRs(ctx, repoID); err != nil {
 		s.logger.Error("PR同期に失敗しました", zap.Error(err))
+		return err
 	}
 
 	_, err = s.db.Exec(
@@ -72,7 +75,10 @@ func (s *SyncService) Sync(ctx context.Context) error {
 		s.logger.Warn("最終同期時刻の更新に失敗しました", zap.Error(err))
 	}
 
-	s.logger.Info("同期が完了しました")
+	totalDuration := time.Since(syncStart)
+	s.logger.Info("同期が完了しました",
+		zap.Duration("total_duration", totalDuration),
+	)
 	return nil
 }
 
@@ -105,28 +111,120 @@ func (s *SyncService) getOrCreateRepository() (int, error) {
 	return id, nil
 }
 
-// syncPRs fetches and saves only PRs updated within the last month.
+// syncPRs fetches and saves PRs updated since the last sync.
+// Uses repositories.last_synced_at as the threshold, falling back to 30 days ago
+// for the first sync. Adds a 5-minute safety margin to avoid missing PRs that
+// were updated just before the last sync completed.
 //
 // Important: We stop fetching older PR pages at the GitHub API layer
-// (sorted by updated desc) to avoid retrieving PRs outside the 1-month window.
+// (sorted by updated desc) to avoid retrieving PRs outside the sync window.
 func (s *SyncService) syncPRs(ctx context.Context, repoID int) error {
-	oneMonthAgo := time.Now().AddDate(0, -1, 0)
+	// Get last sync time from database
+	var lastSyncedAt sql.NullTime
+	err := s.db.QueryRow(
+		"SELECT last_synced_at FROM repositories WHERE id = ?",
+		repoID,
+	).Scan(&lastSyncedAt)
 
-	// Fetch PRs updated within the last month
+	var sinceTime time.Time
+	if err == nil && lastSyncedAt.Valid {
+		// Use last sync time minus 5 minutes as safety margin
+		sinceTime = lastSyncedAt.Time.Add(-5 * time.Minute)
+		s.logger.Info("前回同期時刻を起点に同期します",
+			zap.Time("last_synced_at", lastSyncedAt.Time),
+			zap.Time("since_time", sinceTime),
+		)
+	} else {
+		// First sync: use 30 days ago as default
+		sinceTime = time.Now().AddDate(0, 0, -30)
+		s.logger.Info("初回同期のため、30日前を起点に同期します",
+			zap.Time("since_time", sinceTime),
+		)
+	}
+
+	var totalPRs int
+	var totalComments int
+	var totalDiffs int
+	prsFetchStart := time.Now()
+
+	// Channel to collect PRs from parallel fetchers
+	prChan := make(chan *ghub.PullRequest, 100)
+	errChan := make(chan error, 2)
+	var wg sync.WaitGroup
+
+	// Fetch PRs updated since the threshold in parallel for each state
 	states := []string{"open", "closed"}
 	for _, state := range states {
-		prs, err := s.prFetcher.FetchPRsUpdatedSince(ctx, s.owner, s.repo, state, oneMonthAgo)
-		if err != nil {
-			return err
-		}
+		wg.Add(1)
+		go func(state string) {
+			defer wg.Done()
+			stateFetchStart := time.Now()
+			prs, err := s.prFetcher.FetchPRsUpdatedSince(ctx, s.owner, s.repo, state, sinceTime)
+			if err != nil {
+				errChan <- fmt.Errorf("PR一覧取得失敗 (%s): %w", state, err)
+				return
+			}
+			stateFetchDuration := time.Since(stateFetchStart)
+			s.logger.Info("PR一覧取得完了",
+				zap.String("state", state),
+				zap.Int("count", len(prs)),
+				zap.Duration("duration", stateFetchDuration),
+			)
 
-		for _, pr := range prs {
-			if err := s.savePR(ctx, repoID, pr); err != nil {
+			for _, pr := range prs {
+				prChan <- pr
+			}
+		}(state)
+	}
+
+	// Close channel when all fetchers are done
+	go func() {
+		wg.Wait()
+		close(prChan)
+	}()
+
+	// Process PRs sequentially to avoid SQLite write conflicts
+	// This allows parallel fetching while maintaining safe sequential writes
+	done := make(chan bool)
+	go func() {
+		defer close(done)
+		for pr := range prChan {
+			prSaveStart := time.Now()
+			commentsCount, diffsCount, err := s.savePR(ctx, repoID, pr)
+			if err != nil {
 				s.logger.Error("PRの保存に失敗しました", zap.Int("pr_number", pr.GetNumber()), zap.Error(err))
 				continue
 			}
+			prSaveDuration := time.Since(prSaveStart)
+			totalPRs++
+			totalComments += commentsCount
+			totalDiffs += diffsCount
+			s.logger.Debug("PR保存完了",
+				zap.Int("pr_number", pr.GetNumber()),
+				zap.Int("comments_count", commentsCount),
+				zap.Int("diffs_count", diffsCount),
+				zap.Duration("duration", prSaveDuration),
+			)
 		}
+	}()
+
+	// Wait for completion or error
+	select {
+	case err := <-errChan:
+		// Wait for processing to finish before returning error
+		<-done
+		return err
+	case <-done:
+		// All processing completed successfully
 	}
+
+	prsFetchDuration := time.Since(prsFetchStart)
+	s.logger.Info("PR同期完了",
+		zap.Int("total_prs", totalPRs),
+		zap.Int("total_comments", totalComments),
+		zap.Int("total_diffs", totalDiffs),
+		zap.Duration("total_duration", prsFetchDuration),
+	)
 
 	return nil
 }
@@ -137,7 +235,9 @@ func (s *SyncService) syncPRs(ctx context.Context, repoID int) error {
 //
 // After saving, it synchronizes comments and diffs, and triggers analysis for
 // new PRs or those that changed state (e.g., opened, closed, merged).
-func (s *SyncService) savePR(ctx context.Context, repoID int, pr *ghub.PullRequest) error {
+//
+// Returns the number of comments and diffs processed.
+func (s *SyncService) savePR(ctx context.Context, repoID int, pr *ghub.PullRequest) (commentsCount int, diffsCount int, err error) {
 	state := pr.GetState()
 	mergedAt := pr.GetMergedAt()
 	// Override state to "merged" if merged_at is set, providing clearer semantics
@@ -146,84 +246,120 @@ func (s *SyncService) savePR(ctx context.Context, repoID int, pr *ghub.PullReque
 		state = "merged"
 	}
 
+	// Get existing PR info to check if it has changed
 	var prID int
-	err := s.db.QueryRow(
-		"SELECT id FROM pull_requests WHERE repository_id = ? AND github_id = ?",
+	var dbUpdatedAt time.Time
+	var dbHeadSha sql.NullString
+	var dbState string
+	err = s.db.QueryRow(
+		"SELECT id, updated_at, head_sha, state FROM pull_requests WHERE repository_id = ? AND github_id = ?",
 		repoID, pr.GetNumber(),
-	).Scan(&prID)
+	).Scan(&prID, &dbUpdatedAt, &dbHeadSha, &dbState)
 
-	isNewPR := false
-	var stateChanged bool
-	if err == sql.ErrNoRows {
-		isNewPR = true
-		// Convert time pointers to interface{} for nullable database columns.
-		// Using interface{} allows nil values when the time is zero, which
-		// properly represents NULL in the database rather than a zero timestamp.
-		var mergedAtInsert, closedAtInsert interface{}
-		mergedAtInsertPtr := pr.GetMergedAt()
-		if !mergedAtInsertPtr.IsZero() {
-			mergedAtInsert = mergedAtInsertPtr.Time
-		}
-		closedAtInsertPtr := pr.GetClosedAt()
-		if !closedAtInsertPtr.IsZero() {
-			closedAtInsert = closedAtInsertPtr.Time
-		}
+	isNewPR := err == sql.ErrNoRows
+	prUpdatedAt := pr.GetUpdatedAt().Time
+	prHeadSha := pr.GetHead().GetSHA()
 
-		createdAt := pr.GetCreatedAt().Time
-		updatedAt := pr.GetUpdatedAt().Time
+	// Convert time pointers to interface{} for nullable database columns.
+	var mergedAtInsert, closedAtInsert interface{}
+	mergedAtInsertPtr := pr.GetMergedAt()
+	if !mergedAtInsertPtr.IsZero() {
+		mergedAtInsert = mergedAtInsertPtr.Time
+	}
+	closedAtInsertPtr := pr.GetClosedAt()
+	if !closedAtInsertPtr.IsZero() {
+		closedAtInsert = closedAtInsertPtr.Time
+	}
 
+	createdAt := pr.GetCreatedAt().Time
+	updatedAt := pr.GetUpdatedAt().Time
+
+	// Use UPSERT: Try UPDATE first, then INSERT if no rows affected
+	// This preserves the existing ID and avoids AUTOINCREMENT issues
+	if !isNewPR {
+		// Update existing PR
 		result, err := s.db.Exec(`
-			INSERT INTO pull_requests 
-			(repository_id, github_id, title, body, state, author, created_at, updated_at, merged_at, closed_at, url, last_synced_at)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			repoID, pr.GetNumber(), pr.GetTitle(), pr.GetBody(), state,
-			pr.GetUser().GetLogin(), createdAt, updatedAt,
-			mergedAtInsert, closedAtInsert, pr.GetHTMLURL(), time.Now(),
+			UPDATE pull_requests 
+			SET title = ?, body = ?, state = ?, updated_at = ?, merged_at = ?, closed_at = ?, last_synced_at = ?, head_sha = ?
+			WHERE repository_id = ? AND github_id = ?`,
+			pr.GetTitle(), pr.GetBody(), state, updatedAt,
+			mergedAtInsert, closedAtInsert, time.Now(), prHeadSha,
+			repoID, pr.GetNumber(),
 		)
 		if err != nil {
-			return err
+			return 0, 0, fmt.Errorf("PRの更新に失敗しました: %w", err)
+		}
+		rowsAffected, _ := result.RowsAffected()
+		if rowsAffected == 0 {
+			// Should not happen, but handle gracefully
+			return 0, 0, fmt.Errorf("PRの更新が影響を与えませんでした")
+		}
+	} else {
+		// Insert new PR
+		result, err := s.db.Exec(`
+			INSERT INTO pull_requests 
+			(repository_id, github_id, title, body, state, author, created_at, updated_at, merged_at, closed_at, url, last_synced_at, head_sha)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			repoID, pr.GetNumber(), pr.GetTitle(), pr.GetBody(), state,
+			pr.GetUser().GetLogin(), createdAt, updatedAt,
+			mergedAtInsert, closedAtInsert, pr.GetHTMLURL(), time.Now(), prHeadSha,
+		)
+		if err != nil {
+			return 0, 0, fmt.Errorf("PRの挿入に失敗しました: %w", err)
 		}
 		prID64, _ := result.LastInsertId()
 		prID = int(prID64)
-		stateChanged = false
-	} else if err != nil {
-		return err
-	} else {
+	}
+
+	// Check if PR has actually changed
+	prChanged := isNewPR || !prUpdatedAt.Equal(dbUpdatedAt) ||
+		(dbHeadSha.Valid && dbHeadSha.String != prHeadSha) ||
+		(!dbHeadSha.Valid && prHeadSha != "")
+
+	// Track state changes for existing PRs
+	var stateChanged bool
+	if !isNewPR {
 		stateChanged, err = s.statusTracker.TrackPRState(prID, state)
 		if err != nil {
 			s.logger.Warn("PR状態の追跡に失敗しました", zap.Error(err))
 		}
-
-		var mergedAt, closedAt interface{}
-		mergedAtPtr := pr.GetMergedAt()
-		if !mergedAtPtr.IsZero() {
-			mergedAt = mergedAtPtr.Time
-		}
-		closedAtPtr := pr.GetClosedAt()
-		if !closedAtPtr.IsZero() {
-			closedAt = closedAtPtr.Time
-		}
-
-		updatedAt := pr.GetUpdatedAt().Time
-
-		_, err = s.db.Exec(`
-			UPDATE pull_requests 
-			SET title = ?, body = ?, state = ?, updated_at = ?, merged_at = ?, closed_at = ?, last_synced_at = ?
-			WHERE id = ?`,
-			pr.GetTitle(), pr.GetBody(), state, updatedAt,
-			mergedAt, closedAt, time.Now(), prID,
-		)
-		if err != nil {
-			return err
-		}
+	} else {
+		stateChanged = false
 	}
 
-	if err := s.syncPRComments(ctx, prID, pr.GetNumber()); err != nil {
+	// Only sync comments and diffs if PR has changed
+	if !prChanged {
+		s.logger.Debug("PRに変更がないため、コメントと差分の取得をスキップします",
+			zap.Int("pr_id", prID),
+			zap.Int("pr_number", pr.GetNumber()),
+		)
+		return 0, 0, nil
+	}
+
+	commentsCount, err = s.syncPRComments(ctx, prID, pr.GetNumber())
+	if err != nil {
 		s.logger.Warn("PRコメントの同期に失敗しました", zap.Error(err))
 	}
 
-	if err := s.syncPRDiff(ctx, prID, pr.GetNumber()); err != nil {
-		s.logger.Warn("PR差分の同期に失敗しました", zap.Error(err))
+	// Only fetch diff if head_sha changed
+	headShaChanged := false
+	if dbHeadSha.Valid {
+		headShaChanged = dbHeadSha.String != prHeadSha
+	} else {
+		headShaChanged = prHeadSha != ""
+	}
+
+	if headShaChanged {
+		diffsCount, err = s.syncPRDiff(ctx, prID, pr.GetNumber())
+		if err != nil {
+			s.logger.Warn("PR差分の同期に失敗しました", zap.Error(err))
+		}
+	} else {
+		s.logger.Debug("head_shaに変更がないため、差分の取得をスキップします",
+			zap.Int("pr_id", prID),
+			zap.Int("pr_number", pr.GetNumber()),
+		)
+		diffsCount = 0
 	}
 
 	// Trigger analysis only for new PRs or when state changes, avoiding redundant
@@ -232,55 +368,120 @@ func (s *SyncService) savePR(ctx context.Context, repoID int, pr *ghub.PullReque
 		s.triggerAnalysis(ctx, prID, "PR")
 	}
 
-	return nil
+	return commentsCount, diffsCount, nil
 }
 
-// syncPRComments fetches and stores all comments for a PR.
+// syncPRComments fetches and stores comments for a PR updated since the last sync.
+// Uses the latest comment's updated_at as the threshold to fetch only new/updated comments.
 // Uses INSERT OR REPLACE to handle updates to existing comments (e.g., edited comments)
 // based on the github_id, ensuring we always have the latest version.
-func (s *SyncService) syncPRComments(ctx context.Context, prID int, prNumber int) error {
-	comments, err := s.prFetcher.FetchPRComments(ctx, s.owner, s.repo, prNumber)
-	if err != nil {
-		return err
+// Uses a transaction with prepared statement for batch insertion.
+// Returns the number of comments processed.
+func (s *SyncService) syncPRComments(ctx context.Context, prID int, prNumber int) (int, error) {
+	// Get the latest comment's updated_at to use as 'since' parameter
+	var latestCommentUpdatedAt sql.NullTime
+	err := s.db.QueryRow(
+		"SELECT MAX(updated_at) FROM pull_request_comments WHERE pr_id = ?",
+		prID,
+	).Scan(&latestCommentUpdatedAt)
+
+	var sinceTime time.Time
+	if err == nil && latestCommentUpdatedAt.Valid {
+		// Use latest comment time minus 1 minute as safety margin
+		sinceTime = latestCommentUpdatedAt.Time.Add(-1 * time.Minute)
 	}
+
+	commentsFetchStart := time.Now()
+	comments, err := s.prFetcher.FetchPRCommentsSince(ctx, s.owner, s.repo, prNumber, sinceTime)
+	if err != nil {
+		return 0, err
+	}
+	commentsFetchDuration := time.Since(commentsFetchStart)
+
+	if len(comments) == 0 {
+		return 0, nil
+	}
+
+	commentsSaveStart := time.Now()
+	// Use transaction for batch insertion
+	tx, err := s.db.Begin()
+	if err != nil {
+		return 0, fmt.Errorf("トランザクションの開始に失敗しました: %w", err)
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare(`
+		INSERT OR REPLACE INTO pull_request_comments 
+		(pr_id, github_id, body, author, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?)`)
+	if err != nil {
+		return 0, fmt.Errorf("ステートメントの準備に失敗しました: %w", err)
+	}
+	defer stmt.Close()
 
 	for _, comment := range comments {
 		createdAt := comment.GetCreatedAt().Time
 		updatedAt := comment.GetUpdatedAt().Time
 
-		_, err := s.db.Exec(`
-			INSERT OR REPLACE INTO pull_request_comments 
-			(pr_id, github_id, body, author, created_at, updated_at)
-			VALUES (?, ?, ?, ?, ?, ?)`,
+		_, err := stmt.Exec(
 			prID, comment.GetID(), comment.GetBody(), comment.GetUser().GetLogin(),
 			createdAt, updatedAt,
 		)
 		if err != nil {
-			return err
+			return 0, fmt.Errorf("コメントの保存に失敗しました: %w", err)
 		}
 	}
 
-	return nil
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("トランザクションのコミットに失敗しました: %w", err)
+	}
+	commentsSaveDuration := time.Since(commentsSaveStart)
+
+	s.logger.Debug("PRコメント同期完了",
+		zap.Int("pr_id", prID),
+		zap.Int("pr_number", prNumber),
+		zap.Int("count", len(comments)),
+		zap.Duration("fetch_duration", commentsFetchDuration),
+		zap.Duration("save_duration", commentsSaveDuration),
+	)
+
+	return len(comments), nil
 }
 
 // syncPRDiff fetches and stores the complete diff for a PR.
 // The file_path is set to "all" because we're storing the entire diff as a single
 // text blob rather than per-file diffs. This simplifies storage but could be
 // refactored to store per-file diffs if needed for better queryability.
-func (s *SyncService) syncPRDiff(ctx context.Context, prID int, prNumber int) error {
+// Returns 1 if diff was saved, 0 if not (e.g., error or empty diff).
+func (s *SyncService) syncPRDiff(ctx context.Context, prID int, prNumber int) (int, error) {
+	diffFetchStart := time.Now()
 	diff, err := s.prFetcher.FetchPRDiff(ctx, s.owner, s.repo, prNumber)
 	if err != nil {
-		return err
+		return 0, err
 	}
+	diffFetchDuration := time.Since(diffFetchStart)
 
+	diffSaveStart := time.Now()
 	_, err = s.db.Exec(`
 		INSERT OR REPLACE INTO pull_request_diffs 
 		(pr_id, diff_text, file_path, created_at)
 		VALUES (?, ?, ?, ?)`,
 		prID, diff, "all", time.Now(),
 	)
+	diffSaveDuration := time.Since(diffSaveStart)
 
-	return err
+	if err == nil {
+		s.logger.Debug("PR差分同期完了",
+			zap.Int("pr_id", prID),
+			zap.Int("pr_number", prNumber),
+			zap.Int("diff_size_bytes", len(diff)),
+			zap.Duration("fetch_duration", diffFetchDuration),
+			zap.Duration("save_duration", diffSaveDuration),
+		)
+		return 1, nil
+	}
+
+	return 0, err
 }
 
 // triggerAnalysis starts an asynchronous analysis task for a PR.

@@ -33,6 +33,7 @@ func (h *Handlers) GetPRs(c *gin.Context) {
 	if err != nil || limit < 1 {
 		limit = 20
 	}
+	// Cap limit at 100 to prevent excessive database load and response sizes
 	if limit > 100 {
 		limit = 100
 	}
@@ -43,6 +44,9 @@ func (h *Handlers) GetPRs(c *gin.Context) {
 
 	offset := (page - 1) * limit
 
+	// Use WHERE 1=1 as a base condition to simplify dynamic query construction.
+	// This allows appending AND clauses without conditional logic for the first clause,
+	// making the code cleaner and easier to maintain.
 	query := "SELECT id, repository_id, github_id, title, body, state, author, created_at, updated_at, merged_at, closed_at, url FROM pull_requests WHERE 1=1"
 	args := []interface{}{}
 
@@ -293,6 +297,7 @@ func (h *Handlers) GetIssues(c *gin.Context) {
 	if err != nil || limit < 1 {
 		limit = 20
 	}
+	// Cap limit at 100 to prevent excessive database load and response sizes
 	if limit > 100 {
 		limit = 100
 	}
@@ -303,6 +308,9 @@ func (h *Handlers) GetIssues(c *gin.Context) {
 
 	offset := (page - 1) * limit
 
+	// Use WHERE 1=1 as a base condition to simplify dynamic query construction.
+	// This allows appending AND clauses without conditional logic for the first clause,
+	// making the code cleaner and easier to maintain.
 	query := "SELECT id, repository_id, github_id, title, body, state, author, created_at, updated_at, closed_at, url FROM issues WHERE 1=1"
 	args := []interface{}{}
 

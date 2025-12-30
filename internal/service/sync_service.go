@@ -13,6 +13,9 @@ import (
 	"go.uber.org/zap"
 )
 
+// SyncService coordinates the synchronization of GitHub data (PRs, issues, comments)
+// into the local database. It handles fetching, storing, and triggering analysis
+// for newly created or state-changed items.
 type SyncService struct {
 	db              *sql.DB
 	githubClient    *github.Client
@@ -48,6 +51,10 @@ func NewSyncService(
 	}
 }
 
+// Sync performs a full synchronization of GitHub data for the configured repository.
+// It fetches and stores PRs and issues (including their comments and diffs),
+// then updates the last_synced_at timestamp. Errors in individual sync operations
+// are logged but don't stop the overall process, allowing partial success.
 func (s *SyncService) Sync(ctx context.Context) error {
 	s.logger.Info("同期を開始しました")
 
@@ -76,6 +83,9 @@ func (s *SyncService) Sync(ctx context.Context) error {
 	return nil
 }
 
+// getOrCreateRepository retrieves the repository ID from the database, creating
+// a new record if it doesn't exist. This ensures we have a valid repository ID
+// for foreign key relationships before syncing PRs and issues.
 func (s *SyncService) getOrCreateRepository() (int, error) {
 	var id int
 	err := s.db.QueryRow(
@@ -102,6 +112,9 @@ func (s *SyncService) getOrCreateRepository() (int, error) {
 	return id, nil
 }
 
+// syncPRs fetches and saves all PRs for both open and closed states.
+// We sync both states separately because GitHub's API requires filtering by state,
+// and we want to capture the complete history including closed PRs.
 func (s *SyncService) syncPRs(ctx context.Context, repoID int) error {
 	states := []string{"open", "closed"}
 	for _, state := range states {
@@ -121,9 +134,17 @@ func (s *SyncService) syncPRs(ctx context.Context, repoID int) error {
 	return nil
 }
 
+// savePR saves or updates a PR in the database. It handles both new PRs and updates
+// to existing ones. The state is normalized to "merged" if the PR was merged,
+// overriding GitHub's "closed" state to provide more semantic meaning.
+//
+// After saving, it synchronizes comments and diffs, and triggers analysis for
+// new PRs or those that changed state (e.g., opened, closed, merged).
 func (s *SyncService) savePR(ctx context.Context, repoID int, pr *ghub.PullRequest) error {
 	state := pr.GetState()
 	mergedAt := pr.GetMergedAt()
+	// Override state to "merged" if merged_at is set, providing clearer semantics
+	// than GitHub's generic "closed" state
 	if !mergedAt.IsZero() {
 		state = "merged"
 	}
@@ -138,6 +159,9 @@ func (s *SyncService) savePR(ctx context.Context, repoID int, pr *ghub.PullReque
 	var stateChanged bool
 	if err == sql.ErrNoRows {
 		isNewPR = true
+		// Convert time pointers to interface{} for nullable database columns.
+		// Using interface{} allows nil values when the time is zero, which
+		// properly represents NULL in the database rather than a zero timestamp.
 		var mergedAtInsert, closedAtInsert interface{}
 		mergedAtInsertPtr := pr.GetMergedAt()
 		if !mergedAtInsertPtr.IsZero() {
@@ -168,7 +192,6 @@ func (s *SyncService) savePR(ctx context.Context, repoID int, pr *ghub.PullReque
 	} else if err != nil {
 		return err
 	} else {
-		var err error
 		stateChanged, err = s.statusTracker.TrackPRState(prID, state)
 		if err != nil {
 			s.logger.Warn("PR状態の追跡に失敗しました", zap.Error(err))
@@ -206,6 +229,8 @@ func (s *SyncService) savePR(ctx context.Context, repoID int, pr *ghub.PullReque
 		s.logger.Warn("PR差分の同期に失敗しました", zap.Error(err))
 	}
 
+	// Trigger analysis only for new PRs or when state changes, avoiding redundant
+	// analysis on every sync for unchanged PRs
 	if isNewPR || stateChanged {
 		s.triggerAnalysis(ctx, prID, "PR")
 	}
@@ -213,6 +238,9 @@ func (s *SyncService) savePR(ctx context.Context, repoID int, pr *ghub.PullReque
 	return nil
 }
 
+// syncPRComments fetches and stores all comments for a PR.
+// Uses INSERT OR REPLACE to handle updates to existing comments (e.g., edited comments)
+// based on the github_id, ensuring we always have the latest version.
 func (s *SyncService) syncPRComments(ctx context.Context, prID int, prNumber int) error {
 	comments, err := s.prFetcher.FetchPRComments(ctx, s.owner, s.repo, prNumber)
 	if err != nil {
@@ -238,6 +266,10 @@ func (s *SyncService) syncPRComments(ctx context.Context, prID int, prNumber int
 	return nil
 }
 
+// syncPRDiff fetches and stores the complete diff for a PR.
+// The file_path is set to "all" because we're storing the entire diff as a single
+// text blob rather than per-file diffs. This simplifies storage but could be
+// refactored to store per-file diffs if needed for better queryability.
 func (s *SyncService) syncPRDiff(ctx context.Context, prID int, prNumber int) error {
 	diff, err := s.prFetcher.FetchPRDiff(ctx, s.owner, s.repo, prNumber)
 	if err != nil {
@@ -254,6 +286,8 @@ func (s *SyncService) syncPRDiff(ctx context.Context, prID int, prNumber int) er
 	return err
 }
 
+// syncIssues fetches and saves all issues for both open and closed states.
+// Similar to syncPRs, we sync both states separately to capture complete history.
 func (s *SyncService) syncIssues(ctx context.Context, repoID int) error {
 	states := []string{"open", "closed"}
 	for _, state := range states {
@@ -310,7 +344,6 @@ func (s *SyncService) saveIssue(ctx context.Context, repoID int, issue *ghub.Iss
 	} else if err != nil {
 		return err
 	} else {
-		var err error
 		stateChanged, err = s.statusTracker.TrackIssueState(issueID, issue.GetState())
 		if err != nil {
 			s.logger.Warn("Issue状態の追跡に失敗しました", zap.Error(err))
@@ -347,6 +380,10 @@ func (s *SyncService) saveIssue(ctx context.Context, repoID int, issue *ghub.Iss
 	return nil
 }
 
+// triggerAnalysis starts an asynchronous analysis task for a PR or Issue.
+// The analysis runs in a background goroutine to avoid blocking the sync operation.
+// A separate context with a 5-minute timeout is used to prevent analysis from
+// hanging indefinitely. If analysis fails, it triggers an exponential backoff retry.
 func (s *SyncService) triggerAnalysis(ctx context.Context, id int, itemType string) {
 	go func() {
 		analysisCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -375,6 +412,10 @@ func (s *SyncService) triggerAnalysis(ctx context.Context, id int, itemType stri
 	}()
 }
 
+// retryAnalysis implements exponential backoff retry logic for failed analysis operations.
+// The backoff delay doubles with each attempt (1s, 2s, 4s) to avoid overwhelming
+// the analysis service while giving transient failures time to resolve.
+// After maxRetries (3), the operation is abandoned to prevent infinite retry loops.
 func (s *SyncService) retryAnalysis(id int, itemType string, attempt int) {
 	const maxRetries = 3
 	if attempt > maxRetries {
@@ -386,6 +427,7 @@ func (s *SyncService) retryAnalysis(id int, itemType string, attempt int) {
 		return
 	}
 
+	// Exponential backoff: 2^(attempt-1) seconds (1s, 2s, 4s)
 	backoff := time.Duration(1<<uint(attempt-1)) * time.Second
 	time.Sleep(backoff)
 
@@ -416,6 +458,8 @@ func (s *SyncService) retryAnalysis(id int, itemType string, attempt int) {
 	}
 }
 
+// syncIssueComments fetches and stores all comments for an issue.
+// Uses INSERT OR REPLACE to handle updates to existing comments, similar to syncPRComments.
 func (s *SyncService) syncIssueComments(ctx context.Context, issueID int, issueNumber int) error {
 	comments, err := s.issueFetcher.FetchIssueComments(ctx, s.owner, s.repo, issueNumber)
 	if err != nil {

@@ -73,6 +73,13 @@ func (a *Analyzer) AnalyzeMentalModel(ctx context.Context, analysisType string, 
 	return result, nil
 }
 
+// RetryWithBackoff implements exponential backoff retry logic for LLM API calls.
+// It uses a predefined backoff sequence (1s, 2s, 4s) for the first few retries,
+// then switches to exponential backoff for additional retries beyond the sequence length.
+//
+// Connection errors are immediately returned without retry because they indicate
+// a fundamental connectivity issue that won't be resolved by waiting. This prevents
+// wasting time on retries that are guaranteed to fail.
 func (a *Analyzer) RetryWithBackoff(ctx context.Context, fn func() (string, error), maxRetries int) (string, error) {
 	var lastErr error
 	backoff := []time.Duration{1 * time.Second, 2 * time.Second, 4 * time.Second}
@@ -85,19 +92,18 @@ func (a *Analyzer) RetryWithBackoff(ctx context.Context, fn func() (string, erro
 
 		lastErr = err
 		
-		// 接続エラーの場合は即座に失敗
+		// Fail immediately on connection errors - these won't be resolved by retrying
 		if strings.Contains(err.Error(), "connection") || strings.Contains(err.Error(), "connect") {
 			return "", err
 		}
 
 		if i < maxRetries-1 {
-			// バックオフ時間の取得: 配列の範囲内の場合は配列の値を使用し、
-			// 範囲外の場合は指数バックオフで計算（最後の値の2倍）
+			// Use predefined backoff values for first few retries, then exponential backoff
 			var waitTime time.Duration
 			if i < len(backoff) {
 				waitTime = backoff[i]
 			} else {
-				// 配列の範囲外の場合は、最後の値の2倍を繰り返し使用
+				// Exponential backoff: 2^(i-len(backoff)+1) times the last backoff value
 				waitTime = backoff[len(backoff)-1] * time.Duration(1<<uint(i-len(backoff)+1))
 			}
 			a.logger.Warn("リトライします", zap.Int("attempt", i+1), zap.Duration("wait", waitTime), zap.Error(err))

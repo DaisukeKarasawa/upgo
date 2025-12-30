@@ -66,11 +66,14 @@ func main() {
 	router := gin.New()
 	router.Use(gin.Recovery())
 
+	// CORS middleware: Allow all origins for development convenience.
+	// In production, consider restricting to specific origins for security.
 	router.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
 
+		// Handle preflight OPTIONS requests immediately
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
 			return
@@ -127,6 +130,8 @@ func main() {
 
 	router.Static("/assets", "./web/dist/assets")
 	router.StaticFile("/favicon.ico", "./web/dist/favicon.ico")
+	// SPA routing: Serve index.html for non-API routes to enable client-side routing.
+	// API routes that don't match return 404, while frontend routes are handled by the SPA router.
 	router.NoRoute(func(c *gin.Context) {
 		if !strings.HasPrefix(c.Request.URL.Path, "/api") {
 			c.File("./web/dist/index.html")
@@ -135,7 +140,9 @@ func main() {
 		}
 	})
 
-	var schedulerCancel context.CancelFunc
+	// Conditionally start the scheduler if enabled in config.
+	// The scheduler runs periodic sync operations in the background.
+	var schedulerCancel context.CancelFunc = nil
 	if cfg.Scheduler.Enabled {
 		sched, err := scheduler.NewScheduler(
 			cfg.Scheduler.Interval,

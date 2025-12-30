@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"net/http"
+	"sync"
 	"time"
 
 	"upgo/internal/service"
@@ -15,13 +16,25 @@ import (
 type SyncHandler struct {
 	syncService *service.SyncService
 	logger      *zap.Logger
+	// semaphore limits the number of concurrent sync operations
+	semaphore chan struct{}
+	// maxConcurrency is the maximum number of concurrent sync operations
+	maxConcurrency int
+	// wg tracks running goroutines for graceful shutdown
+	wg sync.WaitGroup
 }
 
 // NewSyncHandler creates a new sync handler with the provided dependencies.
-func NewSyncHandler(syncService *service.SyncService, logger *zap.Logger) *SyncHandler {
+// maxConcurrency limits the number of concurrent sync operations (default: 3).
+func NewSyncHandler(syncService *service.SyncService, logger *zap.Logger, maxConcurrency int) *SyncHandler {
+	if maxConcurrency <= 0 {
+		maxConcurrency = 3 // default to 3 concurrent syncs
+	}
 	return &SyncHandler{
-		syncService: syncService,
-		logger:      logger,
+		syncService:    syncService,
+		logger:         logger,
+		semaphore:      make(chan struct{}, maxConcurrency),
+		maxConcurrency: maxConcurrency,
 	}
 }
 
@@ -29,14 +42,39 @@ func NewSyncHandler(syncService *service.SyncService, logger *zap.Logger) *SyncH
 // The operation runs in a background goroutine to avoid blocking the HTTP response,
 // allowing the client to receive an immediate acknowledgment while the potentially
 // long-running sync operation proceeds. A 10-minute timeout is enforced to prevent
-// runaway operations.
+// runaway operations. Concurrent sync operations are limited by maxConcurrency.
 func (h *SyncHandler) Sync(c *gin.Context) {
+	// Check if we can start a new sync operation
+	select {
+	case h.semaphore <- struct{}{}:
+		// Acquired semaphore, proceed with sync
+	default:
+		// Too many concurrent syncs, reject request
+		c.JSON(http.StatusTooManyRequests, gin.H{
+			"message": "同時実行数の上限に達しています。しばらく待ってから再試行してください。",
+		})
+		return
+	}
+
+	// Derive context from request context so cancellation propagates
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Minute)
+	defer cancel()
+
+	h.wg.Add(1)
 	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-		defer cancel()
+		defer func() {
+			<-h.semaphore // Release semaphore
+			h.wg.Done()
+		}()
 
 		if err := h.syncService.Sync(ctx); err != nil {
-			h.logger.Error("同期に失敗しました", zap.Error(err))
+			if ctx.Err() == context.Canceled {
+				h.logger.Info("同期がキャンセルされました")
+			} else {
+				h.logger.Error("同期に失敗しました", zap.Error(err))
+			}
+		} else {
+			h.logger.Info("同期が完了しました")
 		}
 	}()
 

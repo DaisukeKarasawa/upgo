@@ -12,7 +12,8 @@ import (
 
 func SetupRoutes(router *gin.Engine, db *sql.DB, syncService *service.SyncService, cfg *config.Config, logger *zap.Logger) {
 	handlers := NewHandlers(db, logger)
-	syncHandler := NewSyncHandler(syncService, logger)
+	// Default to 3 concurrent sync operations
+	syncHandler := NewSyncHandler(syncService, logger, 3)
 	backupHandler := NewBackupHandler(cfg, logger)
 
 	api := router.Group("/api/v1")

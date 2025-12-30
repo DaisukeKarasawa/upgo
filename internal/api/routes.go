@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func SetupRoutes(router *gin.Engine, db *sql.DB, syncService *service.SyncService, cfg *config.Config, logger *zap.Logger) {
+func SetupRoutes(router *gin.Engine, db *sql.DB, syncService *service.SyncService, cfg *config.Config, logger *zap.Logger) *SyncHandler {
 	handlers := NewHandlers(db, logger)
 	// Default to 3 concurrent sync operations
 	syncHandler := NewSyncHandler(syncService, logger, 3)
@@ -29,4 +29,6 @@ func SetupRoutes(router *gin.Engine, db *sql.DB, syncService *service.SyncServic
 
 		api.POST("/backup", backupHandler.Backup)
 	}
+
+	return syncHandler
 }

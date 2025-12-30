@@ -126,7 +126,7 @@ func main() {
 		cfg.Repository.Name,
 	)
 
-	api.SetupRoutes(router, database.Get(), syncService, cfg, log)
+	syncHandler := api.SetupRoutes(router, database.Get(), syncService, cfg, log)
 
 	router.Static("/assets", "./web/dist/assets")
 	router.StaticFile("/favicon.ico", "./web/dist/favicon.ico")
@@ -194,6 +194,11 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatal("サーバーのシャットダウンに失敗しました", zap.Error(err))
 	}
+
+	// Wait for all in-flight sync operations to complete
+	log.Info("実行中の同期操作の完了を待機しています...")
+	syncHandler.Wait()
+	log.Info("すべての同期操作が完了しました")
 
 	log.Info("サーバーが正常にシャットダウンしました")
 }

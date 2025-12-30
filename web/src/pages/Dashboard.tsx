@@ -40,59 +40,73 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">UpGo - Goリポジトリ監視システム</h1>
+    <div className="min-h-screen bg-white">
+      <div className="max-w-5xl mx-auto px-6 py-12">
+        <div className="flex justify-between items-start mb-12">
+          <div>
+            <h1 className="text-3xl font-light text-gray-900 tracking-tight mb-2">
+              UpGo
+            </h1>
+            <p className="text-sm text-gray-400 font-light">
+              Goリポジトリ監視システム
+            </p>
+          </div>
           <ManualSyncButton onSync={handleSync} />
         </div>
 
-        <div className="bg-white rounded-lg shadow">
-          <div className="border-b border-gray-200">
-            <nav className="flex -mb-px">
-              <button
-                onClick={() => setActiveTab('prs')}
-                className={`px-6 py-3 text-sm font-medium ${
-                  activeTab === 'prs'
-                    ? 'border-b-2 border-blue-500 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Pull Requests
-              </button>
-              <button
-                onClick={() => setActiveTab('issues')}
-                className={`px-6 py-3 text-sm font-medium ${
-                  activeTab === 'issues'
-                    ? 'border-b-2 border-blue-500 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Issues
-              </button>
-            </nav>
-          </div>
+        <div>
+          <nav className="flex gap-8 mb-8 border-b border-gray-100">
+            <button
+              onClick={() => setActiveTab('prs')}
+              className={`pb-3 text-sm font-light transition-all duration-300 ease-out relative ${
+                activeTab === 'prs'
+                  ? 'text-gray-900'
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              Pull Requests
+              {activeTab === 'prs' && (
+                <span className="absolute bottom-0 left-0 right-0 h-px bg-gray-900 animate-[slideIn_0.3s_ease-out]" />
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('issues')}
+              className={`pb-3 text-sm font-light transition-all duration-300 ease-out relative ${
+                activeTab === 'issues'
+                  ? 'text-gray-900'
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              Issues
+              {activeTab === 'issues' && (
+                <span className="absolute bottom-0 left-0 right-0 h-px bg-gray-900 animate-[slideIn_0.3s_ease-out]" />
+              )}
+            </button>
+          </nav>
 
-          <div className="p-6">
+          <div>
             {loading ? (
-              <div className="text-center py-8">読み込み中...</div>
+              <div className="text-center py-20 text-gray-400 text-sm font-light">読み込み中...</div>
             ) : activeTab === 'prs' ? (
-              <div className="space-y-4">
+              <div className="space-y-1">
                 {prs.map((pr) => (
                   <Link
                     key={pr.id}
                     to={`/pr/${pr.id}`}
-                    className="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                    className="block py-5 px-1 hover:bg-gray-50 transition-all duration-300 ease-out group relative overflow-hidden"
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <StatusBadge state={pr.state} />
-                          <h3 className="text-lg font-semibold text-gray-900">{pr.title}</h3>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-2">{pr.body?.substring(0, 200)}...</p>
-                        <div className="text-xs text-gray-500">
-                          by {pr.author} • {new Date(pr.created_at).toLocaleDateString('ja-JP')}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-50/50 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out" />
+                    <div className="flex items-start gap-3 relative">
+                      <StatusBadge state={pr.state} />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-base font-normal text-gray-900 mb-1.5 group-hover:text-gray-700 transition-colors duration-300">
+                          {pr.title}
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-2 line-clamp-2 font-light leading-relaxed group-hover:text-gray-600 transition-colors duration-300">
+                          {pr.body?.substring(0, 200)}...
+                        </p>
+                        <div className="text-xs text-gray-400 font-light">
+                          {pr.author} • {new Date(pr.created_at).toLocaleDateString('ja-JP')}
                         </div>
                       </div>
                     </div>
@@ -100,22 +114,25 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-1">
                 {issues.map((issue) => (
                   <Link
                     key={issue.id}
                     to={`/issue/${issue.id}`}
-                    className="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                    className="block py-5 px-1 hover:bg-gray-50 transition-all duration-300 ease-out group relative overflow-hidden"
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <StatusBadge state={issue.state} />
-                          <h3 className="text-lg font-semibold text-gray-900">{issue.title}</h3>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-2">{issue.body?.substring(0, 200)}...</p>
-                        <div className="text-xs text-gray-500">
-                          by {issue.author} • {new Date(issue.created_at).toLocaleDateString('ja-JP')}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-50/50 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out" />
+                    <div className="flex items-start gap-3 relative">
+                      <StatusBadge state={issue.state} />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-base font-normal text-gray-900 mb-1.5 group-hover:text-gray-700 transition-colors duration-300">
+                          {issue.title}
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-2 line-clamp-2 font-light leading-relaxed group-hover:text-gray-600 transition-colors duration-300">
+                          {issue.body?.substring(0, 200)}...
+                        </p>
+                        <div className="text-xs text-gray-400 font-light">
+                          {issue.author} • {new Date(issue.created_at).toLocaleDateString('ja-JP')}
                         </div>
                       </div>
                     </div>

@@ -87,7 +87,7 @@ make dev
 
 これにより以下が起動します：
 
-- **バックエンド**: `http://localhost:8080` (Goサーバー)
+- **バックエンド**: `http://localhost:8081` (Goサーバー)
 - **フロントエンド**: `http://localhost:5173` (Vite開発サーバー)
 
 ブラウザで `http://localhost:5173` にアクセスしてください。フロントエンドの変更は自動的に反映されます（HMR）。
@@ -95,7 +95,7 @@ make dev
 **注意**:
 
 - フロントエンドの開発サーバーは`http://localhost:5173`で起動します
-- バックエンドAPIは`http://localhost:8080`で起動します
+- バックエンドAPIは`http://localhost:8081`で起動します
 - Viteの設定で、`/api`へのリクエストは自動的にバックエンドにプロキシされます
 
 #### 本番モード（ビルド済み）
@@ -107,7 +107,7 @@ make run
 ```
 
 これにより、フロントエンドがビルドされ、バックエンドサーバーが起動します。
-ブラウザで `http://localhost:8080` にアクセスしてください。
+ブラウザで `http://localhost:8081` にアクセスしてください。
 
 ## 使い方
 
@@ -128,10 +128,10 @@ Web UIの「同期」ボタンをクリックするか、以下のAPIを呼び�
 
 ```bash
 # 全体同期
-curl -X POST http://localhost:8080/api/v1/sync
+curl -X POST http://localhost:8081/api/v1/sync
 
 # 特定のPRを同期
-curl -X POST http://localhost:8080/api/v1/prs/{id}/sync
+curl -X POST http://localhost:8081/api/v1/prs/{id}/sync
 ```
 
 手動同期では、PRの取得、コメント・差分の収集、要約・分析が実行されます。
@@ -141,7 +141,7 @@ curl -X POST http://localhost:8080/api/v1/prs/{id}/sync
 ```bash
 make backup
 # または
-curl -X POST http://localhost:8080/api/v1/backup
+curl -X POST http://localhost:8081/api/v1/backup
 ```
 
 ### データベースのクリア
@@ -176,7 +176,7 @@ SQLiteの全データをクリアする方法です。
 サーバーが起動している状態で：
 
 ```bash
-curl -X POST -H "X-Confirm-Clear: yes" http://localhost:8080/api/v1/clear
+curl -X POST -H "X-Confirm-Clear: yes" http://localhost:8081/api/v1/clear
 ```
 
 **注意**: 確認ヘッダー `X-Confirm-Clear: yes` が必要です。これにより、誤操作を防ぎます。
@@ -204,7 +204,7 @@ make dev
 本番サーバーが起動している状態で：
 
 ```bash
-curl -X POST -H "X-Confirm-Clear: yes" http://your-server:8080/api/v1/clear
+curl -X POST -H "X-Confirm-Clear: yes" http://your-server:8081/api/v1/clear
 ```
 
 ##### 方法2: データベースファイルを直接削除（より安全）
@@ -233,7 +233,7 @@ rm data/upgo.db data/upgo.db-shm data/upgo.db-wal
 ### ヘルスチェック
 
 ```bash
-curl http://localhost:8080/health
+curl http://localhost:8081/health
 ```
 
 ## 設定

@@ -56,13 +56,12 @@ func (h *SyncHandler) Sync(c *gin.Context) {
 		return
 	}
 
-	// Derive context from request context so cancellation propagates
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Minute)
-	defer cancel()
-
 	h.wg.Add(1)
 	go func() {
+		// Create context inside goroutine so it lives for the operation duration
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Minute)
 		defer func() {
+			cancel() // Cancel context when goroutine exits
 			<-h.semaphore // Release semaphore
 			h.wg.Done()
 		}()
@@ -81,6 +80,12 @@ func (h *SyncHandler) Sync(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "同期を開始しました",
 	})
+}
+
+// Wait blocks until all in-flight sync operations complete.
+// This should be called during graceful shutdown.
+func (h *SyncHandler) Wait() {
+	h.wg.Wait()
 }
 
 // GetSyncStatus returns the current status of synchronization operations.

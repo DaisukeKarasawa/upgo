@@ -60,7 +60,7 @@ export default function Dashboard() {
         <div className="flex justify-between items-start mb-12">
           <div>
             <h1 className="text-3xl font-light text-gray-900 tracking-tight mb-2">
-              UpGo
+              Upgo
             </h1>
             <p className="text-sm text-gray-400 font-light">
               Go Repository Monitoring System

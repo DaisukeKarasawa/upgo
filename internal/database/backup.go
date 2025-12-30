@@ -62,9 +62,20 @@ func cleanupOldBackups(backupPath string, maxBackups int, logger *zap.Logger) er
 	}
 
 	// ファイルを更新時刻でソート（古い順）
+	// エラーが発生したファイルは最後に配置する
 	sort.Slice(files, func(i, j int) bool {
-		infoI, _ := os.Stat(files[i])
-		infoJ, _ := os.Stat(files[j])
+		infoI, errI := os.Stat(files[i])
+		infoJ, errJ := os.Stat(files[j])
+		
+		// エラーが発生した場合は、エラーが発生したファイルを後ろに配置
+		if errI != nil {
+			return false
+		}
+		if errJ != nil {
+			return true
+		}
+		
+		// 両方のファイル情報が正常に取得できた場合のみ比較
 		return infoI.ModTime().Before(infoJ.ModTime())
 	})
 

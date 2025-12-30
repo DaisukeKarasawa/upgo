@@ -380,7 +380,8 @@ func (s *SyncService) triggerAnalysis(ctx context.Context, id int, itemType stri
 				zap.Error(err),
 			)
 			// 非同期リトライ（最大3回、指数バックオフ）
-			s.retryAnalysis(analysisCtx, id, itemType, 1)
+			// リトライでは新しいコンテキストを作成する
+			s.retryAnalysis(id, itemType, 1)
 		} else {
 			s.logger.Info("要約・分析が完了しました",
 				zap.String("type", itemType),
@@ -391,7 +392,8 @@ func (s *SyncService) triggerAnalysis(ctx context.Context, id int, itemType stri
 }
 
 // retryAnalysis は要約・分析をリトライします
-func (s *SyncService) retryAnalysis(ctx context.Context, id int, itemType string, attempt int) {
+// 各リトライのたびに新しいコンテキストを作成します
+func (s *SyncService) retryAnalysis(id int, itemType string, attempt int) {
 	const maxRetries = 3
 	if attempt > maxRetries {
 		s.logger.Error("要約・分析のリトライが最大回数に達しました",
@@ -406,11 +408,15 @@ func (s *SyncService) retryAnalysis(ctx context.Context, id int, itemType string
 	backoff := time.Duration(1<<uint(attempt-1)) * time.Second
 	time.Sleep(backoff)
 
+	// 各リトライのたびに新しいコンテキストを作成
+	analysisCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
 	var err error
 	if itemType == "PR" {
-		err = s.analysisService.AnalyzePR(ctx, id)
+		err = s.analysisService.AnalyzePR(analysisCtx, id)
 	} else {
-		err = s.analysisService.AnalyzeIssue(ctx, id)
+		err = s.analysisService.AnalyzeIssue(analysisCtx, id)
 	}
 
 	if err != nil {
@@ -420,7 +426,7 @@ func (s *SyncService) retryAnalysis(ctx context.Context, id int, itemType string
 			zap.Int("attempt", attempt),
 			zap.Error(err),
 		)
-		s.retryAnalysis(ctx, id, itemType, attempt+1)
+		s.retryAnalysis(id, itemType, attempt+1)
 	} else {
 		s.logger.Info("要約・分析のリトライが成功しました",
 			zap.String("type", itemType),

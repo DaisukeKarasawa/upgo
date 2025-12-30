@@ -128,16 +128,24 @@ func main() {
 
 	syncHandler := api.SetupRoutes(router, database.Get(), syncService, cfg, log)
 
+	// Serve static assets
 	router.Static("/assets", "./web/dist/assets")
 	router.StaticFile("/favicon.ico", "./web/dist/favicon.ico")
-	// SPA routing: Serve index.html for non-API routes to enable client-side routing.
-	// API routes that don't match return 404, while frontend routes are handled by the SPA router.
+	
+	// SPA routing: Serve index.html for root and all non-API routes
+	// This allows React Router to handle all frontend routes.
+	router.GET("/", func(c *gin.Context) {
+		c.File("./web/dist/index.html")
+	})
+	
 	router.NoRoute(func(c *gin.Context) {
-		if !strings.HasPrefix(c.Request.URL.Path, "/api") {
-			c.File("./web/dist/index.html")
-		} else {
+		// API routes that don't exist return 404
+		if strings.HasPrefix(c.Request.URL.Path, "/api") {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+			return
 		}
+		// All other routes serve index.html for SPA routing
+		c.File("./web/dist/index.html")
 	})
 
 	// Conditionally start the scheduler if enabled in config.

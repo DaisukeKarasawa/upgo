@@ -124,7 +124,16 @@ func main() {
 		cfg.Repository.Name,
 	)
 
-	syncHandler := api.SetupRoutes(router, database.Get(), syncService, cfg, log)
+	updateCheckService := service.NewUpdateCheckService(
+		database.Get(),
+		githubClient,
+		prFetcher,
+		log,
+		cfg.Repository.Owner,
+		cfg.Repository.Name,
+	)
+
+	syncHandler := api.SetupRoutes(router, database.Get(), syncService, updateCheckService, cfg, log)
 
 	// Serve static assets
 	router.Static("/assets", "./web/dist/assets")
@@ -147,14 +156,16 @@ func main() {
 	})
 
 	// Conditionally start the scheduler if enabled in config.
-	// The scheduler runs periodic sync operations in the background.
+	// The scheduler runs periodic update checks (lightweight) in the background.
+	// Full sync is now manual-only to avoid heavy operations on every interval.
 	var schedulerCancel context.CancelFunc = nil
 	if cfg.Scheduler.Enabled {
 		sched, err := scheduler.NewScheduler(
 			cfg.Scheduler.Interval,
 			cfg.Scheduler.Enabled,
 			func(ctx context.Context) error {
-				return syncService.Sync(ctx)
+				_, err := updateCheckService.CheckDashboardUpdates(ctx)
+				return err
 			},
 			log,
 		)
@@ -166,7 +177,7 @@ func main() {
 		schedulerCtx, schedulerCancel = context.WithCancel(context.Background())
 
 		go sched.Start(schedulerCtx)
-		log.Info("スケジューラーを起動しました", zap.String("interval", cfg.Scheduler.Interval))
+		log.Info("スケジューラーを起動しました（更新チェック）", zap.String("interval", cfg.Scheduler.Interval))
 	}
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)

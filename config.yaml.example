@@ -7,7 +7,7 @@ github:
   base_url: "https://api.github.com"
 
 scheduler:
-  interval: "15m"  # ポーリング間隔（15分）
+  interval: "15m"  # 更新チェック間隔（15分）- 重い同期処理は実行しません
   enabled: true    # スケジューラーの有効/無効
 
 llm:

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getPR, syncPR } from "../services/api";
+import { getPR, syncPR, getPRUpdateStatus } from "../services/api";
 import StatusBadge from "../components/StatusBadge";
 import ManualSyncButton from "../components/ManualSyncButton";
 
@@ -45,13 +45,34 @@ export default function Detail() {
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<DetailData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasUpdates, setHasUpdates] = useState(false);
   const [activeTab, setActiveTab] = useState<
     "summary" | "diffs" | "comments" | "analysis"
   >("summary");
 
   useEffect(() => {
     loadData();
+    if (id) {
+      checkUpdates();
+
+      // Poll for updates every 30 seconds
+      const interval = setInterval(() => {
+        checkUpdates();
+      }, 30000);
+
+      return () => clearInterval(interval);
+    }
   }, [id]);
+
+  const checkUpdates = async () => {
+    if (!id) return;
+    try {
+      const status = await getPRUpdateStatus(parseInt(id));
+      setHasUpdates(status.updated_since_last_sync || false);
+    } catch (error) {
+      console.error("更新チェックに失敗しました", error);
+    }
+  };
 
   const loadData = async () => {
     if (!id) return;
@@ -70,7 +91,10 @@ export default function Detail() {
     if (!id) return;
     try {
       await syncPR(parseInt(id));
-      setTimeout(loadData, 2000); // 2秒後に再読み込み
+      setTimeout(() => {
+        loadData();
+        checkUpdates(); // 同期後に更新チェックも実行
+      }, 2000); // 2秒後に再読み込み
     } catch (error) {
       console.error("同期に失敗しました", error);
     }
@@ -118,7 +142,7 @@ export default function Detail() {
               {data.title}
             </h1>
             <div className="flex-shrink-0">
-              <ManualSyncButton onSync={handleSync} />
+              <ManualSyncButton onSync={handleSync} hasUpdates={hasUpdates} />
             </div>
           </div>
 

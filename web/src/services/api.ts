@@ -39,3 +39,13 @@ export const getSyncStatus = async () => {
   const response = await api.get('/sync/status')
   return response.data
 }
+
+export const getDashboardUpdateStatus = async () => {
+  const response = await api.get('/updates/dashboard')
+  return response.data
+}
+
+export const getPRUpdateStatus = async (prId: number) => {
+  const response = await api.get(`/updates/pr/${prId}`)
+  return response.data
+}

@@ -334,13 +334,13 @@ export default function Detail() {
                     >
                       {/* Animation 1: Top-left → Top-right → Bottom-right */}
                       {/* Top edge (left → right) */}
-                      <div className="absolute top-0 left-0 h-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineTop_0.15s_ease-out_0s_forwards] pointer-events-none" />
+                      <div className="absolute top-0 left-0 h-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineTop_0.15s_ease-out_forwards] pointer-events-none" />
                       {/* Right edge (top → bottom) */}
                       <div className="absolute top-0 right-0 w-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineRight_0.15s_ease-out_0.15s_forwards] pointer-events-none" />
 
                       {/* Animation 2: Bottom-right → Bottom-left → Top-left */}
                       {/* Bottom edge (right → left) */}
-                      <div className="absolute bottom-0 right-0 h-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineBottom_0.15s_ease-out_0s_forwards] pointer-events-none origin-right" />
+                      <div className="absolute bottom-0 right-0 h-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineBottom_0.15s_ease-out_forwards] pointer-events-none origin-right" />
                       {/* Left edge (bottom → top) */}
                       <div className="absolute bottom-0 left-0 w-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineLeft_0.15s_ease-out_0.15s_forwards] pointer-events-none origin-bottom" />
 

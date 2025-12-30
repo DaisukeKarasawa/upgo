@@ -11,15 +11,20 @@ import (
 )
 
 func Backup(backupPath string, maxBackups int, logger *zap.Logger) error {
-	// Validate and normalize backup path to prevent path traversal attacks
-	absBackupPath, err := filepath.Abs(backupPath)
+	// Normalize and resolve the backup root directory to prevent path traversal attacks
+	// The backupPath from config is treated as the root directory for backups
+	backupRootAbs, err := filepath.Abs(filepath.Clean(backupPath))
 	if err != nil {
-		return fmt.Errorf("バックアップパスの正規化に失敗しました: %w", err)
+		return fmt.Errorf("バックアップルートディレクトリの解決に失敗しました: %w", err)
 	}
-	// Ensure the path doesn't contain any suspicious characters or patterns
-	if err := validateBackupPath(absBackupPath); err != nil {
-		return fmt.Errorf("バックアップパスの検証に失敗しました: %w", err)
+
+	// Ensure the root path doesn't contain any suspicious characters or patterns
+	if err := validateBackupPath(backupRootAbs); err != nil {
+		return fmt.Errorf("バックアップルートパスの検証に失敗しました: %w", err)
 	}
+
+	// Use the resolved root as the backup directory
+	absBackupPath := backupRootAbs
 
 	// Create backup directory
 	if err := os.MkdirAll(absBackupPath, 0755); err != nil {
@@ -93,35 +98,35 @@ func cleanupOldBackups(backupPath string, maxBackups int, logger *zap.Logger) er
 		return err
 	}
 
-	// Filter out files that fail stat and log warnings
-	var statableFiles []string
+	// Filter out files that fail stat, cache FileInfo, and log warnings
+	type fileWithInfo struct {
+		path string
+		info os.FileInfo
+	}
+	var statableFiles []fileWithInfo
 	for _, file := range files {
-		if _, err := os.Stat(file); err != nil {
+		if info, err := os.Stat(file); err != nil {
 			logger.Warn("バックアップファイルの状態確認に失敗しました", zap.String("file", file), zap.Error(err))
 		} else {
-			statableFiles = append(statableFiles, file)
+			statableFiles = append(statableFiles, fileWithInfo{path: file, info: info})
 		}
 	}
-	files = statableFiles
 
-	if len(files) <= maxBackups {
+	if len(statableFiles) <= maxBackups {
 		return nil
 	}
 
 	// Sort files by modification time (oldest first)
-	// At this point all files should have successful stat
-	sort.Slice(files, func(i, j int) bool {
-		infoI, _ := os.Stat(files[i])
-		infoJ, _ := os.Stat(files[j])
-		return infoI.ModTime().Before(infoJ.ModTime())
+	sort.Slice(statableFiles, func(i, j int) bool {
+		return statableFiles[i].info.ModTime().Before(statableFiles[j].info.ModTime())
 	})
 
 	// Delete old files
-	for i := 0; i < len(files)-maxBackups; i++ {
-		if err := os.Remove(files[i]); err != nil {
-			logger.Warn("バックアップファイルの削除に失敗しました", zap.String("file", files[i]), zap.Error(err))
+	for i := 0; i < len(statableFiles)-maxBackups; i++ {
+		if err := os.Remove(statableFiles[i].path); err != nil {
+			logger.Warn("バックアップファイルの削除に失敗しました", zap.String("file", statableFiles[i].path), zap.Error(err))
 		} else {
-			logger.Info("古いバックアップを削除しました", zap.String("file", files[i]))
+			logger.Info("古いバックアップを削除しました", zap.String("file", statableFiles[i].path))
 		}
 	}
 

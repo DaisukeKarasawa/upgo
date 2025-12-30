@@ -332,18 +332,19 @@ export default function Detail() {
                       key={comment.github_id}
                       className="pb-8 border-b border-gray-100 last:border-0 group transition-all duration-300 ease-out relative rounded-lg overflow-hidden"
                     >
-                      <div className="p-4 group-hover:px-6 group-hover:py-5 transition-all duration-300 ease-out">
-                        {/* Animation 1: Top-left → Top-right → Bottom-right */}
-                        {/* Top edge (left → right) */}
-                        <div className="absolute top-0 left-0 h-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineTop_0.15s_ease-out_0s_forwards] pointer-events-none" />
-                        {/* Right edge (top → bottom) */}
-                        <div className="absolute top-0 right-0 w-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineRight_0.15s_ease-out_0.15s_forwards] pointer-events-none" />
+                      {/* Animation 1: Top-left → Top-right → Bottom-right */}
+                      {/* Top edge (left → right) */}
+                      <div className="absolute top-0 left-0 h-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineTop_0.15s_ease-out_0s_forwards] pointer-events-none" />
+                      {/* Right edge (top → bottom) */}
+                      <div className="absolute top-0 right-0 w-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineRight_0.15s_ease-out_0.15s_forwards] pointer-events-none" />
 
-                        {/* Animation 2: Bottom-right → Bottom-left → Top-left */}
-                        {/* Bottom edge (right → left) */}
-                        <div className="absolute bottom-0 right-0 h-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineBottom_0.15s_ease-out_0s_forwards] pointer-events-none origin-right" />
-                        {/* Left edge (bottom → top) */}
-                        <div className="absolute bottom-0 left-0 w-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineLeft_0.15s_ease-out_0.15s_forwards] pointer-events-none origin-bottom" />
+                      {/* Animation 2: Bottom-right → Bottom-left → Top-left */}
+                      {/* Bottom edge (right → left) */}
+                      <div className="absolute bottom-0 right-0 h-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineBottom_0.15s_ease-out_0s_forwards] pointer-events-none origin-right" />
+                      {/* Left edge (bottom → top) */}
+                      <div className="absolute bottom-0 left-0 w-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineLeft_0.15s_ease-out_0.15s_forwards] pointer-events-none origin-bottom" />
+
+                      <div className="p-4 group-hover:px-6 group-hover:py-5 transition-all duration-300 ease-out">
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-sm text-gray-900 font-light group-hover:text-gray-700 transition-colors duration-300">
                             {comment.author}

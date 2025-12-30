@@ -21,6 +21,30 @@ export default {
           },
         },
       },
+      keyframes: {
+        drawLineTop: {
+          from: { transform: "scaleX(0)" },
+          to: { transform: "scaleX(1)" },
+        },
+        drawLineRight: {
+          from: { transform: "scaleY(0)" },
+          to: { transform: "scaleY(1)" },
+        },
+        drawLineBottom: {
+          from: { transform: "scaleX(0)" },
+          to: { transform: "scaleX(1)" },
+        },
+        drawLineLeft: {
+          from: { transform: "scaleY(0)" },
+          to: { transform: "scaleY(1)" },
+        },
+      },
+      animation: {
+        drawLineTop: "drawLineTop 0.15s ease-out forwards",
+        drawLineRight: "drawLineRight 0.15s ease-out forwards",
+        drawLineBottom: "drawLineBottom 0.15s ease-out forwards",
+        drawLineLeft: "drawLineLeft 0.15s ease-out forwards",
+      },
     },
   },
   plugins: [typography],

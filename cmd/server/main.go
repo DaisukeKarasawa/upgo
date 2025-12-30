@@ -223,7 +223,7 @@ func initializeChecks(cfg *config.Config, log *zap.Logger) error {
 	log.Info("GitHubトークンの確認が完了しました")
 
 	// データベースディレクトリの作成
-	dbDir := cfg.Database.Path[:len(cfg.Database.Path)-len("/upgo.db")]
+	dbDir := filepath.Dir(cfg.Database.Path)
 	if err := os.MkdirAll(dbDir, 0755); err != nil {
 		return fmt.Errorf("データベースディレクトリの作成に失敗しました: %w", err)
 	}

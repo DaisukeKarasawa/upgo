@@ -17,7 +17,7 @@ func Connect(dbPath string, logger *zap.Logger) error {
 		return fmt.Errorf("データベース接続に失敗しました: %w", err)
 	}
 
-	// 接続確認
+	// Check connection
 	if err := DB.Ping(); err != nil {
 		return fmt.Errorf("データベース接続確認に失敗しました: %w", err)
 	}

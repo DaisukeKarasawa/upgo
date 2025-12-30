@@ -50,7 +50,7 @@ func (h *SyncHandler) Sync(c *gin.Context) {
 // response. This requires adding a job queue or status store to track
 // ongoing sync operations and their progress.
 func (h *SyncHandler) GetSyncStatus(c *gin.Context) {
-	// TODO: 同期ジョブの状態を取得
+	// TODO: Get sync job status
 	c.JSON(http.StatusOK, gin.H{
 		"status": "completed",
 	})

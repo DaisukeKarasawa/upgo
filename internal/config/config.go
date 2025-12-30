@@ -71,24 +71,24 @@ func Load(configPath string) (*Config, error) {
 	viper.AddConfigPath(".")
 	viper.AddConfigPath(configPath)
 
-	// 環境変数のサポート
+	// Support environment variables
 	viper.SetEnvPrefix("UPGO")
 	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	// 設定ファイルの読み込み
+	// Load config file
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("設定ファイルの読み込みに失敗しました: %w", err)
 	}
 
-	// 環境変数の展開
+	// Expand environment variables
 	tokenValue := viper.GetString("github.token")
 	if strings.HasPrefix(tokenValue, "${") && strings.HasSuffix(tokenValue, "}") {
 		envVar := strings.TrimPrefix(strings.TrimSuffix(tokenValue, "}"), "${")
 		if val := os.Getenv(envVar); val != "" {
 			viper.Set("github.token", val)
 		} else {
-			// GITHUB_TOKENも試す（後方互換性）
+			// Also try GITHUB_TOKEN (for backward compatibility)
 			if val := os.Getenv("GITHUB_TOKEN"); val != "" {
 				viper.Set("github.token", val)
 			}
@@ -98,6 +98,10 @@ func Load(configPath string) (*Config, error) {
 	var config Config
 	if err := viper.Unmarshal(&config); err != nil {
 		return nil, fmt.Errorf("設定の解析に失敗しました: %w", err)
+	}
+
+	if err := Validate(&config); err != nil {
+		return nil, fmt.Errorf("設定の検証に失敗しました: %w", err)
 	}
 
 	AppConfig = &config

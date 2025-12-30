@@ -41,7 +41,7 @@ func (s *Scheduler) Start(ctx context.Context) {
 	ticker := time.NewTicker(s.interval)
 	defer ticker.Stop()
 
-	// 初回実行
+	// Execute first time
 	go func() {
 		if err := s.task(ctx); err != nil {
 			s.logger.Error("スケジュールタスクの実行に失敗しました", zap.Error(err))

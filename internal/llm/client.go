@@ -59,7 +59,7 @@ func (c *Client) CheckConnection(ctx context.Context) error {
 		return fmt.Errorf("Ollama APIがエラーを返しました: status %d", resp.StatusCode)
 	}
 
-	// モデルの存在確認
+	// Check if the model exists
 	var tagsResponse struct {
 		Models []struct {
 			Name string `json:"name"`

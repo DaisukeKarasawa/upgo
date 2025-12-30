@@ -11,7 +11,7 @@ import (
 var Logger *zap.Logger
 
 func Init(level string, output string, filePath string) error {
-	// ログレベルの設定
+	// Set log level
 	var zapLevel zapcore.Level
 	switch level {
 	case "debug":
@@ -26,7 +26,7 @@ func Init(level string, output string, filePath string) error {
 		zapLevel = zapcore.InfoLevel
 	}
 
-	// エンコーダー設定
+	// Encoder configuration
 	encoderConfig := zap.NewProductionEncoderConfig()
 	encoderConfig.TimeKey = "timestamp"
 	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
@@ -36,10 +36,10 @@ func Init(level string, output string, filePath string) error {
 
 	encoder := zapcore.NewJSONEncoder(encoderConfig)
 
-	// 出力先の設定
+	// Set output destination
 	var writeSyncer zapcore.WriteSyncer
 	if output == "file" {
-		// ログディレクトリの作成
+		// Create log directory
 		logDir := filepath.Dir(filePath)
 		if err := os.MkdirAll(logDir, 0755); err != nil {
 			return err
@@ -54,10 +54,10 @@ func Init(level string, output string, filePath string) error {
 		writeSyncer = zapcore.AddSync(os.Stdout)
 	}
 
-	// コアの作成
+	// Create core
 	core := zapcore.NewCore(encoder, writeSyncer, zapLevel)
 
-	// ロガーの作成
+	// Create logger
 	Logger = zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
 
 	return nil
@@ -65,7 +65,7 @@ func Init(level string, output string, filePath string) error {
 
 func Get() *zap.Logger {
 	if Logger == nil {
-		// デフォルトロガーを返す
+		// Return default logger
 		logger, _ := zap.NewProduction()
 		return logger
 	}

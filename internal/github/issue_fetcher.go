@@ -43,7 +43,12 @@ func (f *IssueFetcher) FetchIssues(ctx context.Context, owner, repo string, stat
 			return nil, fmt.Errorf("Issue一覧の取得に失敗しました: %w", err)
 		}
 
-		allIssues = append(allIssues, issues...)
+		// Filter out pull requests (they have a non-nil PullRequestLinks field)
+		for _, issue := range issues {
+			if issue.PullRequestLinks == nil {
+				allIssues = append(allIssues, issue)
+			}
+		}
 
 		if resp.NextPage == 0 {
 			break

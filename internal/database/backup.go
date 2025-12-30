@@ -2,7 +2,6 @@ package database
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -12,36 +11,25 @@ import (
 )
 
 func Backup(backupPath string, dbPath string, maxBackups int, logger *zap.Logger) error {
-	// バックアップディレクトリの作成
+	// Create backup directory
 	if err := os.MkdirAll(backupPath, 0755); err != nil {
 		return fmt.Errorf("バックアップディレクトリの作成に失敗しました: %w", err)
 	}
 
-	// バックアップファイル名（タイムスタンプ付き）
+	// Backup file name with timestamp
 	timestamp := time.Now().Format("20060102_150405")
 	backupFileName := fmt.Sprintf("upgo_%s.db", timestamp)
 	backupFilePath := filepath.Join(backupPath, backupFileName)
 
-	// データベースファイルをコピー
-	sourceFile, err := os.Open(dbPath)
-	if err != nil {
-		return fmt.Errorf("データベースファイルのオープンに失敗しました: %w", err)
-	}
-	defer sourceFile.Close()
-
-	destFile, err := os.Create(backupFilePath)
-	if err != nil {
-		return fmt.Errorf("バックアップファイルの作成に失敗しました: %w", err)
-	}
-	defer destFile.Close()
-
-	if _, err := io.Copy(destFile, sourceFile); err != nil {
-		return fmt.Errorf("バックアップファイルのコピーに失敗しました: %w", err)
+	// Use SQLite's VACUUM INTO for safe backup of active database
+	// This ensures consistency even when the database is in use
+	if _, err := DB.Exec(fmt.Sprintf("VACUUM INTO '%s'", backupFilePath)); err != nil {
+		return fmt.Errorf("バックアップの作成に失敗しました: %w", err)
 	}
 
 	logger.Info("バックアップが完了しました", zap.String("path", backupFilePath))
 
-	// 古いバックアップの削除
+	// Delete old backups
 	if maxBackups > 0 {
 		if err := cleanupOldBackups(backupPath, maxBackups, logger); err != nil {
 			logger.Warn("古いバックアップの削除に失敗しました", zap.Error(err))
@@ -61,13 +49,13 @@ func cleanupOldBackups(backupPath string, maxBackups int, logger *zap.Logger) er
 		return nil
 	}
 
-	// ファイルを更新時刻でソート（古い順）
-	// エラーが発生したファイルは最後に配置する
+	// Sort files by modification time (oldest first)
+	// Files with errors are placed at the end
 	sort.Slice(files, func(i, j int) bool {
 		infoI, errI := os.Stat(files[i])
 		infoJ, errJ := os.Stat(files[j])
 		
-		// エラーが発生した場合は、エラーが発生したファイルを後ろに配置
+		// If an error occurs, place the file with error at the end
 		if errI != nil {
 			return false
 		}
@@ -75,11 +63,11 @@ func cleanupOldBackups(backupPath string, maxBackups int, logger *zap.Logger) er
 			return true
 		}
 		
-		// 両方のファイル情報が正常に取得できた場合のみ比較
+		// Compare only when both file info are successfully retrieved
 		return infoI.ModTime().Before(infoJ.ModTime())
 	})
 
-	// 古いファイルを削除
+	// Delete old files
 	for i := 0; i < len(files)-maxBackups; i++ {
 		if err := os.Remove(files[i]); err != nil {
 			logger.Warn("バックアップファイルの削除に失敗しました", zap.String("file", files[i]), zap.Error(err))

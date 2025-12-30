@@ -115,7 +115,7 @@ func (f *PRFetcher) FetchPRDiff(ctx context.Context, owner, repo string, number 
 		return "", err
 	}
 
-	// PRのdiffを取得
+	// Get PR diff
 	diff, _, err := f.client.GetClient().PullRequests.GetRaw(ctx, owner, repo, number, github.RawOptions{
 		Type: github.Diff,
 	})

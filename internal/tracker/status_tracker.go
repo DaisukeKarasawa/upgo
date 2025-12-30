@@ -35,7 +35,7 @@ func (t *StatusTracker) TrackPRState(prID int, newState string) (bool, error) {
 		return false, fmt.Errorf("PR状態の取得に失敗しました: %w", err)
 	}
 
-	// 状態が変更されたかチェック
+	// Check if state has changed
 	currentStateValue := ""
 	if currentState.Valid {
 		currentStateValue = currentState.String
@@ -77,7 +77,7 @@ func (t *StatusTracker) TrackIssueState(issueID int, newState string) (bool, err
 		return false, fmt.Errorf("Issue状態の取得に失敗しました: %w", err)
 	}
 
-	// 状態が変更されたかチェック
+	// Check if state has changed
 	currentStateValue := ""
 	if currentState.Valid {
 		currentStateValue = currentState.String

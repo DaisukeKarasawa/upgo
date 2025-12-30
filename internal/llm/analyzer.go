@@ -54,15 +54,16 @@ func (a *Analyzer) AnalyzeCloseReason(ctx context.Context, prInfo, comments, dis
 func (a *Analyzer) AnalyzeMentalModel(ctx context.Context, analysisType string, prsData, issuesData string) (string, error) {
 	content := fmt.Sprintf("PRデータ:\n%s\n\nIssueデータ:\n%s", prsData, issuesData)
 	
-	// 分析タイプに応じたプロンプトのカスタマイズ
-	prompt := PromptMentalModel
+	// Customize prompt based on analysis type
+	// First, format the base prompt with content
+	fullPrompt := fmt.Sprintf(PromptMentalModel, content)
 	if analysisType != "" {
-		prompt = fmt.Sprintf("%s\n\n特に以下の観点に焦点を当ててください: %s", PromptMentalModel, analysisType)
+		// Then append the analysis type instruction
+		fullPrompt = fmt.Sprintf("%s\n\n特に以下の観点に焦点を当ててください: %s", fullPrompt, analysisType)
 	}
 	
-	fullPrompt := fmt.Sprintf(prompt, content)
-	
-	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(a.client.timeout)*time.Second*2) // メンタルモデル分析は時間がかかるため
+	// Mental model analysis takes longer, so use double timeout
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(a.client.timeout)*time.Second*2)
 	defer cancel()
 
 	result, err := a.client.Generate(timeoutCtx, fullPrompt)

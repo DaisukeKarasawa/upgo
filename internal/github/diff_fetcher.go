@@ -31,7 +31,7 @@ func (f *DiffFetcher) FetchCommitDiff(ctx context.Context, owner, repo, sha stri
 		return "", fmt.Errorf("コミット詳細の取得に失敗しました: %w", err)
 	}
 
-	// コミットのdiffを取得
+	// Get commit diff
 	diff, _, err := f.client.GetClient().Repositories.GetCommitRaw(ctx, owner, repo, sha, github.RawOptions{
 		Type: github.Diff,
 	})
@@ -39,6 +39,6 @@ func (f *DiffFetcher) FetchCommitDiff(ctx context.Context, owner, repo, sha stri
 		return "", fmt.Errorf("コミット差分の取得に失敗しました: %w", err)
 	}
 
-	_ = commit // 使用しないが将来の拡張のために保持
+	_ = commit // Keep for future extension (not used currently)
 	return diff, nil
 }

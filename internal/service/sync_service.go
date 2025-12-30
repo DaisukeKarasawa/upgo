@@ -211,9 +211,9 @@ func (s *SyncService) savePR(ctx context.Context, repoID int, pr *ghub.PullReque
 
 		_, err = s.db.Exec(`
 			UPDATE pull_requests 
-			SET title = ?, body = ?, updated_at = ?, merged_at = ?, closed_at = ?, last_synced_at = ?
+			SET title = ?, body = ?, state = ?, updated_at = ?, merged_at = ?, closed_at = ?, last_synced_at = ?
 			WHERE id = ?`,
-			pr.GetTitle(), pr.GetBody(), updatedAt,
+			pr.GetTitle(), pr.GetBody(), state, updatedAt,
 			mergedAt, closedAt, time.Now(), prID,
 		)
 		if err != nil {
@@ -359,9 +359,9 @@ func (s *SyncService) saveIssue(ctx context.Context, repoID int, issue *ghub.Iss
 
 		_, err = s.db.Exec(`
 			UPDATE issues 
-			SET title = ?, body = ?, updated_at = ?, closed_at = ?, last_synced_at = ?
+			SET title = ?, body = ?, state = ?, updated_at = ?, closed_at = ?, last_synced_at = ?
 			WHERE id = ?`,
-			issue.GetTitle(), issue.GetBody(), updatedAt,
+			issue.GetTitle(), issue.GetBody(), issue.GetState(), updatedAt,
 			closedAt, time.Now(), issueID,
 		)
 		if err != nil {

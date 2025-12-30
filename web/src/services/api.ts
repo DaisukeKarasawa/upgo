@@ -25,22 +25,6 @@ export const getPR = async (id: number) => {
   return response.data
 }
 
-export const getIssues = async (params?: {
-  page?: number
-  limit?: number
-  state?: string
-  author?: string
-  search?: string
-}) => {
-  const response = await api.get('/issues', { params })
-  return response.data
-}
-
-export const getIssue = async (id: number) => {
-  const response = await api.get(`/issues/${id}`)
-  return response.data
-}
-
 export const sync = async () => {
   const response = await api.post('/sync')
   return response.data

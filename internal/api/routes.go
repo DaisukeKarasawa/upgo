@@ -3,29 +3,29 @@ package api
 import (
 	"database/sql"
 
+	"upgo/internal/config"
+	"upgo/internal/service"
+
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	"upgo/internal/service"
 )
 
-func SetupRoutes(router *gin.Engine, db *sql.DB, syncService *service.SyncService, logger *zap.Logger) {
+func SetupRoutes(router *gin.Engine, db *sql.DB, syncService *service.SyncService, cfg *config.Config, logger *zap.Logger) {
 	handlers := NewHandlers(db, logger)
 	syncHandler := NewSyncHandler(syncService, logger)
-
-	// ヘルスチェックはmain.goで設定済み
+	backupHandler := NewBackupHandler(cfg, logger)
 
 	api := router.Group("/api/v1")
 	{
-		// PR関連
 		api.GET("/prs", handlers.GetPRs)
 		api.GET("/prs/:id", handlers.GetPR)
 
-		// Issue関連
 		api.GET("/issues", handlers.GetIssues)
 		api.GET("/issues/:id", handlers.GetIssue)
 
-		// 同期関連
 		api.POST("/sync", syncHandler.Sync)
 		api.GET("/sync/status", syncHandler.GetSyncStatus)
+
+		api.POST("/backup", backupHandler.Backup)
 	}
 }

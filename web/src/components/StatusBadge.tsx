@@ -6,7 +6,7 @@ interface StatusBadgeProps {
 export default function StatusBadge({ state, alwaysColored = false }: StatusBadgeProps) {
   const stateUpper = state.toUpperCase()
   
-  // ステータスに応じた色クラスを決定
+  // Determine color class based on status
   const getColorClasses = () => {
     switch (stateUpper) {
       case 'OPEN':

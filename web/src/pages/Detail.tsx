@@ -102,7 +102,7 @@ export default function Detail() {
 
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-6">
-            <StatusBadge state={data.state} />
+            <StatusBadge state={data.state} alwaysColored={true} />
             <h1 className="text-3xl font-light text-gray-900 tracking-tight">
               {data.title}
             </h1>

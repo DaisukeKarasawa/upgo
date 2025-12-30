@@ -5,7 +5,10 @@ interface ManualSyncButtonProps {
   hasUpdates?: boolean;
 }
 
-export default function ManualSyncButton({ onSync, hasUpdates = false }: ManualSyncButtonProps) {
+export default function ManualSyncButton({
+  onSync,
+  hasUpdates = false,
+}: ManualSyncButtonProps) {
   const [syncing, setSyncing] = useState(false);
 
   const handleClick = async () => {
@@ -33,12 +36,12 @@ export default function ManualSyncButton({ onSync, hasUpdates = false }: ManualS
         disabled:cursor-not-allowed
         group
       `}
-      title="同期"
+      title="Sync"
     >
       {hasUpdates && !syncing && (
         <span
           className="absolute top-0 left-0 w-2.5 h-2.5 bg-red-500 rounded-full z-10"
-          aria-label="更新あり"
+          aria-label="Updates available"
         />
       )}
       {syncing ? (

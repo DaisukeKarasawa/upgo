@@ -26,7 +26,7 @@ export default function Dashboard() {
       const status = await getDashboardUpdateStatus();
       setHasUpdates(status.has_missing_recent_prs || false);
     } catch (error) {
-      console.error("更新チェックに失敗しました", error);
+      console.error("Failed to check for updates", error);
     }
   };
 
@@ -36,7 +36,7 @@ export default function Dashboard() {
       const prsData = await getPRs({ limit: 50 });
       setPRs(prsData.data || []);
     } catch (error) {
-      console.error("データの取得に失敗しました", error);
+      console.error("Failed to fetch data", error);
     } finally {
       setLoading(false);
     }
@@ -47,10 +47,10 @@ export default function Dashboard() {
       await sync();
       setTimeout(() => {
         loadData();
-        checkUpdates(); // 同期後に更新チェックも実行
-      }, 2000); // 2秒後に再読み込み
+        checkUpdates(); // Check for updates after sync
+      }, 2000); // Reload after 2 seconds
     } catch (error) {
-      console.error("同期に失敗しました", error);
+      console.error("Failed to sync", error);
     }
   };
 
@@ -73,7 +73,7 @@ export default function Dashboard() {
           <div>
             {loading ? (
               <div className="text-center py-20 text-gray-400 text-sm font-light">
-                読み込み中...
+                Loading...
               </div>
             ) : (
               <div className="space-y-1">
@@ -95,7 +95,7 @@ export default function Dashboard() {
                         </p>
                         <div className="text-xs text-gray-400 font-light">
                           {pr.author} •{" "}
-                          {new Date(pr.created_at).toLocaleDateString("ja-JP")}
+                          {new Date(pr.created_at).toLocaleDateString("en-US")}
                         </div>
                       </div>
                     </div>

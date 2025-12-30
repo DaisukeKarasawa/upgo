@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { getPR, syncPR, getPRUpdateStatus } from "../services/api";
 import StatusBadge from "../components/StatusBadge";
 import ManualSyncButton from "../components/ManualSyncButton";
+import Markdown from "../components/Markdown";
 
 interface Summary {
   description_summary?: string;
@@ -70,7 +71,7 @@ export default function Detail() {
       const status = await getPRUpdateStatus(parseInt(id));
       setHasUpdates(status.updated_since_last_sync || false);
     } catch (error) {
-      console.error("更新チェックに失敗しました", error);
+      console.error("Failed to check for updates", error);
     }
   };
 
@@ -81,7 +82,7 @@ export default function Detail() {
       const result = await getPR(parseInt(id));
       setData(result as DetailData);
     } catch (error) {
-      console.error("データの取得に失敗しました", error);
+      console.error("Failed to fetch data", error);
     } finally {
       setLoading(false);
     }
@@ -93,17 +94,17 @@ export default function Detail() {
       await syncPR(parseInt(id));
       setTimeout(() => {
         loadData();
-        checkUpdates(); // 同期後に更新チェックも実行
-      }, 2000); // 2秒後に再読み込み
+        checkUpdates(); // Check for updates after sync
+      }, 2000); // Reload after 2 seconds
     } catch (error) {
-      console.error("同期に失敗しました", error);
+      console.error("Failed to sync", error);
     }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-gray-400 text-sm font-light">読み込み中...</div>
+        <div className="text-gray-400 text-sm font-light">Loading...</div>
       </div>
     );
   }
@@ -111,9 +112,7 @@ export default function Detail() {
   if (!data) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-gray-400 text-sm font-light">
-          データが見つかりません
-        </div>
+        <div className="text-gray-400 text-sm font-light">Data not found</div>
       </div>
     );
   }
@@ -132,7 +131,7 @@ export default function Detail() {
           <span className="inline-block transition-transform duration-300 ease-out group-hover:-translate-x-1">
             ←
           </span>{" "}
-          ダッシュボードに戻る
+          Back to Dashboard
         </Link>
 
         <div className="mb-12">
@@ -146,20 +145,18 @@ export default function Detail() {
             </div>
           </div>
 
-          <div className="prose max-w-none mb-8">
-            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
-              {data.body}
-            </p>
+          <div className="mb-8">
+            <Markdown>{data.body}</Markdown>
           </div>
 
           <div className="border-t border-gray-100 pt-6">
             <div className="text-sm text-gray-400 space-y-1 font-light">
-              <p>作成者: {data.author}</p>
+              <p>Author: {data.author}</p>
               <p>
-                作成日時: {new Date(data.created_at).toLocaleString("ja-JP")}
+                Created: {new Date(data.created_at).toLocaleString("en-US")}
               </p>
               <p>
-                更新日時: {new Date(data.updated_at).toLocaleString("ja-JP")}
+                Updated: {new Date(data.updated_at).toLocaleString("en-US")}
               </p>
               {data.url && (
                 <a
@@ -168,7 +165,7 @@ export default function Detail() {
                   rel="noopener noreferrer"
                   className="text-gray-400 hover:text-gray-900 transition-all duration-300 ease-out inline-block mt-3 group"
                 >
-                  GitHubで開く{" "}
+                  Open on GitHub{" "}
                   <span className="inline-block transition-transform duration-300 ease-out group-hover:translate-x-1">
                     →
                   </span>
@@ -190,7 +187,7 @@ export default function Detail() {
                     : "text-gray-400 hover:text-gray-600"
                 }`}
               >
-                要約
+                Summary
                 {activeTab === "summary" && (
                   <span className="absolute bottom-0 left-0 right-0 h-px bg-gray-900 animate-[slideIn_0.3s_ease-out]" />
                 )}
@@ -205,7 +202,7 @@ export default function Detail() {
                     : "text-gray-400 hover:text-gray-600"
                 }`}
               >
-                Diff
+                Diffs
                 {activeTab === "diffs" && (
                   <span className="absolute bottom-0 left-0 right-0 h-px bg-gray-900 animate-[slideIn_0.3s_ease-out]" />
                 )}
@@ -235,7 +232,7 @@ export default function Detail() {
                     : "text-gray-400 hover:text-gray-600"
                 }`}
               >
-                分析結果
+                Analysis
                 {activeTab === "analysis" && (
                   <span className="absolute bottom-0 left-0 right-0 h-px bg-gray-900 animate-[slideIn_0.3s_ease-out]" />
                 )}
@@ -244,73 +241,63 @@ export default function Detail() {
           </nav>
 
           <div>
-            {/* 要約タブ */}
+            {/* Summary Tab */}
             {activeTab === "summary" && hasSummary && (
               <div className="space-y-10">
                 {data.summary?.description_summary && (
                   <div>
                     <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
-                      説明の要約
+                      Description Summary
                     </h3>
-                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
-                      {data.summary.description_summary}
-                    </div>
+                    <Markdown>{data.summary.description_summary}</Markdown>
                   </div>
                 )}
 
                 {data.summary?.diff_summary && (
                   <div>
                     <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
-                      差分の要約
+                      Changes Summary
                     </h3>
-                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
-                      {data.summary.diff_summary}
-                    </div>
+                    <Markdown>{data.summary.diff_summary}</Markdown>
                   </div>
                 )}
 
                 {data.summary?.diff_explanation && (
                   <div>
                     <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
-                      差分の解説
+                      Changes Explanation
                     </h3>
-                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
-                      {data.summary.diff_explanation}
-                    </div>
+                    <Markdown>{data.summary.diff_explanation}</Markdown>
                   </div>
                 )}
 
                 {data.summary?.comments_summary && (
                   <div>
                     <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
-                      コメントの要約
+                      Comments Summary
                     </h3>
-                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
-                      {data.summary.comments_summary}
-                    </div>
+                    <Markdown>{data.summary.comments_summary}</Markdown>
                   </div>
                 )}
 
                 {data.summary?.discussion_summary && (
                   <div>
                     <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
-                      議論の要約
+                      Discussion Summary
                     </h3>
-                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
-                      {data.summary.discussion_summary}
-                    </div>
+                    <Markdown>{data.summary.discussion_summary}</Markdown>
                   </div>
                 )}
 
                 {!hasSummary && (
                   <div className="text-center py-20 text-gray-400 text-sm font-light">
-                    要約データがまだ生成されていません。しばらくお待ちください。
+                    Summary data is being generated. Please wait.
                   </div>
                 )}
               </div>
             )}
 
-            {/* 差分タブ */}
+            {/* Diffs Tab */}
             {activeTab === "diffs" && (
               <div className="space-y-8">
                 {hasDiffs ? (
@@ -330,72 +317,80 @@ export default function Detail() {
                   ))
                 ) : (
                   <div className="text-center py-20 text-gray-400 text-sm font-light">
-                    差分データがありません。
+                    No diff data available.
                   </div>
                 )}
               </div>
             )}
 
-            {/* コメントタブ */}
+            {/* Comments Tab */}
             {activeTab === "comments" && (
               <div className="space-y-8">
                 {hasComments ? (
                   data.comments?.map((comment) => (
                     <div
                       key={comment.github_id}
-                      className="pb-8 border-b border-gray-100 last:border-0 group hover:pl-2 transition-all duration-300 ease-out"
+                      className="pb-8 border-b border-gray-100 last:border-0 group transition-all duration-300 ease-out relative rounded-lg overflow-hidden"
                     >
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm text-gray-900 font-light group-hover:text-gray-700 transition-colors duration-300">
-                          {comment.author}
-                        </span>
-                        <span className="text-xs text-gray-400 font-light">
-                          {new Date(comment.created_at).toLocaleString("ja-JP")}
-                        </span>
-                      </div>
-                      <div className="prose max-w-none">
-                        <p className="text-gray-700 whitespace-pre-wrap leading-relaxed text-sm font-light group-hover:text-gray-800 transition-colors duration-300">
-                          {comment.body}
-                        </p>
+                      {/* Animation 1: Top-left → Top-right → Bottom-right */}
+                      {/* Top edge (left → right) */}
+                      <div className="absolute top-0 left-0 h-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineTop_0.15s_ease-out_forwards] pointer-events-none" />
+                      {/* Right edge (top → bottom) */}
+                      <div className="absolute top-0 right-0 w-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineRight_0.15s_ease-out_0.15s_forwards] pointer-events-none" />
+
+                      {/* Animation 2: Bottom-right → Bottom-left → Top-left */}
+                      {/* Bottom edge (right → left) */}
+                      <div className="absolute bottom-0 right-0 h-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineBottom_0.15s_ease-out_forwards] pointer-events-none origin-right" />
+                      {/* Left edge (bottom → top) */}
+                      <div className="absolute bottom-0 left-0 w-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineLeft_0.15s_ease-out_0.15s_forwards] pointer-events-none origin-bottom" />
+
+                      <div className="p-4 group-hover:px-6 group-hover:py-5 transition-all duration-300 ease-out">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm text-gray-900 font-light group-hover:text-gray-700 transition-colors duration-300">
+                            {comment.author}
+                          </span>
+                          <span className="text-xs text-gray-400 font-light group-hover:text-gray-600 transition-colors duration-300">
+                            {new Date(comment.created_at).toLocaleString(
+                              "en-US"
+                            )}
+                          </span>
+                        </div>
+                        <Markdown className="text-sm">{comment.body}</Markdown>
                       </div>
                     </div>
                   ))
                 ) : (
                   <div className="text-center py-20 text-gray-400 text-sm font-light">
-                    コメントがありません。
+                    No comments.
                   </div>
                 )}
               </div>
             )}
 
-            {/* 分析結果タブ */}
+            {/* Analysis Tab */}
             {activeTab === "analysis" && (
               <div className="space-y-10">
                 {data.state === "merged" && data.summary?.merge_reason && (
                   <div>
                     <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
-                      Merge理由の分析
+                      Merge Reason
                     </h3>
-                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
-                      {data.summary.merge_reason}
-                    </div>
+                    <Markdown>{data.summary.merge_reason}</Markdown>
                   </div>
                 )}
 
                 {data.state === "closed" && data.summary?.close_reason && (
                   <div>
                     <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
-                      Close理由の分析
+                      Close Reason
                     </h3>
-                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
-                      {data.summary.close_reason}
-                    </div>
+                    <Markdown>{data.summary.close_reason}</Markdown>
                   </div>
                 )}
 
                 {!data.summary?.merge_reason && !data.summary?.close_reason && (
                   <div className="text-center py-20 text-gray-400 text-sm font-light">
-                    分析結果がまだ生成されていません。
+                    Analysis results are being generated.
                   </div>
                 )}
               </div>

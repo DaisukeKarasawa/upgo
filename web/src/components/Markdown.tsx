@@ -1,12 +1,32 @@
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { ReactNode } from "react";
 
 interface MarkdownProps {
   children: string;
   className?: string;
 }
 
-export default function Markdown({ children, className = '' }: MarkdownProps) {
+// Reactノードからテキストコンテンツを抽出するヘルパー関数
+function extractTextContent(node: ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") {
+    return String(node);
+  }
+  if (Array.isArray(node)) {
+    return node.map(extractTextContent).join("");
+  }
+  if (
+    node &&
+    typeof node === "object" &&
+    "props" in node &&
+    node.props.children
+  ) {
+    return extractTextContent(node.props.children);
+  }
+  return "";
+}
+
+export default function Markdown({ children, className = "" }: MarkdownProps) {
   return (
     <div className={`prose prose-sm max-w-none ${className}`}>
       <ReactMarkdown
@@ -14,18 +34,30 @@ export default function Markdown({ children, className = '' }: MarkdownProps) {
         skipHtml={true}
         components={{
           a: ({ ...props }) => {
-            const href = props.href || '';
-            const isSafe = /^(https?|mailto):/.test(href) || href.startsWith('/') || href.startsWith('#');
+            const href = props.href || "";
+            const isSafe =
+              /^(https?|mailto):/.test(href) ||
+              href.startsWith("/") ||
+              href.startsWith("#");
             if (!isSafe) {
-              return <span className="text-gray-400 line-through">{props.children}</span>;
+              return (
+                <span className="text-gray-400 line-through">
+                  {props.children}
+                </span>
+              );
             }
+            const linkText = extractTextContent(props.children);
             return (
               <a
                 {...props}
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer nofollow"
-                aria-label={`${props.children} (opens in new tab)`}
+                aria-label={
+                  linkText
+                    ? `${linkText} (opens in new tab)`
+                    : "External link (opens in new tab)"
+                }
                 className="text-gray-700 hover:text-gray-900 transition-colors duration-300"
               />
             );
@@ -65,10 +97,7 @@ export default function Markdown({ children, className = '' }: MarkdownProps) {
             />
           ),
           td: ({ ...props }) => (
-            <td
-              {...props}
-              className="border border-gray-300 px-4 py-2"
-            />
+            <td {...props} className="border border-gray-300 px-4 py-2" />
           ),
         }}
       >

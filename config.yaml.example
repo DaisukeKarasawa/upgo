@@ -1,0 +1,35 @@
+repository:
+  owner: "golang"
+  name: "go"
+
+github:
+  token: "${GITHUB_TOKEN}"  # 環境変数から取得
+  base_url: "https://api.github.com"
+
+scheduler:
+  interval: "15m"  # ポーリング間隔（15分）
+  enabled: true    # スケジューラーの有効/無効
+
+llm:
+  provider: "ollama"  # ollama
+  base_url: "http://localhost:11434"
+  model: "llama3.2"  # 使用するモデル名
+  timeout: 300        # タイムアウト（秒）
+
+database:
+  path: "./data/upgo.db"
+
+server:
+  port: 8080
+  host: "localhost"
+
+logging:
+  level: "info"  # debug/info/warn/error
+  output: "stdout"  # stdout/file
+  file_path: "./logs/upgo.log"  # output=fileの場合
+
+backup:
+  enabled: true
+  interval: "24h"  # 自動バックアップ間隔
+  max_backups: 7   # 保持するバックアップ数
+  path: "./backups"

@@ -105,13 +105,17 @@ func (s *SyncService) getOrCreateRepository() (int, error) {
 	return id, nil
 }
 
-// syncPRs fetches and saves all PRs for both open and closed states.
-// We sync both states separately because GitHub's API requires filtering by state,
-// and we want to capture the complete history including closed PRs.
+// syncPRs fetches and saves only PRs updated within the last month.
+//
+// Important: We stop fetching older PR pages at the GitHub API layer
+// (sorted by updated desc) to avoid retrieving PRs outside the 1-month window.
 func (s *SyncService) syncPRs(ctx context.Context, repoID int) error {
+	oneMonthAgo := time.Now().AddDate(0, -1, 0)
+
+	// Fetch PRs updated within the last month
 	states := []string{"open", "closed"}
 	for _, state := range states {
-		prs, err := s.prFetcher.FetchPRs(ctx, s.owner, s.repo, state)
+		prs, err := s.prFetcher.FetchPRsUpdatedSince(ctx, s.owner, s.repo, state, oneMonthAgo)
 		if err != nil {
 			return err
 		}

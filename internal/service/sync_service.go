@@ -51,23 +51,19 @@ func NewSyncService(
 func (s *SyncService) Sync(ctx context.Context) error {
 	s.logger.Info("同期を開始しました")
 
-	// リポジトリの取得または作成
 	repoID, err := s.getOrCreateRepository()
 	if err != nil {
 		return fmt.Errorf("リポジトリの取得に失敗しました: %w", err)
 	}
 
-	// PRの同期
 	if err := s.syncPRs(ctx, repoID); err != nil {
 		s.logger.Error("PR同期に失敗しました", zap.Error(err))
 	}
 
-	// Issueの同期
 	if err := s.syncIssues(ctx, repoID); err != nil {
 		s.logger.Error("Issue同期に失敗しました", zap.Error(err))
 	}
 
-	// 最終同期時刻の更新
 	_, err = s.db.Exec(
 		"UPDATE repositories SET last_synced_at = ? WHERE id = ?",
 		time.Now(), repoID,
@@ -107,7 +103,6 @@ func (s *SyncService) getOrCreateRepository() (int, error) {
 }
 
 func (s *SyncService) syncPRs(ctx context.Context, repoID int) error {
-	// すべての状態のPRを取得
 	states := []string{"open", "closed"}
 	for _, state := range states {
 		prs, err := s.prFetcher.FetchPRs(ctx, s.owner, s.repo, state)
@@ -127,14 +122,12 @@ func (s *SyncService) syncPRs(ctx context.Context, repoID int) error {
 }
 
 func (s *SyncService) savePR(ctx context.Context, repoID int, pr *ghub.PullRequest) error {
-	// PRの状態を決定
 	state := pr.GetState()
 	mergedAt := pr.GetMergedAt()
 	if !mergedAt.IsZero() {
 		state = "merged"
 	}
 
-	// PRの取得または更新
 	var prID int
 	err := s.db.QueryRow(
 		"SELECT id FROM pull_requests WHERE repository_id = ? AND github_id = ?",
@@ -142,8 +135,8 @@ func (s *SyncService) savePR(ctx context.Context, repoID int, pr *ghub.PullReque
 	).Scan(&prID)
 
 	isNewPR := false
+	var stateChanged bool
 	if err == sql.ErrNoRows {
-		// 新規作成
 		isNewPR = true
 		var mergedAtInsert, closedAtInsert interface{}
 		mergedAtInsertPtr := pr.GetMergedAt()
@@ -171,10 +164,16 @@ func (s *SyncService) savePR(ctx context.Context, repoID int, pr *ghub.PullReque
 		}
 		prID64, _ := result.LastInsertId()
 		prID = int(prID64)
+		stateChanged = false
 	} else if err != nil {
 		return err
 	} else {
-		// 更新
+		var err error
+		stateChanged, err = s.statusTracker.TrackPRState(prID, state)
+		if err != nil {
+			s.logger.Warn("PR状態の追跡に失敗しました", zap.Error(err))
+		}
+
 		var mergedAt, closedAt interface{}
 		mergedAtPtr := pr.GetMergedAt()
 		if !mergedAtPtr.IsZero() {
@@ -189,9 +188,9 @@ func (s *SyncService) savePR(ctx context.Context, repoID int, pr *ghub.PullReque
 
 		_, err = s.db.Exec(`
 			UPDATE pull_requests 
-			SET title = ?, body = ?, state = ?, updated_at = ?, merged_at = ?, closed_at = ?, last_synced_at = ?
+			SET title = ?, body = ?, updated_at = ?, merged_at = ?, closed_at = ?, last_synced_at = ?
 			WHERE id = ?`,
-			pr.GetTitle(), pr.GetBody(), state, updatedAt,
+			pr.GetTitle(), pr.GetBody(), updatedAt,
 			mergedAt, closedAt, time.Now(), prID,
 		)
 		if err != nil {
@@ -199,23 +198,14 @@ func (s *SyncService) savePR(ctx context.Context, repoID int, pr *ghub.PullReque
 		}
 	}
 
-	// 状態変更の追跡
-	stateChanged, err := s.statusTracker.TrackPRState(prID, state)
-	if err != nil {
-		s.logger.Warn("PR状態の追跡に失敗しました", zap.Error(err))
-	}
-
-	// コメントの取得と保存
 	if err := s.syncPRComments(ctx, prID, pr.GetNumber()); err != nil {
 		s.logger.Warn("PRコメントの同期に失敗しました", zap.Error(err))
 	}
 
-	// 差分の取得と保存
 	if err := s.syncPRDiff(ctx, prID, pr.GetNumber()); err != nil {
 		s.logger.Warn("PR差分の同期に失敗しました", zap.Error(err))
 	}
 
-	// 要約・分析をトリガー（初回保存時または状態変更時）
 	if isNewPR || stateChanged {
 		s.triggerAnalysis(ctx, prID, "PR")
 	}
@@ -254,8 +244,6 @@ func (s *SyncService) syncPRDiff(ctx context.Context, prID int, prNumber int) er
 		return err
 	}
 
-	// 差分をファイル単位で分割して保存（簡易実装）
-	// 実際の実装では、より高度な解析が必要かもしれません
 	_, err = s.db.Exec(`
 		INSERT OR REPLACE INTO pull_request_diffs 
 		(pr_id, diff_text, file_path, created_at)
@@ -293,8 +281,8 @@ func (s *SyncService) saveIssue(ctx context.Context, repoID int, issue *ghub.Iss
 	).Scan(&issueID)
 
 	isNewIssue := false
+	var stateChanged bool
 	if err == sql.ErrNoRows {
-		// 新規作成
 		isNewIssue = true
 		var closedAtInsert interface{}
 		closedAtInsertPtr := issue.GetClosedAt()
@@ -318,9 +306,16 @@ func (s *SyncService) saveIssue(ctx context.Context, repoID int, issue *ghub.Iss
 		}
 		issueID64, _ := result.LastInsertId()
 		issueID = int(issueID64)
+		stateChanged = false
 	} else if err != nil {
 		return err
 	} else {
+		var err error
+		stateChanged, err = s.statusTracker.TrackIssueState(issueID, issue.GetState())
+		if err != nil {
+			s.logger.Warn("Issue状態の追跡に失敗しました", zap.Error(err))
+		}
+
 		var closedAt interface{}
 		closedAtPtr := issue.GetClosedAt()
 		if !closedAtPtr.IsZero() {
@@ -331,9 +326,9 @@ func (s *SyncService) saveIssue(ctx context.Context, repoID int, issue *ghub.Iss
 
 		_, err = s.db.Exec(`
 			UPDATE issues 
-			SET title = ?, body = ?, state = ?, updated_at = ?, closed_at = ?, last_synced_at = ?
+			SET title = ?, body = ?, updated_at = ?, closed_at = ?, last_synced_at = ?
 			WHERE id = ?`,
-			issue.GetTitle(), issue.GetBody(), issue.GetState(), updatedAt,
+			issue.GetTitle(), issue.GetBody(), updatedAt,
 			closedAt, time.Now(), issueID,
 		)
 		if err != nil {
@@ -341,18 +336,10 @@ func (s *SyncService) saveIssue(ctx context.Context, repoID int, issue *ghub.Iss
 		}
 	}
 
-	// 状態変更の追跡
-	stateChanged, err := s.statusTracker.TrackIssueState(issueID, issue.GetState())
-	if err != nil {
-		s.logger.Warn("Issue状態の追跡に失敗しました", zap.Error(err))
-	}
-
-	// コメントの取得と保存
 	if err := s.syncIssueComments(ctx, issueID, issue.GetNumber()); err != nil {
 		s.logger.Warn("Issueコメントの同期に失敗しました", zap.Error(err))
 	}
 
-	// 要約・分析をトリガー（初回保存時または状態変更時）
 	if isNewIssue || stateChanged {
 		s.triggerAnalysis(ctx, issueID, "Issue")
 	}
@@ -360,7 +347,6 @@ func (s *SyncService) saveIssue(ctx context.Context, repoID int, issue *ghub.Iss
 	return nil
 }
 
-// triggerAnalysis は要約・分析を非同期で実行し、失敗時はリトライします
 func (s *SyncService) triggerAnalysis(ctx context.Context, id int, itemType string) {
 	go func() {
 		analysisCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -379,8 +365,6 @@ func (s *SyncService) triggerAnalysis(ctx context.Context, id int, itemType stri
 				zap.Int("id", id),
 				zap.Error(err),
 			)
-			// 非同期リトライ（最大3回、指数バックオフ）
-			// リトライでは新しいコンテキストを作成する
 			s.retryAnalysis(id, itemType, 1)
 		} else {
 			s.logger.Info("要約・分析が完了しました",
@@ -391,8 +375,6 @@ func (s *SyncService) triggerAnalysis(ctx context.Context, id int, itemType stri
 	}()
 }
 
-// retryAnalysis は要約・分析をリトライします
-// 各リトライのたびに新しいコンテキストを作成します
 func (s *SyncService) retryAnalysis(id int, itemType string, attempt int) {
 	const maxRetries = 3
 	if attempt > maxRetries {
@@ -404,11 +386,9 @@ func (s *SyncService) retryAnalysis(id int, itemType string, attempt int) {
 		return
 	}
 
-	// 指数バックオフ: 1秒、2秒、4秒
 	backoff := time.Duration(1<<uint(attempt-1)) * time.Second
 	time.Sleep(backoff)
 
-	// 各リトライのたびに新しいコンテキストを作成
 	analysisCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 

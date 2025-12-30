@@ -33,25 +33,22 @@ func NewAnalysisService(
 }
 
 func (s *AnalysisService) AnalyzePR(ctx context.Context, prID int) error {
-	// PR情報の取得
 	var pr struct {
-		Body    string
-		State   string
-		Title   string
-		Author  string
-		GitHubID int
+		Body   string
+		State  string
+		Title  string
+		Author string
 	}
 
 	err := s.db.QueryRow(
-		"SELECT title, body, state, author, github_id FROM pull_requests WHERE id = ?",
+		"SELECT title, body, state, author FROM pull_requests WHERE id = ?",
 		prID,
-	).Scan(&pr.Title, &pr.Body, &pr.State, &pr.Author, &pr.GitHubID)
+	).Scan(&pr.Title, &pr.Body, &pr.State, &pr.Author)
 
 	if err != nil {
 		return fmt.Errorf("PR情報の取得に失敗しました: %w", err)
 	}
 
-	// コメントの取得
 	rows, err := s.db.Query(
 		"SELECT body FROM pull_request_comments WHERE pr_id = ? ORDER BY created_at",
 		prID,
@@ -70,7 +67,10 @@ func (s *AnalysisService) AnalyzePR(ctx context.Context, prID int) error {
 		comments = append(comments, body)
 	}
 
-	// 差分の取得
+	if err := rows.Err(); err != nil {
+		s.logger.Warn("PRコメントの取得中にエラーが発生しました", zap.Error(err))
+	}
+
 	var diff string
 	err = s.db.QueryRow(
 		"SELECT diff_text FROM pull_request_diffs WHERE pr_id = ? LIMIT 1",
@@ -78,11 +78,8 @@ func (s *AnalysisService) AnalyzePR(ctx context.Context, prID int) error {
 	).Scan(&diff)
 	if err != nil && err != sql.ErrNoRows {
 		s.logger.Warn("差分の取得に失敗しました", zap.Error(err))
-		// エラーが発生しても処理を続行（diffは空文字列のまま）
 	}
-	// sql.ErrNoRowsの場合は差分がないため、diffは空文字列のまま
 
-	// 要約の生成
 	descriptionSummary, err := s.summarizer.SummarizeDescription(ctx, pr.Body)
 	if err != nil {
 		s.logger.Warn("説明の要約に失敗しました", zap.Error(err))
@@ -98,7 +95,6 @@ func (s *AnalysisService) AnalyzePR(ctx context.Context, prID int) error {
 		s.logger.Warn("コメントの要約に失敗しました", zap.Error(err))
 	}
 
-	// 分析結果の保存
 	_, err = s.db.Exec(`
 		INSERT OR REPLACE INTO pull_request_summaries 
 		(pr_id, description_summary, diff_summary, diff_explanation, comments_summary, discussion_summary, updated_at)
@@ -109,7 +105,6 @@ func (s *AnalysisService) AnalyzePR(ctx context.Context, prID int) error {
 		return fmt.Errorf("要約の保存に失敗しました: %w", err)
 	}
 
-	// 状態に応じた分析
 	if pr.State == "merged" {
 		prInfo := fmt.Sprintf("タイトル: %s\n説明: %s\n作成者: %s", pr.Title, pr.Body, pr.Author)
 		mergeReason, err := s.analyzer.AnalyzeMergeReason(ctx, prInfo, fmt.Sprintf("%v", comments), discussionSummary)
@@ -144,12 +139,11 @@ func (s *AnalysisService) AnalyzePR(ctx context.Context, prID int) error {
 }
 
 func (s *AnalysisService) AnalyzeIssue(ctx context.Context, issueID int) error {
-	// Issue情報の取得
 	var issue struct {
-		Body    string
-		State   string
-		Title   string
-		Author  string
+		Body   string
+		State  string
+		Title  string
+		Author string
 	}
 
 	err := s.db.QueryRow(
@@ -161,7 +155,6 @@ func (s *AnalysisService) AnalyzeIssue(ctx context.Context, issueID int) error {
 		return fmt.Errorf("Issue情報の取得に失敗しました: %w", err)
 	}
 
-	// コメントの取得
 	rows, err := s.db.Query(
 		"SELECT body FROM issue_comments WHERE issue_id = ? ORDER BY created_at",
 		issueID,
@@ -180,7 +173,10 @@ func (s *AnalysisService) AnalyzeIssue(ctx context.Context, issueID int) error {
 		comments = append(comments, body)
 	}
 
-	// 要約の生成
+	if err := rows.Err(); err != nil {
+		s.logger.Warn("Issueコメントの取得中にエラーが発生しました", zap.Error(err))
+	}
+
 	descriptionSummary, err := s.summarizer.SummarizeDescription(ctx, issue.Body)
 	if err != nil {
 		s.logger.Warn("説明の要約に失敗しました", zap.Error(err))
@@ -191,7 +187,6 @@ func (s *AnalysisService) AnalyzeIssue(ctx context.Context, issueID int) error {
 		s.logger.Warn("コメントの要約に失敗しました", zap.Error(err))
 	}
 
-	// 分析結果の保存
 	_, err = s.db.Exec(`
 		INSERT OR REPLACE INTO issue_summaries 
 		(issue_id, description_summary, comments_summary, discussion_summary, updated_at)

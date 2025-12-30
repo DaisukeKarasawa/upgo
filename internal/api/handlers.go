@@ -22,20 +22,17 @@ func NewHandlers(db *sql.DB, logger *zap.Logger) *Handlers {
 }
 
 func (h *Handlers) GetPRs(c *gin.Context) {
-	// page パラメータの解析と検証
 	pageStr := c.DefaultQuery("page", "1")
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page < 1 {
 		page = 1
 	}
 
-	// limit パラメータの解析と検証
 	limitStr := c.DefaultQuery("limit", "20")
 	limit, err := strconv.Atoi(limitStr)
 	if err != nil || limit < 1 {
 		limit = 20
 	}
-	// limit の最大値を制限（100件まで）
 	if limit > 100 {
 		limit = 100
 	}
@@ -77,18 +74,18 @@ func (h *Handlers) GetPRs(c *gin.Context) {
 	var prs []map[string]interface{}
 	for rows.Next() {
 		var pr struct {
-			ID         int
-			RepoID     int
-			GitHubID   int
-			Title      string
-			Body       string
-			State      string
-			Author     string
-			CreatedAt  string
-			UpdatedAt  string
-			MergedAt   sql.NullString
-			ClosedAt   sql.NullString
-			URL        string
+			ID        int
+			RepoID    int
+			GitHubID  int
+			Title     string
+			Body      string
+			State     string
+			Author    string
+			CreatedAt string
+			UpdatedAt string
+			MergedAt  sql.NullString
+			ClosedAt  sql.NullString
+			URL       string
 		}
 		err := rows.Scan(&pr.ID, &pr.RepoID, &pr.GitHubID, &pr.Title, &pr.Body, &pr.State, &pr.Author, &pr.CreatedAt, &pr.UpdatedAt, &pr.MergedAt, &pr.ClosedAt, &pr.URL)
 		if err != nil {
@@ -96,16 +93,16 @@ func (h *Handlers) GetPRs(c *gin.Context) {
 		}
 
 		prMap := map[string]interface{}{
-			"id":         pr.ID,
+			"id":            pr.ID,
 			"repository_id": pr.RepoID,
-			"github_id":  pr.GitHubID,
-			"title":      pr.Title,
-			"body":       pr.Body,
-			"state":      pr.State,
-			"author":     pr.Author,
-			"created_at": pr.CreatedAt,
-			"updated_at": pr.UpdatedAt,
-			"url":        pr.URL,
+			"github_id":     pr.GitHubID,
+			"title":         pr.Title,
+			"body":          pr.Body,
+			"state":         pr.State,
+			"author":        pr.Author,
+			"created_at":    pr.CreatedAt,
+			"updated_at":    pr.UpdatedAt,
+			"url":           pr.URL,
 		}
 		if pr.MergedAt.Valid {
 			prMap["merged_at"] = pr.MergedAt.String
@@ -117,9 +114,15 @@ func (h *Handlers) GetPRs(c *gin.Context) {
 		prs = append(prs, prMap)
 	}
 
+	if err := rows.Err(); err != nil {
+		h.logger.Error("PR一覧の取得中にエラーが発生しました", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "PR一覧の取得中にエラーが発生しました"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"data": prs,
-		"page": page,
+		"data":  prs,
+		"page":  page,
 		"limit": limit,
 	})
 }
@@ -132,18 +135,18 @@ func (h *Handlers) GetPR(c *gin.Context) {
 	}
 
 	var pr struct {
-		ID         int
-		RepoID     int
-		GitHubID   int
-		Title      string
-		Body       string
-		State      string
-		Author     string
-		CreatedAt  string
-		UpdatedAt  string
-		MergedAt   sql.NullString
-		ClosedAt   sql.NullString
-		URL        string
+		ID        int
+		RepoID    int
+		GitHubID  int
+		Title     string
+		Body      string
+		State     string
+		Author    string
+		CreatedAt string
+		UpdatedAt string
+		MergedAt  sql.NullString
+		ClosedAt  sql.NullString
+		URL       string
 	}
 
 	err = h.db.QueryRow(
@@ -180,7 +183,6 @@ func (h *Handlers) GetPR(c *gin.Context) {
 		prMap["closed_at"] = pr.ClosedAt.String
 	}
 
-	// 要約データの取得
 	var summary struct {
 		DescriptionSummary sql.NullString
 		DiffSummary        sql.NullString
@@ -225,7 +227,6 @@ func (h *Handlers) GetPR(c *gin.Context) {
 		prMap["summary"] = summaryMap
 	}
 
-	// 差分データの取得
 	diffs := []map[string]interface{}{}
 	diffRows, err := h.db.Query(
 		"SELECT diff_text, file_path FROM pull_request_diffs WHERE pr_id = ? ORDER BY id",
@@ -238,7 +239,7 @@ func (h *Handlers) GetPR(c *gin.Context) {
 			if err := diffRows.Scan(&diffText, &filePath); err == nil {
 				diffs = append(diffs, map[string]interface{}{
 					"diff_text": diffText,
-					"file_path":  filePath,
+					"file_path": filePath,
 				})
 			}
 		}
@@ -247,7 +248,6 @@ func (h *Handlers) GetPR(c *gin.Context) {
 		prMap["diffs"] = diffs
 	}
 
-	// コメント一覧の取得
 	comments := []map[string]interface{}{}
 	commentRows, err := h.db.Query(
 		"SELECT github_id, body, author, created_at, updated_at FROM pull_request_comments WHERE pr_id = ? ORDER BY created_at",
@@ -282,20 +282,17 @@ func (h *Handlers) GetPR(c *gin.Context) {
 }
 
 func (h *Handlers) GetIssues(c *gin.Context) {
-	// page パラメータの解析と検証
 	pageStr := c.DefaultQuery("page", "1")
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page < 1 {
 		page = 1
 	}
 
-	// limit パラメータの解析と検証
 	limitStr := c.DefaultQuery("limit", "20")
 	limit, err := strconv.Atoi(limitStr)
 	if err != nil || limit < 1 {
 		limit = 20
 	}
-	// limit の最大値を制限（100件まで）
 	if limit > 100 {
 		limit = 100
 	}
@@ -355,16 +352,16 @@ func (h *Handlers) GetIssues(c *gin.Context) {
 		}
 
 		issueMap := map[string]interface{}{
-			"id":         issue.ID,
+			"id":            issue.ID,
 			"repository_id": issue.RepoID,
-			"github_id":  issue.GitHubID,
-			"title":      issue.Title,
-			"body":       issue.Body,
-			"state":      issue.State,
-			"author":     issue.Author,
-			"created_at": issue.CreatedAt,
-			"updated_at": issue.UpdatedAt,
-			"url":        issue.URL,
+			"github_id":     issue.GitHubID,
+			"title":         issue.Title,
+			"body":          issue.Body,
+			"state":         issue.State,
+			"author":        issue.Author,
+			"created_at":    issue.CreatedAt,
+			"updated_at":    issue.UpdatedAt,
+			"url":           issue.URL,
 		}
 		if issue.ClosedAt.Valid {
 			issueMap["closed_at"] = issue.ClosedAt.String
@@ -373,9 +370,15 @@ func (h *Handlers) GetIssues(c *gin.Context) {
 		issues = append(issues, issueMap)
 	}
 
+	if err := rows.Err(); err != nil {
+		h.logger.Error("Issue一覧の取得中にエラーが発生しました", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Issue一覧の取得中にエラーが発生しました"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"data": issues,
-		"page": page,
+		"data":  issues,
+		"page":  page,
 		"limit": limit,
 	})
 }
@@ -432,7 +435,6 @@ func (h *Handlers) GetIssue(c *gin.Context) {
 		issueMap["closed_at"] = issue.ClosedAt.String
 	}
 
-	// 要約データの取得
 	var summary struct {
 		DescriptionSummary sql.NullString
 		CommentsSummary    sql.NullString
@@ -461,7 +463,6 @@ func (h *Handlers) GetIssue(c *gin.Context) {
 		issueMap["summary"] = summaryMap
 	}
 
-	// コメント一覧の取得
 	comments := []map[string]interface{}{}
 	commentRows, err := h.db.Query(
 		"SELECT github_id, body, author, created_at, updated_at FROM issue_comments WHERE issue_id = ? ORDER BY created_at",

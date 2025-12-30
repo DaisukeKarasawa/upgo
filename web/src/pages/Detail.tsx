@@ -70,7 +70,7 @@ export default function Detail() {
       const status = await getPRUpdateStatus(parseInt(id));
       setHasUpdates(status.updated_since_last_sync || false);
     } catch (error) {
-      console.error("更新チェックに失敗しました", error);
+      console.error("Failed to check for updates", error);
     }
   };
 
@@ -81,7 +81,7 @@ export default function Detail() {
       const result = await getPR(parseInt(id));
       setData(result as DetailData);
     } catch (error) {
-      console.error("データの取得に失敗しました", error);
+      console.error("Failed to fetch data", error);
     } finally {
       setLoading(false);
     }
@@ -93,17 +93,17 @@ export default function Detail() {
       await syncPR(parseInt(id));
       setTimeout(() => {
         loadData();
-        checkUpdates(); // 同期後に更新チェックも実行
-      }, 2000); // 2秒後に再読み込み
+        checkUpdates(); // Check for updates after sync
+      }, 2000); // Reload after 2 seconds
     } catch (error) {
-      console.error("同期に失敗しました", error);
+      console.error("Failed to sync", error);
     }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-gray-400 text-sm font-light">読み込み中...</div>
+        <div className="text-gray-400 text-sm font-light">Loading...</div>
       </div>
     );
   }
@@ -111,9 +111,7 @@ export default function Detail() {
   if (!data) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-gray-400 text-sm font-light">
-          データが見つかりません
-        </div>
+        <div className="text-gray-400 text-sm font-light">Data not found</div>
       </div>
     );
   }
@@ -132,7 +130,7 @@ export default function Detail() {
           <span className="inline-block transition-transform duration-300 ease-out group-hover:-translate-x-1">
             ←
           </span>{" "}
-          ダッシュボードに戻る
+          Back to Dashboard
         </Link>
 
         <div className="mb-12">
@@ -154,12 +152,12 @@ export default function Detail() {
 
           <div className="border-t border-gray-100 pt-6">
             <div className="text-sm text-gray-400 space-y-1 font-light">
-              <p>作成者: {data.author}</p>
+              <p>Author: {data.author}</p>
               <p>
-                作成日時: {new Date(data.created_at).toLocaleString("ja-JP")}
+                Created: {new Date(data.created_at).toLocaleString("en-US")}
               </p>
               <p>
-                更新日時: {new Date(data.updated_at).toLocaleString("ja-JP")}
+                Updated: {new Date(data.updated_at).toLocaleString("en-US")}
               </p>
               {data.url && (
                 <a
@@ -168,7 +166,7 @@ export default function Detail() {
                   rel="noopener noreferrer"
                   className="text-gray-400 hover:text-gray-900 transition-all duration-300 ease-out inline-block mt-3 group"
                 >
-                  GitHubで開く{" "}
+                  Open on GitHub{" "}
                   <span className="inline-block transition-transform duration-300 ease-out group-hover:translate-x-1">
                     →
                   </span>
@@ -190,7 +188,7 @@ export default function Detail() {
                     : "text-gray-400 hover:text-gray-600"
                 }`}
               >
-                要約
+                Summary
                 {activeTab === "summary" && (
                   <span className="absolute bottom-0 left-0 right-0 h-px bg-gray-900 animate-[slideIn_0.3s_ease-out]" />
                 )}
@@ -205,7 +203,7 @@ export default function Detail() {
                     : "text-gray-400 hover:text-gray-600"
                 }`}
               >
-                Diff
+                Diffs
                 {activeTab === "diffs" && (
                   <span className="absolute bottom-0 left-0 right-0 h-px bg-gray-900 animate-[slideIn_0.3s_ease-out]" />
                 )}
@@ -235,7 +233,7 @@ export default function Detail() {
                     : "text-gray-400 hover:text-gray-600"
                 }`}
               >
-                分析結果
+                Analysis
                 {activeTab === "analysis" && (
                   <span className="absolute bottom-0 left-0 right-0 h-px bg-gray-900 animate-[slideIn_0.3s_ease-out]" />
                 )}
@@ -244,13 +242,13 @@ export default function Detail() {
           </nav>
 
           <div>
-            {/* 要約タブ */}
+            {/* Summary Tab */}
             {activeTab === "summary" && hasSummary && (
               <div className="space-y-10">
                 {data.summary?.description_summary && (
                   <div>
                     <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
-                      説明の要約
+                      Description Summary
                     </h3>
                     <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
                       {data.summary.description_summary}
@@ -261,7 +259,7 @@ export default function Detail() {
                 {data.summary?.diff_summary && (
                   <div>
                     <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
-                      差分の要約
+                      Changes Summary
                     </h3>
                     <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
                       {data.summary.diff_summary}
@@ -272,7 +270,7 @@ export default function Detail() {
                 {data.summary?.diff_explanation && (
                   <div>
                     <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
-                      差分の解説
+                      Changes Explanation
                     </h3>
                     <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
                       {data.summary.diff_explanation}
@@ -283,7 +281,7 @@ export default function Detail() {
                 {data.summary?.comments_summary && (
                   <div>
                     <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
-                      コメントの要約
+                      Comments Summary
                     </h3>
                     <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
                       {data.summary.comments_summary}
@@ -294,7 +292,7 @@ export default function Detail() {
                 {data.summary?.discussion_summary && (
                   <div>
                     <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
-                      議論の要約
+                      Discussion Summary
                     </h3>
                     <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
                       {data.summary.discussion_summary}
@@ -304,13 +302,13 @@ export default function Detail() {
 
                 {!hasSummary && (
                   <div className="text-center py-20 text-gray-400 text-sm font-light">
-                    要約データがまだ生成されていません。しばらくお待ちください。
+                    Summary data is being generated. Please wait.
                   </div>
                 )}
               </div>
             )}
 
-            {/* 差分タブ */}
+            {/* Diffs Tab */}
             {activeTab === "diffs" && (
               <div className="space-y-8">
                 {hasDiffs ? (
@@ -330,13 +328,13 @@ export default function Detail() {
                   ))
                 ) : (
                   <div className="text-center py-20 text-gray-400 text-sm font-light">
-                    差分データがありません。
+                    No diff data available.
                   </div>
                 )}
               </div>
             )}
 
-            {/* コメントタブ */}
+            {/* Comments Tab */}
             {activeTab === "comments" && (
               <div className="space-y-8">
                 {hasComments ? (
@@ -350,7 +348,9 @@ export default function Detail() {
                           {comment.author}
                         </span>
                         <span className="text-xs text-gray-400 font-light">
-                          {new Date(comment.created_at).toLocaleString("ja-JP")}
+                          {new Date(comment.created_at).toLocaleString(
+                            "en-US"
+                          )}
                         </span>
                       </div>
                       <div className="prose max-w-none">
@@ -362,19 +362,19 @@ export default function Detail() {
                   ))
                 ) : (
                   <div className="text-center py-20 text-gray-400 text-sm font-light">
-                    コメントがありません。
+                    No comments.
                   </div>
                 )}
               </div>
             )}
 
-            {/* 分析結果タブ */}
+            {/* Analysis Tab */}
             {activeTab === "analysis" && (
               <div className="space-y-10">
                 {data.state === "merged" && data.summary?.merge_reason && (
                   <div>
                     <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
-                      Merge理由の分析
+                      Merge Reason
                     </h3>
                     <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
                       {data.summary.merge_reason}
@@ -385,7 +385,7 @@ export default function Detail() {
                 {data.state === "closed" && data.summary?.close_reason && (
                   <div>
                     <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
-                      Close理由の分析
+                      Close Reason
                     </h3>
                     <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
                       {data.summary.close_reason}
@@ -395,7 +395,7 @@ export default function Detail() {
 
                 {!data.summary?.merge_reason && !data.summary?.close_reason && (
                   <div className="text-center py-20 text-gray-400 text-sm font-light">
-                    分析結果がまだ生成されていません。
+                    Analysis results are being generated.
                   </div>
                 )}
               </div>

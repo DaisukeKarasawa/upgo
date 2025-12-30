@@ -102,7 +102,7 @@ export default function Detail() {
 
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-6">
-            <StatusBadge state={data.state} />
+            <StatusBadge state={data.state} alwaysColored={true} />
             <h1 className="text-3xl font-light text-gray-900 tracking-tight">
               {data.title}
             </h1>
@@ -167,7 +167,7 @@ export default function Detail() {
                     : "text-gray-400 hover:text-gray-600"
                 }`}
               >
-                差分
+                Diff
                 {activeTab === "diffs" && (
                   <span className="absolute bottom-0 left-0 right-0 h-px bg-gray-900 animate-[slideIn_0.3s_ease-out]" />
                 )}
@@ -182,7 +182,7 @@ export default function Detail() {
                     : "text-gray-400 hover:text-gray-600"
                 }`}
               >
-                コメント ({data.comments?.length || 0})
+                Comments ({data.comments?.length || 0})
                 {activeTab === "comments" && (
                   <span className="absolute bottom-0 left-0 right-0 h-px bg-gray-900 animate-[slideIn_0.3s_ease-out]" />
                 )}

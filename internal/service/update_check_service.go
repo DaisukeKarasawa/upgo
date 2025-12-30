@@ -221,6 +221,7 @@ func (s *UpdateCheckService) checkDashboardUpdates(ctx context.Context) (*Dashbo
 	for rows.Next() {
 		var githubID int
 		if err := rows.Scan(&githubID); err != nil {
+			s.logger.Warn("行のスキャンに失敗しました", zap.Error(err))
 			continue
 		}
 		existingIDs[githubID] = true

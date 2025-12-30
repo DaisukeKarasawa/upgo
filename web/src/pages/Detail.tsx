@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { getPR, syncPR, getPRUpdateStatus } from "../services/api";
 import StatusBadge from "../components/StatusBadge";
 import ManualSyncButton from "../components/ManualSyncButton";
+import Markdown from "../components/Markdown";
 
 interface Summary {
   description_summary?: string;
@@ -144,10 +145,8 @@ export default function Detail() {
             </div>
           </div>
 
-          <div className="prose max-w-none mb-8">
-            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
-              {data.body}
-            </p>
+          <div className="mb-8">
+            <Markdown>{data.body}</Markdown>
           </div>
 
           <div className="border-t border-gray-100 pt-6">
@@ -250,9 +249,7 @@ export default function Detail() {
                     <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
                       Description Summary
                     </h3>
-                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
-                      {data.summary.description_summary}
-                    </div>
+                    <Markdown>{data.summary.description_summary}</Markdown>
                   </div>
                 )}
 
@@ -261,9 +258,7 @@ export default function Detail() {
                     <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
                       Changes Summary
                     </h3>
-                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
-                      {data.summary.diff_summary}
-                    </div>
+                    <Markdown>{data.summary.diff_summary}</Markdown>
                   </div>
                 )}
 
@@ -272,9 +267,7 @@ export default function Detail() {
                     <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
                       Changes Explanation
                     </h3>
-                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
-                      {data.summary.diff_explanation}
-                    </div>
+                    <Markdown>{data.summary.diff_explanation}</Markdown>
                   </div>
                 )}
 
@@ -283,9 +276,7 @@ export default function Detail() {
                     <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
                       Comments Summary
                     </h3>
-                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
-                      {data.summary.comments_summary}
-                    </div>
+                    <Markdown>{data.summary.comments_summary}</Markdown>
                   </div>
                 )}
 
@@ -294,9 +285,7 @@ export default function Detail() {
                     <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
                       Discussion Summary
                     </h3>
-                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
-                      {data.summary.discussion_summary}
-                    </div>
+                    <Markdown>{data.summary.discussion_summary}</Markdown>
                   </div>
                 )}
 
@@ -365,11 +354,7 @@ export default function Detail() {
                             )}
                           </span>
                         </div>
-                        <div className="prose max-w-none">
-                          <p className="text-gray-700 whitespace-pre-wrap leading-relaxed text-sm font-light group-hover:text-gray-800 transition-colors duration-300">
-                            {comment.body}
-                          </p>
-                        </div>
+                        <Markdown className="text-sm">{comment.body}</Markdown>
                       </div>
                     </div>
                   ))
@@ -389,9 +374,7 @@ export default function Detail() {
                     <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
                       Merge Reason
                     </h3>
-                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
-                      {data.summary.merge_reason}
-                    </div>
+                    <Markdown>{data.summary.merge_reason}</Markdown>
                   </div>
                 )}
 
@@ -400,9 +383,7 @@ export default function Detail() {
                     <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
                       Close Reason
                     </h3>
-                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed font-light">
-                      {data.summary.close_reason}
-                    </div>
+                    <Markdown>{data.summary.close_reason}</Markdown>
                   </div>
                 )}
 

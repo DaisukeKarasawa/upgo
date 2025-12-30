@@ -88,7 +88,16 @@ func main() {
 		c.Next()
 	})
 
-	// ヘルスチェックエンドポイント
+	// GitHubクライアントの初期化
+	githubClient := github.NewClient(cfg.GitHub.Token, log)
+	prFetcher := github.NewPRFetcher(githubClient, log)
+	issueFetcher := github.NewIssueFetcher(githubClient, log)
+	statusTracker := tracker.NewStatusTracker(database.Get(), log)
+
+	// LLMクライアントの初期化
+	llmClient := llm.NewClient(cfg.LLM.BaseURL, cfg.LLM.Model, cfg.LLM.Timeout, log)
+
+	// ヘルスチェックエンドポイント（初期化済みのクライアントを再利用）
 	router.GET("/health", func(c *gin.Context) {
 		// DB接続確認
 		if err := database.Get().Ping(); err != nil {
@@ -99,8 +108,7 @@ func main() {
 			return
 		}
 
-		// Ollama接続確認
-		llmClient := llm.NewClient(cfg.LLM.BaseURL, cfg.LLM.Model, cfg.LLM.Timeout, log)
+		// Ollama接続確認（初期化済みのクライアントを再利用）
 		if err := llmClient.CheckConnection(context.Background()); err != nil {
 			c.JSON(http.StatusServiceUnavailable, gin.H{
 				"status": "unhealthy",
@@ -113,15 +121,6 @@ func main() {
 			"status": "healthy",
 		})
 	})
-
-	// GitHubクライアントの初期化
-	githubClient := github.NewClient(cfg.GitHub.Token, log)
-	prFetcher := github.NewPRFetcher(githubClient, log)
-	issueFetcher := github.NewIssueFetcher(githubClient, log)
-	statusTracker := tracker.NewStatusTracker(database.Get(), log)
-
-	// LLMクライアントの初期化
-	llmClient := llm.NewClient(cfg.LLM.BaseURL, cfg.LLM.Model, cfg.LLM.Timeout, log)
 	summarizer := llm.NewSummarizer(llmClient, log)
 	analyzer := llm.NewAnalyzer(llmClient, log)
 	analysisService := service.NewAnalysisService(database.Get(), summarizer, analyzer, log)

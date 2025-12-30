@@ -1,4 +1,4 @@
-.PHONY: dev dev-backend dev-frontend run build test clean backup
+.PHONY: dev dev-backend dev-frontend run build test clean backup bench bench-verbose perf-test
 
 dev:
 	@echo "Starting development servers..."
@@ -26,6 +26,26 @@ build:
 
 test:
 	@go test ./...
+
+# Run benchmark tests
+bench:
+	@echo "Running benchmark tests..."
+	@go test -bench=. -benchmem ./...
+
+# Run benchmark tests with verbose output
+bench-verbose:
+	@echo "Running benchmark tests with verbose output..."
+	@go test -bench=. -benchmem -v ./...
+
+# Run performance tests (includes detailed metrics)
+perf-test:
+	@echo "Running performance tests..."
+	@go test -v -run TestPerformance ./...
+
+# Run all tests including benchmarks and performance tests
+test-all:
+	@echo "Running all tests..."
+	@go test -v -bench=. -benchmem ./...
 
 clean:
 	@rm -rf bin/ dist/ web/dist/

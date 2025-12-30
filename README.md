@@ -147,7 +147,7 @@ SQLiteの全データをクリアする方法です。
 - **What（何を）**: すべてのテーブルを削除し、マイグレーションを再実行して空のスキーマを再作成します
 - **Where（どこで）**: SQLiteデータベースファイル（`data/upgo.db`）に対して実行されます
 - **Why（なぜ）**: 開発環境でのリセット、テストシナリオ、データクリーンアップに使用されます
-- **Technologies（技術）**: 
+- **Technologies（技術）**:
   - SQLiteの `DROP TABLE` コマンド（[SQLite DROP TABLE](https://www.sqlite.org/lang_droptable.html)）
   - Goの `database/sql` パッケージ（[database/sql](https://pkg.go.dev/database/sql)）
 
@@ -272,9 +272,42 @@ make build
 
 ### テスト
 
+#### 通常のテスト
+
 ```bash
 make test
 ```
+
+#### ベンチマークテスト
+
+パフォーマンスを計測するベンチマークテストを実行：
+
+```bash
+# ベンチマークテストを実行
+make bench
+
+# 詳細な出力付きでベンチマークテストを実行
+make bench-verbose
+```
+
+#### パフォーマンス計測テスト
+
+実行時間や処理量を詳細に計測するテストを実行：
+
+```bash
+# パフォーマンス計測テストを実行
+make perf-test
+
+# すべてのテスト（通常テスト + ベンチマーク + パフォーマンス）を実行
+make test-all
+```
+
+計測できる項目：
+
+- 同期処理の実行時間
+- データベース操作のパフォーマンス
+- LLM呼び出しの実行時間（Ollamaが起動している場合）
+- 処理量（メモリ割り当て、操作回数など）
 
 ### クリーンアップ
 

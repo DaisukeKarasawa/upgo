@@ -1,0 +1,38 @@
+# Git
+.git
+.gitignore
+
+# Data and logs
+data/
+logs/
+backups/
+*.db
+*.db-shm
+*.db-wal
+
+# Build artifacts
+bin/
+dist/
+web/dist/
+web/node_modules/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Config (will be mounted)
+config.yaml
+
+# Documentation
+*.md
+!README.md
+
+# Test files
+*_test.go
+*_bench_test.go

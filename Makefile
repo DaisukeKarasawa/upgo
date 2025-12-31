@@ -52,3 +52,30 @@ clean:
 
 backup:
 	@curl -X POST http://localhost:8081/api/v1/backup
+
+# Docker Compose targets
+# Use 'docker compose' (without hyphen) which is the modern Docker CLI plugin
+# Falls back to 'docker-compose' (with hyphen) for older installations
+DOCKER_COMPOSE := $(shell command -v docker-compose 2> /dev/null || echo "docker compose")
+
+docker-build:
+	@echo "Building Docker image..."
+	@$(DOCKER_COMPOSE) build
+
+docker-up:
+	@echo "Starting containers..."
+	@$(DOCKER_COMPOSE) up -d
+
+docker-down:
+	@echo "Stopping containers..."
+	@$(DOCKER_COMPOSE) down
+
+docker-logs:
+	@$(DOCKER_COMPOSE) logs -f
+
+docker-restart:
+	@$(DOCKER_COMPOSE) restart
+
+docker-clean:
+	@echo "Stopping and removing containers, volumes..."
+	@$(DOCKER_COMPOSE) down -v

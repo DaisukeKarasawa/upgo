@@ -49,3 +49,30 @@ export const getPRUpdateStatus = async (prId: number) => {
   const response = await api.get(`/updates/pr/${prId}`)
   return response.data
 }
+
+// Gerrit Change API
+export const getChanges = async (params?: {
+  page?: number
+  limit?: number
+  status?: string
+  branch?: string
+  author?: string
+}) => {
+  const response = await api.get('/changes', { params })
+  return response.data
+}
+
+export const getChange = async (id: number) => {
+  const response = await api.get(`/changes/${id}`)
+  return response.data
+}
+
+export const syncChange = async (id: number) => {
+  const response = await api.post(`/changes/${id}/sync`)
+  return response.data
+}
+
+export const getChangeUpdateStatus = async (changeId: number) => {
+  const response = await api.get(`/updates/change/${changeId}`)
+  return response.data
+}

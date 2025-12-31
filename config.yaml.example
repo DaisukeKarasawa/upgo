@@ -2,13 +2,36 @@ repository:
   owner: "golang"
   name: "go"
 
+# Gerrit設定（go-review.googlesource.com）
+gerrit:
+  base_url: "https://go-review.googlesource.com"
+  # 認証は任意（匿名アクセス可能）
+  # 認証が必要な場合は以下を設定
+  # username: "${GERRIT_USERNAME}"
+  # password: "${GERRIT_PASSWORD}"  # HTTP password (Generate Password で取得)
+
+# Gitiles設定（go.googlesource.com）
+gitiles:
+  base_url: "https://go.googlesource.com"
+
+# GitHub設定（移行後は使用しない）
 github:
   token: "${GITHUB_TOKEN}"  # 環境変数から取得
   base_url: "https://api.github.com"
 
 scheduler:
-  interval: "15m"  # 更新チェック間隔（15分）- 重い同期処理は実行しません
+  # 軽量ポーリング（バッジ用）: 1日1回 00:00 に実行
+  # cron形式: "0 0 * * *" (毎日00:00)
+  interval: "0 0 * * *"  # バッジ用ポーリング間隔（cron形式）
   enabled: true    # スケジューラーの有効/無効
+
+# Gerrit取得設定
+gerrit_fetch:
+  project: "go"  # 固定（変更不可）
+  branches: ["master", "release-branch.go1.*"]  # 正規表現対応
+  status: ["open", "merged"]  # open/merged/abandoned
+  days: 30  # 取得期間（日数）
+  diff_size_limit: 500000  # 差分サイズ上限（バイト、500KB）
 
 llm:
   provider: "ollama"  # ollama

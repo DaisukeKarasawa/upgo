@@ -14,7 +14,8 @@ import (
 	"upgo/internal/api"
 	"upgo/internal/config"
 	"upgo/internal/database"
-	"upgo/internal/github"
+	"upgo/internal/gerrit"
+	"upgo/internal/gitiles"
 	"upgo/internal/llm"
 	"upgo/internal/logger"
 	"upgo/internal/scheduler"
@@ -82,11 +83,27 @@ func main() {
 		c.Next()
 	})
 
-	githubClient := github.NewClient(cfg.GitHub.Token, log)
-	prFetcher := github.NewPRFetcher(githubClient, log)
+	// Gerrit clients
+	gerritClient := gerrit.NewClient(cfg.Gerrit.BaseURL, cfg.Gerrit.Username, cfg.Gerrit.Password, log)
+	_ = gitiles.NewClient(cfg.Gitiles.BaseURL, log) // Gitiles client (for future use)
+	
+	// Gerrit change fetcher
+	changeFetcher := gerrit.NewChangeFetcher(
+		gerritClient,
+		log,
+		cfg.GerritFetch.Project,
+		cfg.GerritFetch.Branches,
+		cfg.GerritFetch.Status,
+		cfg.GerritFetch.Days,
+	)
+	
+	// Diff policy
+	diffPolicy := gerrit.NewDiffPolicy(cfg.GerritFetch.DiffSizeLimit)
+	
 	statusTracker := tracker.NewStatusTracker(database.Get(), log)
 
-	llmClient := llm.NewClient(cfg.LLM.BaseURL, cfg.LLM.Model, cfg.LLM.Timeout, log)
+	// LLM client (for backward compatibility, but analysis is disabled)
+	_ = llm.NewClient(cfg.LLM.BaseURL, cfg.LLM.Model, cfg.LLM.Timeout, log) // LLM client (analysis disabled)
 
 	router.GET("/health", func(c *gin.Context) {
 		if err := database.Get().Ping(); err != nil {
@@ -97,43 +114,55 @@ func main() {
 			return
 		}
 
-		if err := llmClient.CheckConnection(context.Background()); err != nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{
-				"status": "unhealthy",
-				"error":  "ollama connection failed",
-			})
-			return
-		}
+		// Ollama check is optional (analysis is disabled)
+		// if err := llmClient.CheckConnection(context.Background()); err != nil {
+		// 	c.JSON(http.StatusServiceUnavailable, gin.H{
+		// 		"status": "unhealthy",
+		// 		"error":  "ollama connection failed",
+		// 	})
+		// 	return
+		// }
 
 		c.JSON(http.StatusOK, gin.H{
 			"status": "healthy",
 		})
 	})
-	summarizer := llm.NewSummarizer(llmClient, log)
-	analyzer := llm.NewAnalyzer(llmClient, log)
-	analysisService := service.NewAnalysisService(database.Get(), summarizer, analyzer, log)
+	
+	// Analysis service (disabled - code kept but not used)
+	// summarizer := llm.NewSummarizer(llmClient, log)
+	// analyzer := llm.NewAnalyzer(llmClient, log)
+	// analysisService := service.NewAnalysisService(database.Get(), summarizer, analyzer, log)
 
-	syncService := service.NewSyncService(
+	// Gerrit sync service
+	gerritSyncService := service.NewGerritSyncService(
 		database.Get(),
-		githubClient,
-		prFetcher,
+		gerritClient,
+		changeFetcher,
+		diffPolicy,
 		statusTracker,
-		analysisService,
 		log,
-		cfg.Repository.Owner,
-		cfg.Repository.Name,
+		cfg.GerritFetch.Project,
 	)
 
-	updateCheckService := service.NewUpdateCheckService(
+	// Gerrit update check service
+	gerritUpdateCheckService := service.NewGerritUpdateCheckService(
 		database.Get(),
-		githubClient,
-		prFetcher,
+		gerritClient,
+		changeFetcher,
 		log,
-		cfg.Repository.Owner,
-		cfg.Repository.Name,
+		cfg.GerritFetch.Project,
 	)
 
-	syncHandler := api.SetupRoutes(router, database.Get(), syncService, updateCheckService, cfg, log)
+	// Setup Gerrit routes (primary)
+	gerritSyncHandler := api.SetupGerritRoutes(router, database.Get(), gerritSyncService, gerritUpdateCheckService, cfg, log)
+
+	// GitHub services are disabled (migrated to Gerrit)
+	// Keeping code for reference but not registering routes to avoid conflicts
+	// githubClient := github.NewClient(cfg.GitHub.Token, log)
+	// prFetcher := github.NewPRFetcher(githubClient, log)
+	// syncService := service.NewSyncService(...)
+	// updateCheckService := service.NewUpdateCheckService(...)
+	// _ = api.SetupRoutes(router, database.Get(), syncService, updateCheckService, cfg, log)
 
 	// Serve static assets
 	router.Static("/assets", "./web/dist/assets")
@@ -157,27 +186,55 @@ func main() {
 
 	// Conditionally start the scheduler if enabled in config.
 	// The scheduler runs periodic update checks (lightweight) in the background.
-	// Full sync is now manual-only to avoid heavy operations on every interval.
+	// For Gerrit: runs daily at 00:00 to check for updates (badge only).
+	// Full sync is manual-only.
 	var schedulerCancel context.CancelFunc = nil
 	if cfg.Scheduler.Enabled {
-		sched, err := scheduler.NewScheduler(
-			cfg.Scheduler.Interval,
-			cfg.Scheduler.Enabled,
-			func(ctx context.Context) error {
-				_, err := updateCheckService.CheckDashboardUpdates(ctx)
-				return err
-			},
-			log,
-		)
-		if err != nil {
-			log.Fatal("スケジューラーの初期化に失敗しました", zap.Error(err))
+		// Check if interval is cron format
+		var sched interface {
+			Start(ctx context.Context)
+			Stop()
+		}
+
+		if scheduler.IsCronSpec(cfg.Scheduler.Interval) {
+			// Use cron scheduler for cron format (e.g., "0 0 * * *")
+			cronSched, err := scheduler.NewCronScheduler(
+				cfg.Scheduler.Interval,
+				cfg.Scheduler.Enabled,
+				func(ctx context.Context) error {
+					// Use Gerrit update check service for badge polling
+					_, err := gerritUpdateCheckService.CheckDashboardUpdates(ctx)
+					return err
+				},
+				log,
+			)
+			if err != nil {
+				log.Fatal("Cronスケジューラーの初期化に失敗しました", zap.Error(err))
+			}
+			sched = cronSched
+		} else {
+			// Use duration-based scheduler for duration format (e.g., "24h")
+			durationSched, err := scheduler.NewScheduler(
+				cfg.Scheduler.Interval,
+				cfg.Scheduler.Enabled,
+				func(ctx context.Context) error {
+					// Use Gerrit update check service for badge polling
+					_, err := gerritUpdateCheckService.CheckDashboardUpdates(ctx)
+					return err
+				},
+				log,
+			)
+			if err != nil {
+				log.Fatal("スケジューラーの初期化に失敗しました", zap.Error(err))
+			}
+			sched = durationSched
 		}
 
 		var schedulerCtx context.Context
 		schedulerCtx, schedulerCancel = context.WithCancel(context.Background())
 
 		go sched.Start(schedulerCtx)
-		log.Info("スケジューラーを起動しました（更新チェック）", zap.String("interval", cfg.Scheduler.Interval))
+		log.Info("スケジューラーを起動しました（Gerrit更新チェック）", zap.String("interval", cfg.Scheduler.Interval))
 	}
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
@@ -214,17 +271,24 @@ func main() {
 
 	// Wait for all in-flight sync operations to complete
 	log.Info("実行中の同期操作の完了を待機しています...")
-	syncHandler.Wait()
+	gerritSyncHandler.Wait()
 	log.Info("すべての同期操作が完了しました")
 
 	log.Info("サーバーが正常にシャットダウンしました")
 }
 
 func initializeChecks(cfg *config.Config, log *zap.Logger) error {
-	if cfg.GitHub.Token == "" {
-		return fmt.Errorf("GitHubトークンが設定されていません（環境変数 GITHUB_TOKEN を設定してください）")
+	// Gerrit configuration check
+	if cfg.Gerrit.BaseURL == "" {
+		return fmt.Errorf("Gerrit base_urlが設定されていません")
 	}
-	log.Info("GitHubトークンの確認が完了しました")
+	log.Info("Gerrit設定の確認が完了しました", zap.String("base_url", cfg.Gerrit.BaseURL))
+
+	// Gitiles configuration check
+	if cfg.Gitiles.BaseURL == "" {
+		return fmt.Errorf("Gitiles base_urlが設定されていません")
+	}
+	log.Info("Gitiles設定の確認が完了しました", zap.String("base_url", cfg.Gitiles.BaseURL))
 
 	dbDir := filepath.Dir(cfg.Database.Path)
 	if err := os.MkdirAll(dbDir, 0755); err != nil {
@@ -232,13 +296,14 @@ func initializeChecks(cfg *config.Config, log *zap.Logger) error {
 	}
 	log.Info("データベースディレクトリの確認が完了しました", zap.String("path", dbDir))
 
-	llmClient := llm.NewClient(cfg.LLM.BaseURL, cfg.LLM.Model, cfg.LLM.Timeout, log)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := llmClient.CheckConnection(ctx); err != nil {
-		return fmt.Errorf("Ollama接続確認に失敗しました: %w", err)
-	}
-	log.Info("Ollama接続確認が完了しました", zap.String("model", cfg.LLM.Model))
+	// LLM/Ollama check is optional (analysis is disabled)
+	// llmClient := llm.NewClient(cfg.LLM.BaseURL, cfg.LLM.Model, cfg.LLM.Timeout, log)
+	// ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// defer cancel()
+	// if err := llmClient.CheckConnection(ctx); err != nil {
+	// 	return fmt.Errorf("Ollama接続確認に失敗しました: %w", err)
+	// }
+	// log.Info("Ollama接続確認が完了しました", zap.String("model", cfg.LLM.Model))
 
 	return nil
 }

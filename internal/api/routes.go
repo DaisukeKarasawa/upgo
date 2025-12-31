@@ -20,6 +20,7 @@ func SetupRoutes(router *gin.Engine, db *sql.DB, syncService *service.SyncServic
 
 	api := router.Group("/api/v1")
 	{
+		// GitHub PR endpoints (deprecated but kept for backward compatibility)
 		api.GET("/prs", handlers.GetPRs)
 		api.GET("/prs/:id", handlers.GetPR)
 		api.POST("/prs/:id/sync", syncHandler.SyncPR)
@@ -35,4 +36,34 @@ func SetupRoutes(router *gin.Engine, db *sql.DB, syncService *service.SyncServic
 	}
 
 	return syncHandler
+}
+
+// SetupGerritRoutes sets up Gerrit-specific routes
+func SetupGerritRoutes(router *gin.Engine, db *sql.DB, gerritSyncService *service.GerritSyncService, gerritUpdateCheckService *service.GerritUpdateCheckService, cfg *config.Config, logger *zap.Logger) *GerritSyncHandler {
+	handlers := NewHandlers(db, logger)
+	// Default to 3 concurrent sync operations
+	gerritSyncHandler := NewGerritSyncHandler(gerritSyncService, logger, 3)
+	backupHandler := NewBackupHandler(cfg, logger)
+	clearHandler := NewGerritClearHandler(logger, gerritSyncHandler)
+	gerritUpdateHandler := NewGerritUpdateHandler(gerritUpdateCheckService, logger)
+
+	api := router.Group("/api/v1")
+	{
+		// Gerrit Change endpoints
+		api.GET("/changes", handlers.GetChanges)
+		api.GET("/changes/:id", handlers.GetChange)
+		api.POST("/changes/:id/sync", gerritSyncHandler.SyncChange)
+
+		api.POST("/sync", gerritSyncHandler.Sync)
+		api.POST("/sync/full", gerritSyncHandler.SyncFull) // Force full sync (30 days)
+		api.GET("/sync/status", gerritSyncHandler.GetSyncStatus)
+
+		api.GET("/updates/dashboard", gerritUpdateHandler.CheckDashboardUpdates)
+		api.GET("/updates/change/:id", gerritUpdateHandler.CheckChangeUpdates)
+
+		api.POST("/backup", backupHandler.Backup)
+		api.POST("/clear", clearHandler.Clear)
+	}
+
+	return gerritSyncHandler
 }

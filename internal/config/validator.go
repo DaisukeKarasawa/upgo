@@ -2,50 +2,21 @@ package config
 
 import (
 	"fmt"
-	"os"
 	"strings"
 )
 
 func Validate(cfg *Config) error {
 	var errors []string
 
-	// Validate Repository settings
-	if cfg.Repository.Owner == "" {
-		errors = append(errors, "repository.owner が設定されていません")
+	// Validate Gerrit settings
+	if cfg.Gerrit.BaseURL == "" {
+		errors = append(errors, "gerrit.base_url が設定されていません")
 	}
-	if cfg.Repository.Name == "" {
-		errors = append(errors, "repository.name が設定されていません")
-	}
-
-	// Validate GitHub settings
-	if cfg.GitHub.Token == "" {
-		errors = append(errors, "github.token が設定されていません（環境変数 GITHUB_TOKEN を設定してください）")
-	} else {
-		// Try to get from environment variable
-		if strings.HasPrefix(cfg.GitHub.Token, "${") && strings.HasSuffix(cfg.GitHub.Token, "}") {
-			envVar := strings.TrimPrefix(strings.TrimSuffix(cfg.GitHub.Token, "}"), "${")
-			if val := os.Getenv(envVar); val == "" {
-				errors = append(errors, fmt.Sprintf("環境変数 %s が設定されていません", envVar))
-			}
-		}
-	}
-
-	// Validate LLM settings
-	if cfg.LLM.Provider == "" {
-		errors = append(errors, "llm.provider が設定されていません")
-	}
-	if cfg.LLM.BaseURL == "" {
-		errors = append(errors, "llm.base_url が設定されていません")
-	}
-	if cfg.LLM.Model == "" {
-		errors = append(errors, "llm.model が設定されていません")
-	}
-	if cfg.LLM.Timeout <= 0 {
-		errors = append(errors, "llm.timeout は1以上である必要があります")
+	if cfg.Gerrit.Project == "" {
+		errors = append(errors, "gerrit.project が設定されていません")
 	}
 
 	// Validate Database settings
-	// devとprdの両方が設定されている必要がある
 	if cfg.Database.Dev == "" {
 		errors = append(errors, "database.dev が設定されていません")
 	}
@@ -79,6 +50,16 @@ func Validate(cfg *Config) error {
 	}
 	if cfg.Backup.MaxBackups < 0 {
 		errors = append(errors, "backup.max_backups は0以上である必要があります")
+	}
+
+	// Validate Sync settings
+	if cfg.Sync.UpdatedDays <= 0 {
+		errors = append(errors, "sync.updated_days は1以上である必要があります")
+	}
+
+	// Validate Diff settings
+	if cfg.Diff.MaxSizeBytes <= 0 {
+		errors = append(errors, "diff.max_size_bytes は1以上である必要があります")
 	}
 
 	if len(errors) > 0 {

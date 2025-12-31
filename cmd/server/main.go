@@ -14,12 +14,10 @@ import (
 	"upgo/internal/api"
 	"upgo/internal/config"
 	"upgo/internal/database"
-	"upgo/internal/github"
-	"upgo/internal/llm"
+	"upgo/internal/gerrit"
 	"upgo/internal/logger"
 	"upgo/internal/scheduler"
 	"upgo/internal/service"
-	"upgo/internal/tracker"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -66,14 +64,11 @@ func main() {
 	router := gin.New()
 	router.Use(gin.Recovery())
 
-	// CORS middleware: Allow all origins for development convenience.
-	// In production, consider restricting to specific origins for security.
 	router.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
 
-		// Handle preflight OPTIONS requests immediately
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
 			return
@@ -82,11 +77,7 @@ func main() {
 		c.Next()
 	})
 
-	githubClient := github.NewClient(cfg.GitHub.Token, log)
-	prFetcher := github.NewPRFetcher(githubClient, log)
-	statusTracker := tracker.NewStatusTracker(database.Get(), log)
-
-	llmClient := llm.NewClient(cfg.LLM.BaseURL, cfg.LLM.Model, cfg.LLM.Timeout, log)
+	gerritClient := gerrit.NewClient(cfg.Gerrit.BaseURL, log)
 
 	router.GET("/health", func(c *gin.Context) {
 		if err := database.Get().Ping(); err != nil {
@@ -97,74 +88,55 @@ func main() {
 			return
 		}
 
-		if err := llmClient.CheckConnection(context.Background()); err != nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{
-				"status": "unhealthy",
-				"error":  "ollama connection failed",
-			})
-			return
-		}
-
 		c.JSON(http.StatusOK, gin.H{
 			"status": "healthy",
 		})
 	})
-	summarizer := llm.NewSummarizer(llmClient, log)
-	analyzer := llm.NewAnalyzer(llmClient, log)
-	analysisService := service.NewAnalysisService(database.Get(), summarizer, analyzer, log)
 
-	syncService := service.NewSyncService(
+	gerritSyncService := service.NewGerritSyncService(
 		database.Get(),
-		githubClient,
-		prFetcher,
-		statusTracker,
-		analysisService,
+		gerritClient,
 		log,
-		cfg.Repository.Owner,
-		cfg.Repository.Name,
+		cfg,
 	)
 
-	updateCheckService := service.NewUpdateCheckService(
-		database.Get(),
-		githubClient,
-		prFetcher,
-		log,
-		cfg.Repository.Owner,
-		cfg.Repository.Name,
-	)
+	changeHandlers := api.NewChangeHandlers(database.Get(), log)
+	syncHandlers := api.NewSyncHandlers(gerritSyncService, log)
 
-	syncHandler := api.SetupRoutes(router, database.Get(), syncService, updateCheckService, cfg, log)
+	apiGroup := router.Group("/api")
+	{
+		apiGroup.GET("/changes", changeHandlers.GetChanges)
+		apiGroup.GET("/changes/:id", changeHandlers.GetChange)
+		apiGroup.GET("/branches", changeHandlers.GetBranches)
+		apiGroup.GET("/statuses", changeHandlers.GetStatuses)
 
-	// Serve static assets
+		apiGroup.POST("/sync", syncHandlers.TriggerSync)
+		apiGroup.POST("/sync/change/:change_number", syncHandlers.SyncChange)
+		apiGroup.GET("/sync/check", syncHandlers.CheckUpdates)
+	}
+
 	router.Static("/assets", "./web/dist/assets")
 	router.StaticFile("/favicon.ico", "./web/dist/favicon.ico")
-	
-	// SPA routing: Serve index.html for root and all non-API routes
-	// This allows React Router to handle all frontend routes.
+
 	router.GET("/", func(c *gin.Context) {
 		c.File("./web/dist/index.html")
 	})
-	
+
 	router.NoRoute(func(c *gin.Context) {
-		// API routes that don't exist return 404
 		if strings.HasPrefix(c.Request.URL.Path, "/api") {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return
 		}
-		// All other routes serve index.html for SPA routing
 		c.File("./web/dist/index.html")
 	})
 
-	// Conditionally start the scheduler if enabled in config.
-	// The scheduler runs periodic update checks (lightweight) in the background.
-	// Full sync is now manual-only to avoid heavy operations on every interval.
 	var schedulerCancel context.CancelFunc = nil
 	if cfg.Scheduler.Enabled {
 		sched, err := scheduler.NewScheduler(
 			cfg.Scheduler.Interval,
 			cfg.Scheduler.Enabled,
 			func(ctx context.Context) error {
-				_, err := updateCheckService.CheckDashboardUpdates(ctx)
+				_, err := gerritSyncService.CheckUpdates(ctx)
 				return err
 			},
 			log,
@@ -212,33 +184,20 @@ func main() {
 		log.Fatal("サーバーのシャットダウンに失敗しました", zap.Error(err))
 	}
 
-	// Wait for all in-flight sync operations to complete
-	log.Info("実行中の同期操作の完了を待機しています...")
-	syncHandler.Wait()
-	log.Info("すべての同期操作が完了しました")
-
 	log.Info("サーバーが正常にシャットダウンしました")
 }
 
 func initializeChecks(cfg *config.Config, log *zap.Logger) error {
-	if cfg.GitHub.Token == "" {
-		return fmt.Errorf("GitHubトークンが設定されていません（環境変数 GITHUB_TOKEN を設定してください）")
+	if cfg.Gerrit.BaseURL == "" {
+		return fmt.Errorf("Gerrit URLが設定されていません")
 	}
-	log.Info("GitHubトークンの確認が完了しました")
+	log.Info("Gerrit設定の確認が完了しました", zap.String("base_url", cfg.Gerrit.BaseURL))
 
 	dbDir := filepath.Dir(cfg.Database.Path)
 	if err := os.MkdirAll(dbDir, 0755); err != nil {
 		return fmt.Errorf("データベースディレクトリの作成に失敗しました: %w", err)
 	}
 	log.Info("データベースディレクトリの確認が完了しました", zap.String("path", dbDir))
-
-	llmClient := llm.NewClient(cfg.LLM.BaseURL, cfg.LLM.Model, cfg.LLM.Timeout, log)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := llmClient.CheckConnection(ctx); err != nil {
-		return fmt.Errorf("Ollama接続確認に失敗しました: %w", err)
-	}
-	log.Info("Ollama接続確認が完了しました", zap.String("model", cfg.LLM.Model))
 
 	return nil
 }

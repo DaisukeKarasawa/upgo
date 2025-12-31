@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: '/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -9,19 +9,28 @@ const api = axios.create({
 
 export default api
 
-export const getPRs = async (params?: {
+export const getChanges = async (params?: {
   page?: number
   limit?: number
-  state?: string
-  author?: string
-  search?: string
+  status?: string
+  branch?: string
 }) => {
-  const response = await api.get('/prs', { params })
+  const response = await api.get('/changes', { params })
   return response.data
 }
 
-export const getPR = async (id: number) => {
-  const response = await api.get(`/prs/${id}`)
+export const getChange = async (id: number) => {
+  const response = await api.get(`/changes/${id}`)
+  return response.data
+}
+
+export const getBranches = async () => {
+  const response = await api.get('/branches')
+  return response.data
+}
+
+export const getStatuses = async () => {
+  const response = await api.get('/statuses')
   return response.data
 }
 
@@ -30,22 +39,12 @@ export const sync = async () => {
   return response.data
 }
 
-export const syncPR = async (id: number) => {
-  const response = await api.post(`/prs/${id}/sync`)
+export const syncChange = async (changeNumber: number) => {
+  const response = await api.post(`/sync/change/${changeNumber}`)
   return response.data
 }
 
-export const getSyncStatus = async () => {
-  const response = await api.get('/sync/status')
-  return response.data
-}
-
-export const getDashboardUpdateStatus = async () => {
-  const response = await api.get('/updates/dashboard')
-  return response.data
-}
-
-export const getPRUpdateStatus = async (prId: number) => {
-  const response = await api.get(`/updates/pr/${prId}`)
+export const checkUpdates = async () => {
+  const response = await api.get('/sync/check')
   return response.data
 }

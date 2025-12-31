@@ -1,86 +1,102 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getPR, syncPR, getPRUpdateStatus } from "../services/api";
+import { getChange, syncChange } from "../services/api";
 import StatusBadge from "../components/StatusBadge";
 import ManualSyncButton from "../components/ManualSyncButton";
 import Markdown from "../components/Markdown";
 
-interface Summary {
-  description_summary?: string;
-  diff_summary?: string;
-  diff_explanation?: string;
-  comments_summary?: string;
-  discussion_summary?: string;
-  merge_reason?: string;
-  close_reason?: string;
+interface File {
+  id: number;
+  file_path: string;
+  status?: string;
+  lines_inserted: number;
+  lines_deleted: number;
+  size_delta: number;
 }
 
-interface Diff {
-  file_path: string;
-  diff_text: string;
+interface Revision {
+  id: number;
+  revision_id: string;
+  patchset_num: number;
+  uploader_name?: string;
+  uploader_email?: string;
+  created: string;
+  commit_message?: string;
+  files?: File[];
 }
 
 interface Comment {
-  github_id: number;
-  body: string;
-  author: string;
-  created_at: string;
-  updated_at: string;
+  id: number;
+  comment_id: string;
+  file_path?: string;
+  line?: number;
+  author_name: string;
+  author_email?: string;
+  message: string;
+  created: string;
+  updated: string;
+  in_reply_to?: string;
+  unresolved: boolean;
 }
 
-interface DetailData {
+interface Label {
   id: number;
-  title: string;
-  body: string;
-  state: string;
-  author: string;
-  created_at: string;
-  updated_at: string;
-  url: string;
-  summary?: Summary;
-  diffs?: Diff[];
+  label_name: string;
+  value: number;
+  account_name?: string;
+  account_email?: string;
+  granted_on: string;
+}
+
+interface Message {
+  id: number;
+  message_id: string;
+  author_name?: string;
+  author_email?: string;
+  message: string;
+  date: string;
+  revision_number?: number;
+}
+
+interface ChangeData {
+  id: number;
+  change_id: string;
+  change_number: number;
+  project: string;
+  branch: string;
+  status: string;
+  subject: string;
+  message?: string;
+  owner_name: string;
+  owner_email?: string;
+  created: string;
+  updated: string;
+  submitted?: string;
+  last_synced_at?: string;
+  revisions?: Revision[];
   comments?: Comment[];
+  labels?: Label[];
+  messages?: Message[];
 }
 
 export default function Detail() {
   const { id } = useParams<{ id: string }>();
-  const [data, setData] = useState<DetailData | null>(null);
+  const [data, setData] = useState<ChangeData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [hasUpdates, setHasUpdates] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "summary" | "diffs" | "comments" | "analysis"
-  >("summary");
+    "revisions" | "files" | "comments" | "labels" | "messages"
+  >("revisions");
 
   useEffect(() => {
     loadData();
-    if (id) {
-      checkUpdates();
-
-      // Poll for updates every 30 seconds
-      const interval = setInterval(() => {
-        checkUpdates();
-      }, 30000);
-
-      return () => clearInterval(interval);
-    }
   }, [id]);
-
-  const checkUpdates = async () => {
-    if (!id) return;
-    try {
-      const status = await getPRUpdateStatus(parseInt(id));
-      setHasUpdates(status.updated_since_last_sync || false);
-    } catch (error) {
-      console.error("Failed to check for updates", error);
-    }
-  };
 
   const loadData = async () => {
     if (!id) return;
     setLoading(true);
     try {
-      const result = await getPR(parseInt(id));
-      setData(result as DetailData);
+      const result = await getChange(parseInt(id));
+      setData(result as ChangeData);
     } catch (error) {
       console.error("Failed to fetch data", error);
     } finally {
@@ -89,13 +105,12 @@ export default function Detail() {
   };
 
   const handleSync = async () => {
-    if (!id) return;
+    if (!data) return;
     try {
-      await syncPR(parseInt(id));
+      await syncChange(data.change_number);
       setTimeout(() => {
         loadData();
-        checkUpdates(); // Check for updates after sync
-      }, 2000); // Reload after 2 seconds
+      }, 2000);
     } catch (error) {
       console.error("Failed to sync", error);
     }
@@ -117,9 +132,12 @@ export default function Detail() {
     );
   }
 
-  const hasSummary = data.summary && Object.keys(data.summary).length > 0;
-  const hasDiffs = data.diffs && data.diffs.length > 0;
+  const hasRevisions = data.revisions && data.revisions.length > 0;
   const hasComments = data.comments && data.comments.length > 0;
+  const hasLabels = data.labels && data.labels.length > 0;
+  const hasMessages = data.messages && data.messages.length > 0;
+
+  const gerritUrl = `https://go-review.googlesource.com/c/go/+/${data.change_number}`;
 
   return (
     <div className="min-h-screen bg-white">
@@ -136,78 +154,67 @@ export default function Detail() {
 
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-6">
-            <StatusBadge state={data.state} alwaysColored={true} />
+            <StatusBadge state={data.status} alwaysColored={true} />
             <h1 className="text-3xl font-light text-gray-900 tracking-tight flex-1">
-              {data.title}
+              <span className="text-gray-400 mr-2">#{data.change_number}</span>
+              {data.subject}
             </h1>
             <div className="flex-shrink-0">
-              <ManualSyncButton onSync={handleSync} hasUpdates={hasUpdates} />
+              <ManualSyncButton onSync={handleSync} hasUpdates={false} />
             </div>
           </div>
 
-          <div className="mb-8">
-            <Markdown>{data.body}</Markdown>
-          </div>
+          {data.message && (
+            <div className="mb-8">
+              <Markdown>{data.message}</Markdown>
+            </div>
+          )}
 
           <div className="border-t border-gray-100 pt-6">
             <div className="text-sm text-gray-400 space-y-1 font-light">
-              <p>Author: {data.author}</p>
+              <p>Owner: {data.owner_name}</p>
+              <p>Branch: {data.branch}</p>
               <p>
-                Created: {new Date(data.created_at).toLocaleString("en-US")}
+                Created: {new Date(data.created).toLocaleString("en-US")}
               </p>
               <p>
-                Updated: {new Date(data.updated_at).toLocaleString("en-US")}
+                Updated: {new Date(data.updated).toLocaleString("en-US")}
               </p>
-              {data.url && (
-                <a
-                  href={data.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-gray-900 transition-all duration-300 ease-out inline-block mt-3 group"
-                >
-                  Open on GitHub{" "}
-                  <span className="inline-block transition-transform duration-300 ease-out group-hover:translate-x-1">
-                    →
-                  </span>
-                </a>
+              {data.submitted && (
+                <p>
+                  Submitted: {new Date(data.submitted).toLocaleString("en-US")}
+                </p>
               )}
+              <a
+                href={gerritUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-400 hover:text-gray-900 transition-all duration-300 ease-out inline-block mt-3 group"
+              >
+                Open on Gerrit{" "}
+                <span className="inline-block transition-transform duration-300 ease-out group-hover:translate-x-1">
+                  →
+                </span>
+              </a>
             </div>
           </div>
         </div>
 
-        {/* タブナビゲーション */}
         <div>
           <nav className="flex gap-8 mb-8 border-b border-gray-100">
-            {hasSummary && (
-              <button
-                onClick={() => setActiveTab("summary")}
-                className={`pb-3 text-sm font-light transition-all duration-300 ease-out relative ${
-                  activeTab === "summary"
-                    ? "text-gray-900"
-                    : "text-gray-400 hover:text-gray-600"
-                }`}
-              >
-                Summary
-                {activeTab === "summary" && (
-                  <span className="absolute bottom-0 left-0 right-0 h-px bg-gray-900 animate-[slideIn_0.3s_ease-out]" />
-                )}
-              </button>
-            )}
-            {hasDiffs && (
-              <button
-                onClick={() => setActiveTab("diffs")}
-                className={`pb-3 text-sm font-light transition-all duration-300 ease-out relative ${
-                  activeTab === "diffs"
-                    ? "text-gray-900"
-                    : "text-gray-400 hover:text-gray-600"
-                }`}
-              >
-                Diffs
-                {activeTab === "diffs" && (
-                  <span className="absolute bottom-0 left-0 right-0 h-px bg-gray-900 animate-[slideIn_0.3s_ease-out]" />
-                )}
-              </button>
-            )}
+            <button
+              onClick={() => setActiveTab("revisions")}
+              className={`pb-3 text-sm font-light transition-all duration-300 ease-out relative ${
+                activeTab === "revisions"
+                  ? "text-gray-900"
+                  : "text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              Patchsets ({data.revisions?.length || 0})
+              {activeTab === "revisions" && (
+                <span className="absolute bottom-0 left-0 right-0 h-px bg-gray-900 animate-[slideIn_0.3s_ease-out]" />
+              )}
+            </button>
             {hasComments && (
               <button
                 onClick={() => setActiveTab("comments")}
@@ -223,17 +230,32 @@ export default function Detail() {
                 )}
               </button>
             )}
-            {(data.state === "merged" || data.state === "closed") && (
+            {hasLabels && (
               <button
-                onClick={() => setActiveTab("analysis")}
+                onClick={() => setActiveTab("labels")}
                 className={`pb-3 text-sm font-light transition-all duration-300 ease-out relative ${
-                  activeTab === "analysis"
+                  activeTab === "labels"
                     ? "text-gray-900"
                     : "text-gray-400 hover:text-gray-600"
                 }`}
               >
-                Analysis
-                {activeTab === "analysis" && (
+                Labels ({data.labels?.length || 0})
+                {activeTab === "labels" && (
+                  <span className="absolute bottom-0 left-0 right-0 h-px bg-gray-900 animate-[slideIn_0.3s_ease-out]" />
+                )}
+              </button>
+            )}
+            {hasMessages && (
+              <button
+                onClick={() => setActiveTab("messages")}
+                className={`pb-3 text-sm font-light transition-all duration-300 ease-out relative ${
+                  activeTab === "messages"
+                    ? "text-gray-900"
+                    : "text-gray-400 hover:text-gray-600"
+                }`}
+              >
+                Messages ({data.messages?.length || 0})
+                {activeTab === "messages" && (
                   <span className="absolute bottom-0 left-0 right-0 h-px bg-gray-900 animate-[slideIn_0.3s_ease-out]" />
                 )}
               </button>
@@ -241,122 +263,86 @@ export default function Detail() {
           </nav>
 
           <div>
-            {/* Summary Tab */}
-            {activeTab === "summary" && hasSummary && (
-              <div className="space-y-10">
-                {data.summary?.description_summary && (
-                  <div>
-                    <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
-                      Description Summary
-                    </h3>
-                    <Markdown>{data.summary.description_summary}</Markdown>
-                  </div>
-                )}
-
-                {data.summary?.diff_summary && (
-                  <div>
-                    <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
-                      Changes Summary
-                    </h3>
-                    <Markdown>{data.summary.diff_summary}</Markdown>
-                  </div>
-                )}
-
-                {data.summary?.diff_explanation && (
-                  <div>
-                    <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
-                      Changes Explanation
-                    </h3>
-                    <Markdown>{data.summary.diff_explanation}</Markdown>
-                  </div>
-                )}
-
-                {data.summary?.comments_summary && (
-                  <div>
-                    <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
-                      Comments Summary
-                    </h3>
-                    <Markdown>{data.summary.comments_summary}</Markdown>
-                  </div>
-                )}
-
-                {data.summary?.discussion_summary && (
-                  <div>
-                    <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
-                      Discussion Summary
-                    </h3>
-                    <Markdown>{data.summary.discussion_summary}</Markdown>
-                  </div>
-                )}
-
-                {!hasSummary && (
-                  <div className="text-center py-20 text-gray-400 text-sm font-light">
-                    Summary data is being generated. Please wait.
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Diffs Tab */}
-            {activeTab === "diffs" && (
+            {activeTab === "revisions" && (
               <div className="space-y-8">
-                {hasDiffs ? (
-                  data.diffs?.map((diff, index) => (
-                    <div key={index}>
-                      <h4 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-3">
-                        {diff.file_path}
-                      </h4>
-                      <div className="bg-gray-50 p-4 rounded">
-                        <pre className="text-xs overflow-x-auto font-mono">
-                          <code className="whitespace-pre-wrap text-gray-700">
-                            {diff.diff_text}
-                          </code>
-                        </pre>
+                {hasRevisions ? (
+                  data.revisions?.map((revision) => (
+                    <div key={revision.id} className="border border-gray-100 rounded-lg p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-base font-normal text-gray-900">
+                          Patchset {revision.patchset_num}
+                        </h4>
+                        <span className="text-xs text-gray-400 font-light">
+                          {new Date(revision.created).toLocaleString("en-US")}
+                        </span>
                       </div>
+                      {revision.uploader_name && (
+                        <p className="text-sm text-gray-500 mb-3">
+                          Uploaded by: {revision.uploader_name}
+                        </p>
+                      )}
+                      {revision.commit_message && (
+                        <div className="bg-gray-50 p-4 rounded mb-4">
+                          <pre className="text-sm whitespace-pre-wrap text-gray-700 font-mono">
+                            {revision.commit_message}
+                          </pre>
+                        </div>
+                      )}
+                      {revision.files && revision.files.length > 0 && (
+                        <div>
+                          <h5 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-3">
+                            Files ({revision.files.length})
+                          </h5>
+                          <div className="space-y-2">
+                            {revision.files.map((file) => (
+                              <div key={file.id} className="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
+                                <span className="text-gray-700 font-mono text-xs">{file.file_path}</span>
+                                <div className="flex items-center gap-3 text-xs">
+                                  <span className="text-green-600">+{file.lines_inserted}</span>
+                                  <span className="text-red-600">-{file.lines_deleted}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))
                 ) : (
                   <div className="text-center py-20 text-gray-400 text-sm font-light">
-                    No diff data available.
+                    No patchsets available. Click "Sync" to fetch details.
                   </div>
                 )}
               </div>
             )}
 
-            {/* Comments Tab */}
             {activeTab === "comments" && (
-              <div className="space-y-8">
+              <div className="space-y-6">
                 {hasComments ? (
                   data.comments?.map((comment) => (
                     <div
-                      key={comment.github_id}
-                      className="pb-8 border-b border-gray-100 last:border-0 group transition-all duration-300 ease-out relative rounded-lg overflow-hidden"
+                      key={comment.id}
+                      className={`p-4 rounded-lg ${comment.unresolved ? 'bg-yellow-50 border border-yellow-100' : 'bg-gray-50'}`}
                     >
-                      {/* Animation 1: Top-left → Top-right → Bottom-right */}
-                      {/* Top edge (left → right) */}
-                      <div className="absolute top-0 left-0 h-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineTop_0.15s_ease-out_forwards] pointer-events-none" />
-                      {/* Right edge (top → bottom) */}
-                      <div className="absolute top-0 right-0 w-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineRight_0.15s_ease-out_0.15s_forwards] pointer-events-none" />
-
-                      {/* Animation 2: Bottom-right → Bottom-left → Top-left */}
-                      {/* Bottom edge (right → left) */}
-                      <div className="absolute bottom-0 right-0 h-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineBottom_0.15s_ease-out_forwards] pointer-events-none origin-right" />
-                      {/* Left edge (bottom → top) */}
-                      <div className="absolute bottom-0 left-0 w-px bg-gray-200 opacity-0 group-hover:opacity-100 group-hover:animate-[drawLineLeft_0.15s_ease-out_0.15s_forwards] pointer-events-none origin-bottom" />
-
-                      <div className="p-4 group-hover:px-6 group-hover:py-5 transition-all duration-300 ease-out">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-sm text-gray-900 font-light group-hover:text-gray-700 transition-colors duration-300">
-                            {comment.author}
-                          </span>
-                          <span className="text-xs text-gray-400 font-light group-hover:text-gray-600 transition-colors duration-300">
-                            {new Date(comment.created_at).toLocaleString(
-                              "en-US"
-                            )}
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-gray-900 font-light">
+                          {comment.author_name}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {comment.unresolved && (
+                            <span className="text-xs text-yellow-600 font-light">Unresolved</span>
+                          )}
+                          <span className="text-xs text-gray-400 font-light">
+                            {new Date(comment.created).toLocaleString("en-US")}
                           </span>
                         </div>
-                        <Markdown className="text-sm">{comment.body}</Markdown>
                       </div>
+                      {comment.file_path && (
+                        <p className="text-xs text-gray-500 mb-2 font-mono">
+                          {comment.file_path}{comment.line ? `:${comment.line}` : ''}
+                        </p>
+                      )}
+                      <Markdown className="text-sm">{comment.message}</Markdown>
                     </div>
                   ))
                 ) : (
@@ -367,30 +353,59 @@ export default function Detail() {
               </div>
             )}
 
-            {/* Analysis Tab */}
-            {activeTab === "analysis" && (
-              <div className="space-y-10">
-                {data.state === "merged" && data.summary?.merge_reason && (
-                  <div>
-                    <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
-                      Merge Reason
-                    </h3>
-                    <Markdown>{data.summary.merge_reason}</Markdown>
-                  </div>
-                )}
-
-                {data.state === "closed" && data.summary?.close_reason && (
-                  <div>
-                    <h3 className="text-sm text-gray-400 font-light uppercase tracking-wider mb-4">
-                      Close Reason
-                    </h3>
-                    <Markdown>{data.summary.close_reason}</Markdown>
-                  </div>
-                )}
-
-                {!data.summary?.merge_reason && !data.summary?.close_reason && (
+            {activeTab === "labels" && (
+              <div className="space-y-4">
+                {hasLabels ? (
+                  data.labels?.map((label) => (
+                    <div key={label.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div>
+                        <span className="text-sm text-gray-900 font-light">{label.label_name}</span>
+                        <span className={`ml-2 text-sm font-medium ${label.value > 0 ? 'text-green-600' : label.value < 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                          {label.value > 0 ? `+${label.value}` : label.value}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        {label.account_name && (
+                          <p className="text-sm text-gray-500">{label.account_name}</p>
+                        )}
+                        <p className="text-xs text-gray-400">
+                          {new Date(label.granted_on).toLocaleString("en-US")}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
                   <div className="text-center py-20 text-gray-400 text-sm font-light">
-                    Analysis results are being generated.
+                    No labels.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === "messages" && (
+              <div className="space-y-6">
+                {hasMessages ? (
+                  data.messages?.map((msg) => (
+                    <div key={msg.id} className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-gray-900 font-light">
+                          {msg.author_name || 'System'}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {msg.revision_number && (
+                            <span className="text-xs text-gray-500">PS{msg.revision_number}</span>
+                          )}
+                          <span className="text-xs text-gray-400 font-light">
+                            {new Date(msg.date).toLocaleString("en-US")}
+                          </span>
+                        </div>
+                      </div>
+                      <Markdown className="text-sm">{msg.message}</Markdown>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-20 text-gray-400 text-sm font-light">
+                    No messages.
                   </div>
                 )}
               </div>

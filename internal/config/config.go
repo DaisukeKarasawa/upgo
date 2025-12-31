@@ -9,14 +9,17 @@ import (
 )
 
 type Config struct {
-	Repository RepositoryConfig `mapstructure:"repository"`
-	GitHub     GitHubConfig      `mapstructure:"github"`
-	Scheduler  SchedulerConfig   `mapstructure:"scheduler"`
-	LLM        LLMConfig         `mapstructure:"llm"`
-	Database   DatabaseConfig    `mapstructure:"database"`
-	Server     ServerConfig      `mapstructure:"server"`
-	Logging    LoggingConfig     `mapstructure:"logging"`
-	Backup     BackupConfig      `mapstructure:"backup"`
+	Repository  RepositoryConfig  `mapstructure:"repository"`
+	GitHub      GitHubConfig      `mapstructure:"github"`
+	Gerrit      GerritConfig      `mapstructure:"gerrit"`
+	Gitiles     GitilesConfig     `mapstructure:"gitiles"`
+	GerritFetch GerritFetchConfig `mapstructure:"gerrit_fetch"`
+	Scheduler   SchedulerConfig   `mapstructure:"scheduler"`
+	LLM         LLMConfig         `mapstructure:"llm"`
+	Database    DatabaseConfig    `mapstructure:"database"`
+	Server      ServerConfig      `mapstructure:"server"`
+	Logging     LoggingConfig     `mapstructure:"logging"`
+	Backup      BackupConfig      `mapstructure:"backup"`
 }
 
 type RepositoryConfig struct {
@@ -27,6 +30,24 @@ type RepositoryConfig struct {
 type GitHubConfig struct {
 	Token   string `mapstructure:"token"`
 	BaseURL string `mapstructure:"base_url"`
+}
+
+type GerritConfig struct {
+	BaseURL  string `mapstructure:"base_url"`
+	Username string `mapstructure:"username"` // オプション（認証が必要な場合）
+	Password string `mapstructure:"password"` // オプション（認証が必要な場合）
+}
+
+type GitilesConfig struct {
+	BaseURL string `mapstructure:"base_url"`
+}
+
+type GerritFetchConfig struct {
+	Project      string   `mapstructure:"project"`       // 固定: "go"
+	Branches     []string `mapstructure:"branches"`      // 正規表現対応
+	Status       []string `mapstructure:"status"`         // open/merged/abandoned
+	Days         int      `mapstructure:"days"`          // 取得期間（日数）
+	DiffSizeLimit int     `mapstructure:"diff_size_limit"` // 差分サイズ上限（バイト）
 }
 
 type SchedulerConfig struct {
@@ -83,7 +104,7 @@ func Load(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("設定ファイルの読み込みに失敗しました: %w", err)
 	}
 
-	// Expand environment variables
+	// Expand environment variables for GitHub token (optional, for backward compatibility)
 	tokenValue := viper.GetString("github.token")
 	if strings.HasPrefix(tokenValue, "${") && strings.HasSuffix(tokenValue, "}") {
 		envVar := strings.TrimPrefix(strings.TrimSuffix(tokenValue, "}"), "${")
@@ -93,7 +114,27 @@ func Load(configPath string) (*Config, error) {
 			// Also try GITHUB_TOKEN (for backward compatibility)
 			if val := os.Getenv("GITHUB_TOKEN"); val != "" {
 				viper.Set("github.token", val)
+			} else {
+				// If not set, set to empty string (GitHub is optional now)
+				viper.Set("github.token", "")
 			}
+		}
+	}
+
+	// Expand environment variables for Gerrit credentials
+	gerritUsername := viper.GetString("gerrit.username")
+	if strings.HasPrefix(gerritUsername, "${") && strings.HasSuffix(gerritUsername, "}") {
+		envVar := strings.TrimPrefix(strings.TrimSuffix(gerritUsername, "}"), "${")
+		if val := os.Getenv(envVar); val != "" {
+			viper.Set("gerrit.username", val)
+		}
+	}
+
+	gerritPassword := viper.GetString("gerrit.password")
+	if strings.HasPrefix(gerritPassword, "${") && strings.HasSuffix(gerritPassword, "}") {
+		envVar := strings.TrimPrefix(strings.TrimSuffix(gerritPassword, "}"), "${")
+		if val := os.Getenv(envVar); val != "" {
+			viper.Set("gerrit.password", val)
 		}
 	}
 

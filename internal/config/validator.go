@@ -17,10 +17,36 @@ func Validate(cfg *Config) error {
 		errors = append(errors, "repository.name が設定されていません")
 	}
 
-	// Validate GitHub settings
-	if cfg.GitHub.Token == "" {
-		errors = append(errors, "github.token が設定されていません（環境変数 GITHUB_TOKEN を設定してください）")
-	} else {
+	// Validate Gerrit settings
+	if cfg.Gerrit.BaseURL == "" {
+		errors = append(errors, "gerrit.base_url が設定されていません")
+	}
+
+	// Validate Gitiles settings
+	if cfg.Gitiles.BaseURL == "" {
+		errors = append(errors, "gitiles.base_url が設定されていません")
+	}
+
+	// Validate GerritFetch settings
+	if cfg.GerritFetch.Project == "" {
+		errors = append(errors, "gerrit_fetch.project が設定されていません")
+	}
+	if len(cfg.GerritFetch.Branches) == 0 {
+		errors = append(errors, "gerrit_fetch.branches が設定されていません")
+	}
+	if len(cfg.GerritFetch.Status) == 0 {
+		errors = append(errors, "gerrit_fetch.status が設定されていません")
+	}
+	if cfg.GerritFetch.Days <= 0 {
+		errors = append(errors, "gerrit_fetch.days は1以上である必要があります")
+	}
+	if cfg.GerritFetch.DiffSizeLimit <= 0 {
+		errors = append(errors, "gerrit_fetch.diff_size_limit は1以上である必要があります")
+	}
+
+	// GitHub settings are optional (for backward compatibility during migration)
+	// Validate only if token is provided
+	if cfg.GitHub.Token != "" {
 		// Try to get from environment variable
 		if strings.HasPrefix(cfg.GitHub.Token, "${") && strings.HasSuffix(cfg.GitHub.Token, "}") {
 			envVar := strings.TrimPrefix(strings.TrimSuffix(cfg.GitHub.Token, "}"), "${")
@@ -30,18 +56,18 @@ func Validate(cfg *Config) error {
 		}
 	}
 
-	// Validate LLM settings
-	if cfg.LLM.Provider == "" {
-		errors = append(errors, "llm.provider が設定されていません")
-	}
-	if cfg.LLM.BaseURL == "" {
-		errors = append(errors, "llm.base_url が設定されていません")
-	}
-	if cfg.LLM.Model == "" {
-		errors = append(errors, "llm.model が設定されていません")
-	}
-	if cfg.LLM.Timeout <= 0 {
-		errors = append(errors, "llm.timeout は1以上である必要があります")
+	// LLM settings are optional (analysis feature is disabled)
+	// Validate only if provider is set (for backward compatibility)
+	if cfg.LLM.Provider != "" {
+		if cfg.LLM.BaseURL == "" {
+			errors = append(errors, "llm.base_url が設定されていません（llm.provider が設定されている場合）")
+		}
+		if cfg.LLM.Model == "" {
+			errors = append(errors, "llm.model が設定されていません（llm.provider が設定されている場合）")
+		}
+		if cfg.LLM.Timeout <= 0 {
+			errors = append(errors, "llm.timeout は1以上である必要があります（llm.provider が設定されている場合）")
+		}
 	}
 
 	// Validate Database settings

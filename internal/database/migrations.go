@@ -9,23 +9,24 @@ import (
 
 func RunMigrations(logger *zap.Logger) error {
 	migrations := []string{
-		createRepositoriesTable,
-		createPullRequestsTable,
-		createPullRequestSummariesTable,
-		createPullRequestCommentsTable,
-		createPullRequestDiffsTable,
-		createMentalModelAnalysesTable,
+		createChangesTable,
+		createRevisionsTable,
+		createFilesTable,
+		createDiffsTable,
+		createCommentsTable,
+		createLabelsTable,
+		createMessagesTable,
+		createCommitsTable,
 		createSyncJobsTable,
-		// Add head_sha column to pull_requests table (if not exists)
-		addHeadShaToPullRequests,
+		createChangesIndexes,
 	}
 
 	for i, migration := range migrations {
 		_, err := DB.Exec(migration)
 		if err != nil {
-			// SQLite returns "duplicate column name" when column already exists
-			if strings.Contains(err.Error(), "duplicate column name") {
-				logger.Debug("マイグレーションをスキップしました（カラムが既に存在します）", zap.Int("number", i+1))
+			if strings.Contains(err.Error(), "duplicate column name") ||
+				strings.Contains(err.Error(), "already exists") {
+				logger.Debug("マイグレーションをスキップしました（既に存在します）", zap.Int("number", i+1))
 			} else {
 				return fmt.Errorf("マイグレーション %d の実行に失敗しました: %w", i+1, err)
 			}
@@ -38,94 +39,127 @@ func RunMigrations(logger *zap.Logger) error {
 	return nil
 }
 
-const createRepositoriesTable = `
-CREATE TABLE IF NOT EXISTS repositories (
+const createChangesTable = `
+CREATE TABLE IF NOT EXISTS changes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    owner TEXT NOT NULL,
-    name TEXT NOT NULL,
-    last_synced_at DATETIME,
-    UNIQUE(owner, name)
+    change_id TEXT NOT NULL UNIQUE,
+    change_number INTEGER NOT NULL,
+    project TEXT NOT NULL,
+    branch TEXT NOT NULL,
+    status TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    message TEXT,
+    owner_name TEXT NOT NULL,
+    owner_email TEXT,
+    created DATETIME NOT NULL,
+    updated DATETIME NOT NULL,
+    submitted DATETIME,
+    last_synced_at DATETIME
 );
 `
 
-const createPullRequestsTable = `
-CREATE TABLE IF NOT EXISTS pull_requests (
+const createRevisionsTable = `
+CREATE TABLE IF NOT EXISTS revisions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    repository_id INTEGER NOT NULL,
-    github_id INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    body TEXT,
-    state TEXT NOT NULL,
-    previous_state TEXT,
-    author TEXT NOT NULL,
-    created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL,
-    merged_at DATETIME,
-    closed_at DATETIME,
-    url TEXT NOT NULL,
-    last_synced_at DATETIME,
-    head_sha TEXT,
-    UNIQUE(repository_id, github_id),
-    FOREIGN KEY (repository_id) REFERENCES repositories(id)
+    change_db_id INTEGER NOT NULL,
+    revision_id TEXT NOT NULL,
+    patchset_num INTEGER NOT NULL,
+    uploader_name TEXT,
+    uploader_email TEXT,
+    created DATETIME NOT NULL,
+    commit_message TEXT,
+    FOREIGN KEY (change_db_id) REFERENCES changes(id) ON DELETE CASCADE,
+    UNIQUE(change_db_id, patchset_num)
 );
 `
 
-const addHeadShaToPullRequests = `
-ALTER TABLE pull_requests ADD COLUMN head_sha TEXT;
-`
-
-const createPullRequestSummariesTable = `
-CREATE TABLE IF NOT EXISTS pull_request_summaries (
+const createFilesTable = `
+CREATE TABLE IF NOT EXISTS files (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    pr_id INTEGER NOT NULL,
-    description_summary TEXT,
-    diff_summary TEXT,
-    diff_explanation TEXT,
-    comments_summary TEXT,
-    discussion_summary TEXT,
-    merge_reason TEXT,
-    close_reason TEXT,
-    updated_at DATETIME NOT NULL,
-    FOREIGN KEY (pr_id) REFERENCES pull_requests(id) ON DELETE CASCADE,
-    UNIQUE(pr_id)
-);
-`
-
-const createPullRequestCommentsTable = `
-CREATE TABLE IF NOT EXISTS pull_request_comments (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    pr_id INTEGER NOT NULL,
-    github_id INTEGER NOT NULL,
-    body TEXT NOT NULL,
-    author TEXT NOT NULL,
-    created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL,
-    FOREIGN KEY (pr_id) REFERENCES pull_requests(id) ON DELETE CASCADE,
-    UNIQUE(pr_id, github_id)
-);
-`
-
-const createPullRequestDiffsTable = `
-CREATE TABLE IF NOT EXISTS pull_request_diffs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    pr_id INTEGER NOT NULL,
-    diff_text TEXT NOT NULL,
+    revision_db_id INTEGER NOT NULL,
     file_path TEXT NOT NULL,
-    created_at DATETIME NOT NULL,
-    FOREIGN KEY (pr_id) REFERENCES pull_requests(id) ON DELETE CASCADE
+    status TEXT,
+    lines_inserted INTEGER DEFAULT 0,
+    lines_deleted INTEGER DEFAULT 0,
+    size_delta INTEGER DEFAULT 0,
+    FOREIGN KEY (revision_db_id) REFERENCES revisions(id) ON DELETE CASCADE,
+    UNIQUE(revision_db_id, file_path)
 );
 `
 
-const createMentalModelAnalysesTable = `
-CREATE TABLE IF NOT EXISTS mental_model_analyses (
+const createDiffsTable = `
+CREATE TABLE IF NOT EXISTS diffs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    repository_id INTEGER NOT NULL,
-    analysis_type TEXT NOT NULL,
-    analysis_content TEXT NOT NULL,
-    analyzed_pr_ids TEXT,
-    analyzed_issue_ids TEXT,
-    created_at DATETIME NOT NULL,
-    FOREIGN KEY (repository_id) REFERENCES repositories(id)
+    file_db_id INTEGER NOT NULL,
+    diff_content TEXT,
+    is_binary INTEGER DEFAULT 0,
+    size_exceeded INTEGER DEFAULT 0,
+    FOREIGN KEY (file_db_id) REFERENCES files(id) ON DELETE CASCADE,
+    UNIQUE(file_db_id)
+);
+`
+
+const createCommentsTable = `
+CREATE TABLE IF NOT EXISTS comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    change_db_id INTEGER NOT NULL,
+    comment_id TEXT NOT NULL,
+    revision_db_id INTEGER,
+    file_path TEXT,
+    line INTEGER,
+    author_name TEXT NOT NULL,
+    author_email TEXT,
+    message TEXT NOT NULL,
+    created DATETIME NOT NULL,
+    updated DATETIME NOT NULL,
+    in_reply_to TEXT,
+    unresolved INTEGER DEFAULT 0,
+    FOREIGN KEY (change_db_id) REFERENCES changes(id) ON DELETE CASCADE,
+    FOREIGN KEY (revision_db_id) REFERENCES revisions(id) ON DELETE SET NULL,
+    UNIQUE(change_db_id, comment_id)
+);
+`
+
+const createLabelsTable = `
+CREATE TABLE IF NOT EXISTS labels (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    change_db_id INTEGER NOT NULL,
+    label_name TEXT NOT NULL,
+    value INTEGER NOT NULL,
+    account_name TEXT,
+    account_email TEXT,
+    granted_on DATETIME NOT NULL,
+    FOREIGN KEY (change_db_id) REFERENCES changes(id) ON DELETE CASCADE
+);
+`
+
+const createMessagesTable = `
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    change_db_id INTEGER NOT NULL,
+    message_id TEXT NOT NULL,
+    author_name TEXT,
+    author_email TEXT,
+    message TEXT NOT NULL,
+    date DATETIME NOT NULL,
+    revision_number INTEGER,
+    FOREIGN KEY (change_db_id) REFERENCES changes(id) ON DELETE CASCADE,
+    UNIQUE(change_db_id, message_id)
+);
+`
+
+const createCommitsTable = `
+CREATE TABLE IF NOT EXISTS commits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    hash TEXT NOT NULL UNIQUE,
+    author_name TEXT NOT NULL,
+    author_email TEXT,
+    commit_date DATETIME NOT NULL,
+    message TEXT,
+    change_id TEXT,
+    reviewed_on TEXT,
+    change_db_id INTEGER,
+    FOREIGN KEY (change_db_id) REFERENCES changes(id) ON DELETE SET NULL
 );
 `
 
@@ -140,22 +174,30 @@ CREATE TABLE IF NOT EXISTS sync_jobs (
 );
 `
 
-// ClearAllTables drops all tables and recreates them by running migrations
-// This effectively clears all data from the database
+const createChangesIndexes = `
+CREATE INDEX IF NOT EXISTS idx_changes_status ON changes(status);
+CREATE INDEX IF NOT EXISTS idx_changes_branch ON changes(branch);
+CREATE INDEX IF NOT EXISTS idx_changes_updated ON changes(updated);
+CREATE INDEX IF NOT EXISTS idx_changes_project ON changes(project);
+CREATE INDEX IF NOT EXISTS idx_revisions_change ON revisions(change_db_id);
+CREATE INDEX IF NOT EXISTS idx_files_revision ON files(revision_db_id);
+CREATE INDEX IF NOT EXISTS idx_comments_change ON comments(change_db_id);
+CREATE INDEX IF NOT EXISTS idx_labels_change ON labels(change_db_id);
+CREATE INDEX IF NOT EXISTS idx_messages_change ON messages(change_db_id);
+CREATE INDEX IF NOT EXISTS idx_commits_change_id ON commits(change_id);
+`
+
 func ClearAllTables(logger *zap.Logger) error {
-	// Drop tables in reverse order of dependencies to avoid foreign key constraint errors
-	// Order: dependent tables first, then parent tables
-	// - pull_request_diffs, pull_request_comments, pull_request_summaries depend on pull_requests
-	// - mental_model_analyses depends on repositories
-	// - pull_requests depends on repositories
 	tables := []string{
-		"pull_request_diffs",        // Dependent table
-		"pull_request_comments",     // Dependent table
-		"pull_request_summaries",    // Dependent table
-		"mental_model_analyses",     // Dependent table (depends on repositories)
-		"pull_requests",             // Parent table (depends on repositories)
-		"repositories",              // Parent table
-		"sync_jobs",                 // Independent table
+		"diffs",
+		"files",
+		"comments",
+		"labels",
+		"messages",
+		"revisions",
+		"commits",
+		"changes",
+		"sync_jobs",
 	}
 
 	logger.Info("データベースの全テーブルを削除しています...")
@@ -167,6 +209,5 @@ func ClearAllTables(logger *zap.Logger) error {
 	}
 
 	logger.Info("マイグレーションを再実行してテーブルを再作成しています...")
-	// Recreate all tables by running migrations
 	return RunMigrations(logger)
 }

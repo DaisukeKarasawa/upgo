@@ -1,15 +1,13 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
 import Detail from './pages/Detail'
-import MentalModel from './pages/MentalModel'
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/pr/:id" element={<Detail />} />
-        <Route path="/mental-model" element={<MentalModel />} />
+        <Route path="/change/:id" element={<Detail />} />
       </Routes>
     </BrowserRouter>
   )

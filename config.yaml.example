@@ -1,35 +1,56 @@
-repository:
-  owner: "golang"
-  name: "go"
+# Gerrit設定
+gerrit:
+  base_url: "https://go-review.googlesource.com"
+  project: "go"
+  branches:
+    - "master"
+    - "release-branch.go1.*"
+  status:
+    - "open"
+    - "merged"
 
-github:
-  token: "${GITHUB_TOKEN}"  # 環境変数から取得
-  base_url: "https://api.github.com"
+# Gitiles設定
+gitiles:
+  base_url: "https://go.googlesource.com"
 
+# 同期設定
+sync:
+  updated_days: 30           # 取得対象期間（日数）
+  safety_window_minutes: 10  # 安全窓（分）
+
+# 差分保存設定
+diff:
+  max_size_bytes: 1048576    # 1MB - これを超える差分は統計のみ保存
+  exclude_paths:             # 除外パス
+    - "vendor/"
+    - "testdata/"
+  exclude_patterns:          # 除外パターン（正規表現）
+    - ".*\\.pb\\.go$"
+    - ".*_generated\\.go$"
+
+# スケジューラー設定
 scheduler:
-  interval: "15m"  # 更新チェック間隔（15分）- 重い同期処理は実行しません
+  interval: "24h"  # 更新チェック間隔（1日1回）
   enabled: true    # スケジューラーの有効/無効
 
-llm:
-  provider: "ollama"  # ollama
-  base_url: "http://localhost:11434"
-  model: "llama3.2"  # 使用するモデル名
-  timeout: 300        # タイムアウト（秒）
-
+# データベース設定
 database:
   # 環境に応じて自動選択される（UPGO_ENV=production で本番環境）
   dev: "./data/upgo-dev.db"   # 開発環境用
   prd: "./data/upgo.db"       # 本番環境用
 
+# サーバー設定
 server:
   port: 8081
-  host: "localhost"
+  host: "0.0.0.0"
 
+# ログ設定
 logging:
   level: "info"  # debug/info/warn/error
   output: "stdout"  # stdout/file
   file_path: "./logs/upgo.log"  # output=fileの場合
 
+# バックアップ設定
 backup:
   enabled: true
   interval: "24h"  # 自動バックアップ間隔

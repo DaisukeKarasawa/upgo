@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -23,6 +24,12 @@ type Scheduler struct {
 }
 
 func NewScheduler(interval string, enabled bool, task func(ctx context.Context) error, logger *zap.Logger) (*Scheduler, error) {
+	// Check if it's a cron spec first
+	if IsCronSpec(interval) {
+		// Return error - caller should use NewCronScheduler instead
+		return nil, fmt.Errorf("cron形式が検出されました。NewCronSchedulerを使用してください: %s", interval)
+	}
+
 	duration, err := time.ParseDuration(interval)
 	if err != nil {
 		return nil, err

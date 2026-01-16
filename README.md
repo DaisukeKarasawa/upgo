@@ -4,7 +4,7 @@ golang/go の PR を Claude Code で自動取得・分析し、Go の設計思�
 
 ## 特徴
 
-- **PR 自動取得**: GitHub API で golang/go の最新 PR を取得
+- **PR 自動取得**: GitHub CLI (gh) で golang/go の最新 PR を取得
 - **議論の分析**: レビューコメント・議論のポイントを抽出
 - **Go 思想の学習**: 変更の背景から Go の設計思想を学ぶ
 
@@ -33,17 +33,17 @@ cp -r upgo/commands/* ~/.claude/commands/
 
 ### PR キャッチアップ
 
-```
+```bash
 /go-catchup
 ```
 
-直近のマージ済み PR を取得・分析し、Go の設計思想をレポートします。
+直近 30 日間のマージ済み PR を取得・分析し、Go の設計思想をレポートします。
 
-```
-/go-catchup 20
+```bash
+/go-catchup compiler
 ```
 
-件数を指定して取得できます。
+カテゴリフィルタを指定して取得できます(例: compiler, runtime など)。
 
 ### 個別 PR の分析
 
@@ -59,14 +59,14 @@ golang/go の PR #12345 を分析して、Go の思想を教えて
 
 | スキル | 説明 |
 |--------|------|
-| `go-pr-fetcher` | GitHub API で PR を取得 |
+| `go-pr-fetcher` | GitHub CLI (gh) で PR を取得 |
 | `go-pr-analyzer` | PR を分析し Go 思想を抽出 |
 
 ### Commands（ユーザー向け）
 
 | コマンド | 説明 |
 |----------|------|
-| `/go-catchup [件数]` | 直近 PR をキャッチアップ |
+| `/go-catchup [カテゴリ]` | 直近 30 日間の PR をキャッチアップ |
 
 ## 分析で得られる情報
 

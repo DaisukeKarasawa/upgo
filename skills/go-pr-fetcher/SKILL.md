@@ -40,7 +40,7 @@ gh pr list --repo golang/go --state merged --limit 30 --json number,title,author
 
 ```bash
 # Last 7 days
-gh pr list --repo golang/go --state all --search "updated:>=$(date -v-7d +%Y-%m-%d)" --limit 50 --json number,title,state,author,updatedAt
+gh pr list --repo golang/go --state all --search "updated:>=$(date -v-7d +%Y-%m-%d 2>/dev/null || date -d '7 days ago' +%Y-%m-%d)" --limit 50 --json number,title,state,author,updatedAt
 ```
 
 ## Fetching Individual PR Details

@@ -28,7 +28,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger, _ := zap.NewProduction()
+	logger, err := zap.NewProduction()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error creating logger: %v\n", err)
+		os.Exit(1)
+	}
 	defer logger.Sync()
 
 	if err := database.Connect(cfg.Database.Path, logger); err != nil {

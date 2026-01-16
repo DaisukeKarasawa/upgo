@@ -107,7 +107,10 @@ func (g *Generator) Sync(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to create repository: %w", err)
 		}
-		id, _ := result.LastInsertId()
+		id, err := result.LastInsertId()
+		if err != nil {
+			return fmt.Errorf("failed to get repository ID: %w", err)
+		}
 		repoID = int(id)
 	} else if err != nil {
 		return fmt.Errorf("failed to get repository: %w", err)
@@ -241,6 +244,7 @@ func (g *Generator) fetchPRDataByCategory() (map[string][]PRData, error) {
 			&data.ID, &data.Title, &data.Body, &data.State, &data.Author,
 			&data.CreatedAt, &data.UpdatedAt, &data.Summary, &data.Analysis,
 		); err != nil {
+			g.logger.Warn("Failed to scan PR data", zap.Error(err))
 			continue
 		}
 
@@ -370,7 +374,9 @@ func (g *Generator) getCategoryDescription(category string) string {
 func formatTitle(category string) string {
 	parts := strings.Split(category, "-")
 	for i, part := range parts {
-		parts[i] = strings.Title(part)
+		if len(part) > 0 {
+			parts[i] = strings.ToUpper(part[:1]) + part[1:]
+		}
 	}
 	return strings.Join(parts, " ")
 }

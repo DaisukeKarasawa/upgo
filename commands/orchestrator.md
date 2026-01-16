@@ -1,118 +1,70 @@
 ---
-description: zellijを使って複数タスクを並列ペインで実行
+description: タスクを分析し、zellijの複数ペインで並列実行
 allowed-tools: Bash, Read, Write
 argument-hint: <task-description>
 ---
 
-# Orchestrator
+タスクを分析し、並列実行可能なサブタスクに分割して複数ペインで実行します。
 
-zellijの複数ペインを使って、タスクを並列実行します。
-
-## 引数
+## タスク
 
 $ARGUMENTS
 
-## 実行手順
+## 手順
 
 ### 1. タスク分析
 
-ユーザーのリクエストを分析し、並列実行可能なサブタスクを特定してください。
+ユーザーのタスクを分析し、2-4個の独立したサブタスクに分割してください。
 
-**分解のガイドライン:**
-- 独立して実行できるタスクを特定
-- 2-4個のサブタスクに分割
-- 各タスクの依存関係を確認
+例:
+- 「APIを実装してテストも書いて」→ タスク1: API実装、タスク2: テスト作成
+- 「コードレビューして」→ タスク1: セキュリティ、タスク2: パフォーマンス、タスク3: スタイル
 
-### 2. ペインレイアウト決定
+### 2. ペインレイアウト
 
-タスク数に応じたレイアウト:
+サブタスク数に応じてレイアウトを選択:
 
-**2タスク:** 左右分割
-```
-┌───────────┬───────────┐
-│  Task 1   │  Task 2   │
-└───────────┴───────────┘
-```
-
-**3タスク:** T字レイアウト
-```
-┌───────────┬───────────┐
-│  Task 1   │  Task 2   │
-├───────────┴───────────┤
-│        Task 3         │
-└───────────────────────┘
-```
-
-**4タスク:** 2x2グリッド
-```
-┌───────────┬───────────┐
-│  Task 1   │  Task 2   │
-├───────────┼───────────┤
-│  Task 3   │  Task 4   │
-└───────────────────────┘
-```
-
-### 3. ペイン作成とタスク配布
-
+**2タスク (左右):**
 ```bash
-# 例: 2タスクの場合
-# ペイン2を作成
 zellij action new-pane --direction right --name "task-2"
-
-# タスク2を送信
-zellij action write-chars "claude --print 'タスク2の内容'"
-zellij action write 10
-
-# メインペインに戻る
 zellij action move-focus left
 ```
 
-### 4. タスク1を実行
+**3タスク (T字):**
+```bash
+zellij action new-pane --direction right --name "task-2"
+zellij action move-focus left
+zellij action new-pane --direction down --name "task-3"
+zellij action move-focus up
+```
+
+**4タスク (グリッド):**
+```bash
+zellij action new-pane --direction right --name "task-2"
+zellij action move-focus left
+zellij action new-pane --direction down --name "task-3"
+zellij action move-focus right
+zellij action new-pane --direction down --name "task-4"
+zellij action move-focus up
+zellij action move-focus left
+```
+
+### 3. エージェント起動
+
+各ペインでClaude Codeを起動してタスクを割り当て:
+
+```bash
+# ペイン2にタスク送信
+zellij action move-focus right
+zellij action write-chars "claude --print 'サブタスク2の内容'"
+zellij action write 10
+zellij action move-focus left
+```
+
+### 4. メインタスク実行
 
 メインペインでタスク1を直接実行してください。
 
-### 5. 結果統合
+## 完了報告
 
-全タスク完了後、各ペインの結果を確認し、統合レポートを作成。
-
-## 使用例
-
-### 例1: 機能実装 + テスト
-
-```
-/orchestrator APIエンドポイントを実装してテストも書いて
-
-→ タスク分解:
-  - タスク1（メイン）: APIエンドポイント実装
-  - タスク2（右ペイン）: ユニットテスト作成
-```
-
-### 例2: コードレビュー並列
-
-```
-/orchestrator このPRを多角的にレビューして
-
-→ タスク分解:
-  - タスク1: セキュリティチェック
-  - タスク2: パフォーマンス分析
-  - タスク3: コードスタイル確認
-  - タスク4: テストカバレッジ確認
-```
-
-### 例3: リファクタリング + 検証
-
-```
-/orchestrator このモジュールをリファクタリングして動作確認もして
-
-→ タスク分解:
-  - タスク1（メイン）: リファクタリング実行
-  - タスク2（右ペイン）: テスト監視 (go test -v ./...)
-  - タスク3（下ペイン）: ビルド監視 (go build ./...)
-```
-
-## 注意事項
-
-- zellijセッション内で実行する必要があります
-- 各ペインは独立したコンテキストを持ちます
-- ペイン間の情報共有はファイル経由で行います
-- 完了後はペインを適切にクローズしてください
+「タスクを N 個のサブタスクに分割し、各ペインで並列実行を開始しました。」と報告してください。

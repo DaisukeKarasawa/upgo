@@ -1,358 +1,140 @@
 ---
 name: zellij-workflow
-description: zellijを使った並列開発ワークフローのスキル。マルチペイン活用、タスク分散、CI/CD統合について質問されたときに使用。
+description: |
+  zellijターミナルマルチプレクサを使った並列開発ワークフロースキル。
+  ユーザーが「別ペインで実行」「並列で」「zellij」「マルチペイン」「テストを別窓で」などと言った場合に使用。
+  テスト実行、サーバー起動、マルチエージェント構成をサポート。
+allowed-tools:
+  - Bash
+  - Read
 ---
 
-# Zellij Workflow Patterns
+# Zellij Workflow for Claude Code
 
-zellijを使った効率的な並列開発ワークフローのパターン集。
+zellijを使ってClaude Codeの作業を並列化するためのスキルです。
 
-## 基本コマンド
+## 重要: zellijセッション確認
 
-### ペイン操作
+まず、zellijセッション内かどうかを確認してください：
 
 ```bash
-# 新しいペインを作成
-zellij action new-pane                           # デフォルト（下）
-zellij action new-pane --direction right         # 右側
-zellij action new-pane --direction down          # 下側
-zellij action new-pane --direction left          # 左側
-zellij action new-pane --direction up            # 上側
-
-# フローティングペイン
-zellij action new-pane --floating --name "popup"
-
-# ペインに名前を付ける
-zellij action new-pane --name "test-runner"
+echo $ZELLIJ
 ```
 
-### フォーカス移動
+空の場合は `zellij` で新しいセッションを開始するよう促してください。
+
+## コマンドリファレンス
+
+### 新しいペイン作成
 
 ```bash
-# 方向指定で移動
-zellij action move-focus left
-zellij action move-focus right
-zellij action move-focus up
-zellij action move-focus down
+# 右側に新しいペイン
+zellij action new-pane --direction right --name "ペイン名"
 
-# 次/前のペインへ
-zellij action focus-next-pane
-zellij action focus-previous-pane
+# 下側に新しいペイン
+zellij action new-pane --direction down --name "ペイン名"
+
+# フローティングペイン（ポップアップ）
+zellij action new-pane --floating --name "ペイン名"
 ```
 
 ### コマンド送信
 
 ```bash
-# 文字列を送信
-zellij action write-chars "go test -v ./..."
+# 文字を送信
+zellij action write-chars "コマンド文字列"
 
-# Enter キーを送信（ASCII 10 = LF）
+# Enterキーを送信（実行）
 zellij action write 10
-
-# 組み合わせ（コマンド実行）
-zellij action write-chars "make build" && zellij action write 10
 ```
 
-### ペイン管理
+### フォーカス移動
 
 ```bash
-# ペインを閉じる
-zellij action close-pane
-
-# ペインを最大化/戻す
-zellij action toggle-fullscreen
-
-# フレーム表示切替
-zellij action toggle-pane-frames
-
-# ペインの位置を交換
-zellij action move-pane
-```
-
-## 開発ワークフローパターン
-
-### パターン1: TDD ワークフロー
-
-コードとテストを同時に見ながら開発：
-
-```
-┌─────────────────┬─────────────────┐
-│                 │                 │
-│   Main Editor   │   Test Runner   │
-│   (開発作業)     │   (go test -v)  │
-│                 │                 │
-├─────────────────┴─────────────────┤
-│                                   │
-│         Test Output               │
-│         (テスト結果)               │
-│                                   │
-└───────────────────────────────────┘
-```
-
-セットアップ:
-```bash
-# 右にテストランナー
-zellij action new-pane --direction right --name "test-runner"
-zellij action write-chars "go test -v ./... -count=1"
-zellij action write 10
 zellij action move-focus left
-
-# 下にテスト出力
-zellij action new-pane --direction down --name "test-output"
-zellij action write-chars "watch -n 2 'go test ./... 2>&1 | tail -20'"
-zellij action write 10
+zellij action move-focus right
 zellij action move-focus up
+zellij action move-focus down
 ```
 
-### パターン2: フルスタック開発
+## よく使うパターン
 
-フロントエンドとバックエンドを同時開発：
+### パターン1: 別ペインでテスト実行
 
-```
-┌─────────────────┬─────────────────┐
-│                 │                 │
-│   Backend Dev   │  Frontend Dev   │
-│   (Go API)      │  (React/Vite)   │
-│                 │                 │
-├─────────────────┼─────────────────┤
-│                 │                 │
-│  Backend Server │ Frontend Server │
-│  (go run ...)   │  (npm run dev)  │
-│                 │                 │
-└─────────────────┴─────────────────┘
-```
-
-セットアップ:
 ```bash
-# 右にフロントエンド開発
-zellij action new-pane --direction right --name "frontend"
+# 1. 右側にテストペインを作成
+zellij action new-pane --direction right --name "tests"
 
-# メインペインの下にバックエンドサーバー
+# 2. テストコマンドを送信
+zellij action write-chars "go test -v ./..."
+zellij action write 10
+
+# 3. メインペインに戻る
 zellij action move-focus left
-zellij action new-pane --direction down --name "backend-server"
+```
+
+### パターン2: 別ペインでサーバー起動
+
+```bash
+# 1. 下側にサーバーペインを作成
+zellij action new-pane --direction down --name "server"
+
+# 2. サーバーを起動
 zellij action write-chars "go run cmd/server/main.go"
 zellij action write 10
 
-# フロントエンドの下にdevサーバー
-zellij action move-focus right
-zellij action new-pane --direction down --name "frontend-server"
-zellij action write-chars "cd web && npm run dev"
-zellij action write 10
-
-# メイン開発ペインに戻る
+# 3. メインペインに戻る
 zellij action move-focus up
-zellij action move-focus left
 ```
 
-### パターン3: CI パイプライン模擬
+### パターン3: 別ペインでClaude Codeエージェント起動
 
-ローカルでCIパイプラインを並列実行：
-
-```
-┌─────────────────┬─────────────────┐
-│   Lint Check    │   Type Check    │
-│   (golangci)    │   (go vet)      │
-├─────────────────┼─────────────────┤
-│   Unit Tests    │  Build Check    │
-│   (go test)     │   (go build)    │
-└─────────────────┴─────────────────┘
-```
-
-セットアップ:
 ```bash
-# 2x2グリッド作成
-zellij action new-pane --direction right --name "type-check"
-zellij action move-focus left
-zellij action new-pane --direction down --name "unit-tests"
-zellij action move-focus right
-zellij action new-pane --direction down --name "build"
+# 1. 右側にエージェントペインを作成
+zellij action new-pane --direction right --name "agent"
 
-# 各ペインにコマンド送信
-# ペイン1: lint
+# 2. Claude Codeをタスク付きで起動
+zellij action write-chars "claude --print 'タスクの指示'"
+zellij action write 10
+
+# 3. メインペインに戻る
+zellij action move-focus left
+```
+
+### パターン4: 2x2グリッドで並列タスク
+
+```bash
+# グリッド作成
+zellij action new-pane --direction right --name "task-2"
+zellij action move-focus left
+zellij action new-pane --direction down --name "task-3"
+zellij action move-focus right
+zellij action new-pane --direction down --name "task-4"
+
+# メインに戻る
 zellij action move-focus up
 zellij action move-focus left
-zellij action write-chars "golangci-lint run ./..."
-zellij action write 10
+```
 
-# ペイン2: type check
-zellij action move-focus right
-zellij action write-chars "go vet ./..."
-zellij action write 10
+## 実行例
 
-# ペイン3: unit tests
-zellij action move-focus down
-zellij action move-focus left
+ユーザーが「テストを別ペインで実行して」と言った場合：
+
+```bash
+# zellijセッション確認
+echo $ZELLIJ
+
+# 別ペインでテスト
+zellij action new-pane --direction right --name "test-runner"
 zellij action write-chars "go test -v ./..."
 zellij action write 10
-
-# ペイン4: build
-zellij action move-focus right
-zellij action write-chars "go build -o /dev/null ./..."
-zellij action write 10
-```
-
-### パターン4: ログ監視 + 開発
-
-アプリケーションログを監視しながら開発：
-
-```
-┌───────────────────────────────────┐
-│                                   │
-│         Main Editor               │
-│         (開発作業)                 │
-│                                   │
-├─────────────────┬─────────────────┤
-│   App Server    │   Log Viewer    │
-│   (running)     │   (tail -f)     │
-└─────────────────┴─────────────────┘
-```
-
-### パターン5: マルチエージェント Claude Code
-
-複数のClaude Codeセッションで並列作業：
-
-```
-┌─────────────────┬─────────────────┐
-│   Claude Code   │   Claude Code   │
-│   (Feature A)   │   (Feature B)   │
-├─────────────────┼─────────────────┤
-│   Claude Code   │   Claude Code   │
-│   (Tests)       │   (Docs)        │
-└─────────────────┴─────────────────┘
-```
-
-セットアップ:
-```bash
-# 4つのペインを作成
-zellij action new-pane --direction right --name "agent-2"
 zellij action move-focus left
-zellij action new-pane --direction down --name "agent-3"
-zellij action move-focus right
-zellij action new-pane --direction down --name "agent-4"
-
-# 各ペインでClaude Codeを起動
-# ペイン1 (現在位置)
-zellij action move-focus up
-zellij action move-focus left
-zellij action write-chars "claude"
-zellij action write 10
-
-# ペイン2
-zellij action move-focus right
-zellij action write-chars "claude"
-zellij action write 10
-
-# ペイン3
-zellij action move-focus down
-zellij action move-focus left
-zellij action write-chars "claude"
-zellij action write 10
-
-# ペイン4
-zellij action move-focus right
-zellij action write-chars "claude"
-zellij action write 10
 ```
 
-## タスク指示の送信
+ユーザーに「右側のペインでテストが実行されています」と報告してください。
 
-Claude Codeセッションにタスクを送信：
+## 注意事項
 
-```bash
-# --print オプションで直接タスクを渡す
-zellij action write-chars "claude --print 'ユニットテストを作成してください'"
-zellij action write 10
-
-# または、起動後にプロンプトを送信
-zellij action write-chars "Implement the user authentication feature"
-zellij action write 10
-```
-
-## キーバインド設定（~/.config/zellij/config.kdl）
-
-```kdl
-keybinds {
-    normal {
-        // Ctrl+t でテストペインを開く
-        bind "Ctrl t" {
-            NewPane "Right" { name "tests"; }
-            Write "go test -v ./...\n"
-            MoveFocus "Left"
-        }
-
-        // Ctrl+s でサーバーペインを開く
-        bind "Ctrl s" {
-            NewPane "Down" { name "server"; }
-            Write "go run cmd/server/main.go\n"
-            MoveFocus "Up"
-        }
-    }
-}
-```
-
-## ベストプラクティス
-
-### 1. ペイン数は2-4が最適
-
-多すぎると管理が困難になる。一般的な構成:
-- 2ペイン: エディタ + テスト/サーバー
-- 3ペイン: エディタ + テスト + サーバー
-- 4ペイン: 並列タスク（CIパイプライン模擬）
-
-### 2. 命名で識別性を高める
-
-```bash
-zellij action new-pane --name "test-runner"
-zellij action new-pane --name "api-server"
-zellij action new-pane --name "log-viewer"
-```
-
-### 3. フローティングペインの活用
-
-一時的な作業にはフローティングペインが便利:
-
-```bash
-# フローティングペインでクイックテスト
-zellij action new-pane --floating --name "quick-test"
-zellij action write-chars "go test -v -run TestSpecific ./..."
-zellij action write 10
-```
-
-### 4. セッション保存
-
-作業構成をレイアウトとして保存:
-
-```bash
-# 現在のレイアウトを保存
-zellij action dump-layout > ~/.config/zellij/layouts/dev.kdl
-```
-
-## トラブルシューティング
-
-### ペインが作成できない
-
-```bash
-# zellijセッション内か確認
-echo $ZELLIJ
-# 空ならzellijセッション外
-
-# セッション開始
-zellij
-```
-
-### コマンドが送信されない
-
-```bash
-# write-chars は文字列を送信するだけ
-# 実行にはEnterが必要
-zellij action write-chars "command"
-zellij action write 10  # Enter (LF)
-```
-
-### フォーカスが移動しない
-
-```bash
-# move-focusは方向指定が必要
-zellij action move-focus left   # OK
-zellij action move-focus        # NG
-```
+1. **Enter送信を忘れない**: `write-chars` だけではコマンドは実行されません。必ず `write 10` でEnterを送信。
+2. **フォーカスを戻す**: 作業後はメインペインにフォーカスを戻す。
+3. **ペイン名を付ける**: `--name` で識別しやすい名前を付ける。

@@ -1,36 +1,20 @@
 {
-  "name": "upgo",
+  "name": "upgo-claude-code-skills",
   "version": "1.0.0",
-  "description": "Go開発の思想・哲学・ベストプラクティスを学べるClaude Code Skills セット",
-  "author": "DaisukeKarasawa",
+  "description": "Claude Code専用のGo開発・zellijワークフロースキルセット",
+  "author": {
+    "name": "DaisukeKarasawa",
+    "url": "https://github.com/DaisukeKarasawa"
+  },
   "repository": "https://github.com/DaisukeKarasawa/upgo",
   "license": "MIT",
-  "plugins": [
-    {
-      "name": "go-skills",
-      "description": "Go言語開発のためのスキルセット（設計思想、エラーハンドリング、テスト、並行処理、コードレビュー）",
-      "skills": [
-        "skills/go-philosophy",
-        "skills/go-error-handling",
-        "skills/go-testing",
-        "skills/go-concurrency",
-        "skills/go-code-review"
-      ],
-      "agents": [
-        "agents/go-mentor"
-      ],
-      "commands": [
-        "commands/go-review.md",
-        "commands/go-explain.md"
-      ]
-    }
-  ],
   "keywords": [
+    "claude-code",
     "go",
     "golang",
-    "development",
-    "best-practices",
-    "tdd",
-    "code-review"
+    "zellij",
+    "parallel-workflow",
+    "multi-agent",
+    "tdd"
   ]
 }

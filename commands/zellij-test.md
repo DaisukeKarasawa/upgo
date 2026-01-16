@@ -1,58 +1,43 @@
 ---
-description: zellijの別ペインでテストを実行し、結果を監視
-allowed-tools: Bash, Read
+description: zellijの別ペインでテストを実行
+allowed-tools: Bash
 argument-hint: [test-pattern]
 ---
 
-# Zellij Test Runner
+別ペインでテストを実行します。
 
-zellijの別ペインでテストを実行します。
+## 手順
 
-## 引数
+1. zellijセッション確認
+2. 右側に新しいペインを作成
+3. テストを実行
+4. メインペインに戻る
 
-$ARGUMENTS
-
-## 実行手順
-
-### 1. 新しいペインでテストを起動
+## 実行
 
 ```bash
-# テストコマンドを構築
-TEST_CMD="go test -v ./..."
-if [ -n "$ARGUMENTS" ]; then
-    TEST_CMD="go test -v -run '$ARGUMENTS' ./..."
+# 1. zellijセッション確認
+if [ -z "$ZELLIJ" ]; then
+  echo "ERROR: zellijセッション内で実行してください"
+  exit 1
 fi
 
-# 右側に新しいペインを作成してテスト実行
+# 2. テストペイン作成
 zellij action new-pane --direction right --name "test-runner"
-zellij action write-chars "$TEST_CMD"
-zellij action write 10  # Enter key
-```
 
-### 2. メインペインに戻る
+# 3. テスト実行
+TEST_PATTERN="$ARGUMENTS"
+if [ -n "$TEST_PATTERN" ]; then
+  zellij action write-chars "go test -v -run '$TEST_PATTERN' ./..."
+else
+  zellij action write-chars "go test -v ./..."
+fi
+zellij action write 10
 
-```bash
+# 4. メインに戻る
 zellij action move-focus left
 ```
 
-### 3. テスト結果の確認
+## 完了報告
 
-テストが完了したら、ユーザーに結果を報告してください。
-以下のコマンドで別ペインの出力を確認できます：
-
-```bash
-# ペインの出力をスクロールバッファから取得
-zellij action toggle-pane-frames
-```
-
-## 使い方
-
-- `/zellij-test` - 全テストを別ペインで実行
-- `/zellij-test TestUserService` - 特定のテストのみ実行
-- `/zellij-test Integration` - 名前にIntegrationを含むテストを実行
-
-## 注意事項
-
-- zellijセッション内で実行する必要があります
-- テスト実行中もメインペインで作業を継続できます
-- テストの結果は別ペインに表示されます
+「右側のペインでテストが実行されています。結果はそちらで確認できます。」と報告してください。

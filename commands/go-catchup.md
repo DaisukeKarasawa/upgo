@@ -1,17 +1,16 @@
 ---
 description: Catch up on recent golang/go PRs and learn Go philosophy
 allowed-tools: Bash, WebFetch, Read
-argument-hint: [count] [category]
+argument-hint: [category]
 ---
 
 # Go PR Catchup
 
-Fetches and analyzes recent PRs from golang/go repository to learn Go design philosophy.
+Fetches and analyzes PRs updated in the last month from golang/go repository to learn Go design philosophy.
 
 ## Arguments
 
-- `$1`: Number of PRs to fetch (default: 10)
-- `$2`: Category filter (optional: error-handling, performance, api-design, testing, runtime, compiler)
+- `$1`: Category filter (optional: error-handling, performance, api-design, testing, runtime, compiler)
 
 ## Execution Steps
 
@@ -28,9 +27,11 @@ gh auth status
 ### 2. Fetch PR List
 
 ```bash
-# Fetch recent merged PRs
-LIMIT="${1:-10}"
-gh pr list --repo golang/go --state merged --limit $LIMIT --json number,title,author,mergedAt,labels
+# Calculate date 1 month ago
+ONE_MONTH_AGO=$(date -v-1m +%Y-%m-%d 2>/dev/null || date -d "1 month ago" +%Y-%m-%d)
+
+# Fetch PRs updated in the last month
+gh pr list --repo golang/go --state merged --search "updated:>=$ONE_MONTH_AGO" --json number,title,author,mergedAt,labels,updatedAt
 ```
 
 ### 3. Analyze Each PR
@@ -83,12 +84,12 @@ Create report in the following format:
 ## Usage Examples
 
 ```bash
-# Catch up on 10 recent PRs
+# Catch up on all PRs from the last month
 /go-catchup
 
-# Catch up on 20 PRs
-/go-catchup 20
-
 # Filter by error-handling category
-/go-catchup 10 error-handling
+/go-catchup error-handling
+
+# Filter by performance category
+/go-catchup performance
 ```

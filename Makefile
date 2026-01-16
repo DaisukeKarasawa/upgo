@@ -1,28 +1,13 @@
-.PHONY: dev dev-backend dev-frontend run build test clean backup bench bench-verbose perf-test test-all
+.PHONY: dev dev-backend dev-frontend run build test clean backup bench bench-verbose perf-test test-all \
+        legacy-dev legacy-backend legacy-frontend skillgen
 
-dev:
-	@echo "Starting development servers..."
-	@echo "Backend: http://localhost:8081"
-	@echo "Frontend: http://localhost:5173"
-	@make -j2 dev-backend dev-frontend
-
-dev-backend:
-	@go run cmd/server/main.go
-
-dev-frontend:
-	@cd web && npm run dev
-
-run:
-	@echo "Building frontend..."
-	@cd web && npm run build
-	@echo "Starting server..."
-	@go run cmd/server/main.go
-
+# New CLI tool commands
 build:
-	@echo "Building backend..."
-	@go build -o bin/upgo cmd/server/main.go
-	@echo "Building frontend..."
-	@cd web && npm run build
+	@echo "Building skillgen CLI..."
+	@go build -o bin/upgo cmd/skillgen/main.go
+
+skillgen:
+	@go run cmd/skillgen/main.go
 
 test:
 	@go test ./...
@@ -48,7 +33,32 @@ test-all:
 	@go test -v -bench=. -benchmem ./...
 
 clean:
-	@rm -rf bin/ dist/ web/dist/
+	@rm -rf bin/ dist/ legacy/web/dist/
+
+# Legacy Web UI commands
+legacy-dev:
+	@echo "Starting legacy development servers..."
+	@echo "Backend: http://localhost:8081"
+	@echo "Frontend: http://localhost:5173"
+	@make -j2 legacy-backend legacy-frontend
+
+legacy-backend:
+	@go run legacy/cmd/server/main.go
+
+legacy-frontend:
+	@cd legacy/web && npm run dev
+
+legacy-run:
+	@echo "Building legacy frontend..."
+	@cd legacy/web && npm run build
+	@echo "Starting legacy server..."
+	@go run legacy/cmd/server/main.go
+
+legacy-build:
+	@echo "Building legacy backend..."
+	@go build -o bin/upgo-legacy legacy/cmd/server/main.go
+	@echo "Building legacy frontend..."
+	@cd legacy/web && npm run build
 
 backup:
 	@curl -X POST http://localhost:8081/api/v1/backup

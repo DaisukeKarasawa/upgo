@@ -1,60 +1,60 @@
 ---
-description: 別ペインでClaude Codeペアプログラミングパートナーを起動
+description: Launch Claude Code pair programming partner in separate pane
 allowed-tools: Bash
 argument-hint: [initial-prompt]
 ---
 
-別ペインでClaude Codeを起動し、ペアプログラミングパートナーとして動作させます。
+Launch Claude Code in a separate pane as a pair programming partner.
 
-## 初期プロンプト
+## Initial Prompt
 
 $ARGUMENTS
 
-## 実行
+## Execution
 
 ```bash
-# zellijセッション確認
+# Check zellij session
 if [ -z "$ZELLIJ" ]; then
-  echo "ERROR: zellijセッション内で実行してください"
+  echo "ERROR: Must run inside a zellij session"
   exit 1
 fi
 
-# 右側にペイン作成
+# Create pane on the right
 zellij action new-pane --direction right --name "pair-programmer"
 
-# Claude Codeを起動
+# Launch Claude Code
 INITIAL_PROMPT="$ARGUMENTS"
 if [ -n "$INITIAL_PROMPT" ]; then
-  zellij action write-chars "claude --print 'ペアプログラミングパートナーとして支援してください。$INITIAL_PROMPT'"
+  zellij action write-chars "claude --print 'Act as pair programming partner. $INITIAL_PROMPT'"
 else
-  zellij action write-chars "claude --print 'ペアプログラミングパートナーとして支援してください。'"
+  zellij action write-chars "claude --print 'Act as pair programming partner.'"
 fi
 zellij action write 10
 
-# メインに戻る
+# Return to main
 zellij action move-focus left
 ```
 
-## 使用パターン
+## Usage Patterns
 
-### テスト担当
-
-```bash
-/loop テストの作成を担当してください
-```
-
-### レビュー担当
+### Test Writer
 
 ```bash
-/loop コードレビューを担当してください
+/loop Handle test creation
 ```
 
-### ドキュメント担当
+### Code Reviewer
 
 ```bash
-/loop ドキュメントの作成を担当してください
+/loop Handle code review
 ```
 
-## 完了報告
+### Documentation Writer
 
-「右側のペインでペアプログラミングパートナーが起動しました。」と報告してください。
+```bash
+/loop Handle documentation
+```
+
+## Completion
+
+Report: "Pair programming partner launched in the right pane."

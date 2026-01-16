@@ -1,8 +1,8 @@
 ---
 name: go-pr-fetcher
 description: |
-  golang/go リポジトリから PR 情報を取得するスキル。
-  ユーザーが「Go の PR を取得」「golang/go の最新 PR」「Go の変更を確認」などと言った場合に使用。
+  Fetches PR information from golang/go repository.
+  Use when user says "fetch Go PRs", "latest PRs from golang/go", "check Go changes", etc.
 allowed-tools:
   - Bash
   - WebFetch
@@ -10,80 +10,80 @@ allowed-tools:
 
 # Go PR Fetcher
 
-golang/go リポジトリから PR 情報を GitHub API で取得します。
+Fetches PR information from golang/go repository using GitHub API.
 
-## 前提条件
+## Prerequisites
 
-環境変数 `GITHUB_TOKEN` が設定されていること。
+Environment variable `GITHUB_TOKEN` must be set.
 
 ```bash
 echo $GITHUB_TOKEN
 ```
 
-設定されていない場合は、ユーザーに設定を促してください。
+If not set, prompt the user to set it.
 
-## PR 一覧の取得
+## Fetching PR List
 
-### 直近の PR を取得（デフォルト: 30件）
+### Get recent PRs (default: 30)
 
 ```bash
 gh pr list --repo golang/go --state all --limit 30 --json number,title,state,author,createdAt,updatedAt,labels
 ```
 
-### マージ済み PR のみ取得
+### Get merged PRs only
 
 ```bash
 gh pr list --repo golang/go --state merged --limit 30 --json number,title,author,mergedAt,labels
 ```
 
-### 特定期間の PR を取得
+### Get PRs from specific period
 
 ```bash
-# 直近1週間
+# Last 7 days
 gh pr list --repo golang/go --state all --search "updated:>=$(date -v-7d +%Y-%m-%d)" --limit 50 --json number,title,state,author,updatedAt
 ```
 
-## 個別 PR の詳細取得
+## Fetching Individual PR Details
 
-### PR の基本情報
+### PR basic info
 
 ```bash
 gh pr view <PR_NUMBER> --repo golang/go --json number,title,body,state,author,labels,comments,reviews
 ```
 
-### PR のコメント・議論
+### PR comments and discussions
 
 ```bash
 gh pr view <PR_NUMBER> --repo golang/go --comments
 ```
 
-### PR の変更ファイル
+### PR diff
 
 ```bash
 gh pr diff <PR_NUMBER> --repo golang/go
 ```
 
-## 出力フォーマット
+## Output Format
 
-取得した PR 情報は以下の形式で整理してください：
+Format fetched PR information as follows:
 
 ```markdown
 ## PR #<number>: <title>
 
-**状態**: <state> | **作成者**: <author> | **更新日**: <updatedAt>
+**State**: <state> | **Author**: <author> | **Updated**: <updatedAt>
 
-**ラベル**: <labels>
+**Labels**: <labels>
 
-### 概要
-<body の要約>
+### Summary
+<body summary>
 
-### 変更ファイル
+### Changed Files
 - <file1>
 - <file2>
 ```
 
-## エラーハンドリング
+## Error Handling
 
-- `gh` コマンドが見つからない場合: GitHub CLI のインストールを案内
-- 認証エラーの場合: `gh auth login` を案内
-- レート制限の場合: しばらく待ってから再試行を案内
+- `gh` command not found: Guide user to install GitHub CLI
+- Authentication error: Guide user to run `gh auth login`
+- Rate limit: Advise to wait and retry

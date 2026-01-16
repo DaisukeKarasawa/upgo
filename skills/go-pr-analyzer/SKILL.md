@@ -1,8 +1,8 @@
 ---
 name: go-pr-analyzer
 description: |
-  golang/go の PR を分析し、Go の設計思想・哲学を抽出するスキル。
-  ユーザーが「PR を分析」「Go の思想を教えて」「なぜこの変更が入ったか」などと言った場合に使用。
+  Analyzes golang/go PRs and extracts Go design philosophy and insights.
+  Use when user says "analyze PR", "explain Go philosophy", "why was this change made", etc.
 allowed-tools:
   - Bash
   - WebFetch
@@ -11,111 +11,111 @@ allowed-tools:
 
 # Go PR Analyzer
 
-golang/go の PR から Go の設計思想・哲学・ベストプラクティスを分析・抽出します。
+Analyzes golang/go PRs to extract Go design philosophy, best practices, and insights.
 
-## 分析の観点
+## Analysis Perspectives
 
-### 1. 変更の背景・動機
+### 1. Change Background & Motivation
 
-PR の説明文やコメントから以下を抽出：
+Extract from PR description and comments:
 
-- なぜこの変更が必要だったか
-- どのような問題を解決するか
-- 既存の代替案と比較してなぜこの方法が選ばれたか
+- Why was this change needed?
+- What problem does it solve?
+- Why was this approach chosen over alternatives?
 
-### 2. レビューの議論ポイント
+### 2. Review Discussion Points
 
-レビューコメントから以下を抽出：
+Extract from review comments:
 
-- どのような点が議論されたか
-- 承認されるまでに何が修正されたか
-- レビュアーが重視した品質基準
+- What points were discussed?
+- What was modified before approval?
+- What quality criteria did reviewers emphasize?
 
-### 3. Go の設計思想との関連
+### 3. Go Design Philosophy Alignment
 
-変更内容を Go の設計思想と照らし合わせ：
+Map changes to Go design principles:
 
-- **シンプルさ**: 複雑さを減らす変更か
-- **明示性**: 暗黙の動作を避けているか
-- **直交性**: 独立した機能の組み合わせか
-- **実用性**: 実際のユースケースに基づいているか
+- **Simplicity**: Does it reduce complexity?
+- **Explicitness**: Does it avoid implicit behavior?
+- **Orthogonality**: Is it composable with independent features?
+- **Practicality**: Is it based on real use cases?
 
-### 4. カテゴリ分類
+### 4. Category Classification
 
-PR を以下のカテゴリに分類：
+Classify PRs into categories:
 
-| カテゴリ | 説明 |
-|----------|------|
-| `error-handling` | エラー処理の改善 |
-| `performance` | パフォーマンス最適化 |
-| `api-design` | API 設計の変更 |
-| `testing` | テストの追加・改善 |
-| `documentation` | ドキュメント更新 |
-| `tooling` | ツールチェーンの改善 |
-| `runtime` | ランタイムの変更 |
-| `compiler` | コンパイラの改善 |
+| Category | Description |
+|----------|-------------|
+| `error-handling` | Error handling improvements |
+| `performance` | Performance optimization |
+| `api-design` | API design changes |
+| `testing` | Test additions/improvements |
+| `documentation` | Documentation updates |
+| `tooling` | Toolchain improvements |
+| `runtime` | Runtime changes |
+| `compiler` | Compiler improvements |
 
-## 分析手順
+## Analysis Steps
 
-### Step 1: PR 情報の取得
+### Step 1: Fetch PR Information
 
 ```bash
-# PR の詳細を取得
+# Get PR details
 gh pr view <PR_NUMBER> --repo golang/go --json number,title,body,state,author,labels,comments,reviews
 
-# コメント・議論を取得
+# Get comments and discussions
 gh pr view <PR_NUMBER> --repo golang/go --comments
 
-# 変更内容を取得
+# Get diff
 gh pr diff <PR_NUMBER> --repo golang/go
 ```
 
-### Step 2: 分析の実行
+### Step 2: Perform Analysis
 
-取得した情報から以下を分析：
+Analyze fetched information for:
 
-1. **Issue との関連**: `Fixes #XXXX` などから関連 Issue を特定
-2. **変更の規模**: 追加/削除行数、影響ファイル数
-3. **レビュー回数**: 承認までの修正回数
-4. **議論の深さ**: コメント数、返信スレッド
+1. **Issue relation**: Identify related issues from `Fixes #XXXX`
+2. **Change scope**: Lines added/removed, files affected
+3. **Review rounds**: Number of revisions before approval
+4. **Discussion depth**: Comment count, reply threads
 
-### Step 3: 洞察の抽出
+### Step 3: Extract Insights
 
-分析結果から Go の思想を言語化：
+Articulate Go philosophy from analysis:
 
 ```markdown
-## Go 思想の洞察
+## Go Philosophy Insights
 
-この PR は「<Go の原則>」を体現しています。
+This PR embodies "<Go principle>".
 
-**具体的には:**
-- <変更内容> が <原則> に沿っている理由
-- レビューで <点> が重視された背景
+**Specifically:**
+- Why <change> aligns with <principle>
+- Why <point> was emphasized in review
 
-**学べること:**
-- <実践的なアドバイス>
+**Learnings:**
+- <practical advice>
 ```
 
-## 出力フォーマット
+## Output Format
 
 ```markdown
-# PR #<number> 分析: <title>
+# PR #<number> Analysis: <title>
 
-## 概要
-<PR の目的と変更内容の要約>
+## Summary
+<PR purpose and change summary>
 
-## 変更の背景
-<なぜこの変更が必要だったか>
+## Background
+<Why this change was needed>
 
-## 議論のポイント
-<レビューで議論された重要な点>
+## Discussion Points
+<Key points discussed in review>
 
-## Go 思想との関連
-<この変更が体現する Go の設計思想>
+## Go Philosophy Alignment
+<Go design principles this change embodies>
 
-## カテゴリ
+## Category
 <category>
 
-## 学べること
-<この PR から学べる実践的な知見>
+## Key Learnings
+<Practical insights from this PR>
 ```

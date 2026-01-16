@@ -1,36 +1,36 @@
 ---
-description: タスクを分析し、zellijの複数ペインで並列実行
+description: Analyze task and run in parallel across multiple zellij panes
 allowed-tools: Bash, Read, Write
 argument-hint: <task-description>
 ---
 
-タスクを分析し、並列実行可能なサブタスクに分割して複数ペインで実行します。
+Analyze task and split into subtasks for parallel execution across multiple panes.
 
-## タスク
+## Task
 
 $ARGUMENTS
 
-## 手順
+## Steps
 
-### 1. タスク分析
+### 1. Task Analysis
 
-ユーザーのタスクを分析し、2-4個の独立したサブタスクに分割してください。
+Analyze user's task and split into 2-4 independent subtasks.
 
-例:
-- 「APIを実装してテストも書いて」→ タスク1: API実装、タスク2: テスト作成
-- 「コードレビューして」→ タスク1: セキュリティ、タスク2: パフォーマンス、タスク3: スタイル
+Examples:
+- "Implement API and write tests" → Task 1: API implementation, Task 2: Test creation
+- "Review code" → Task 1: Security, Task 2: Performance, Task 3: Style
 
-### 2. ペインレイアウト
+### 2. Pane Layout
 
-サブタスク数に応じてレイアウトを選択:
+Choose layout based on number of subtasks:
 
-**2タスク (左右):**
+**2 tasks (side by side):**
 ```bash
 zellij action new-pane --direction right --name "task-2"
 zellij action move-focus left
 ```
 
-**3タスク (T字):**
+**3 tasks (T-shape):**
 ```bash
 zellij action new-pane --direction right --name "task-2"
 zellij action move-focus left
@@ -38,7 +38,7 @@ zellij action new-pane --direction down --name "task-3"
 zellij action move-focus up
 ```
 
-**4タスク (グリッド):**
+**4 tasks (grid):**
 ```bash
 zellij action new-pane --direction right --name "task-2"
 zellij action move-focus left
@@ -49,22 +49,22 @@ zellij action move-focus up
 zellij action move-focus left
 ```
 
-### 3. エージェント起動
+### 3. Launch Agents
 
-各ペインでClaude Codeを起動してタスクを割り当て:
+Launch Claude Code in each pane with assigned task:
 
 ```bash
-# ペイン2にタスク送信
+# Send task to pane 2
 zellij action move-focus right
-zellij action write-chars "claude --print 'サブタスク2の内容'"
+zellij action write-chars "claude --print 'Subtask 2 instructions'"
 zellij action write 10
 zellij action move-focus left
 ```
 
-### 4. メインタスク実行
+### 4. Execute Main Task
 
-メインペインでタスク1を直接実行してください。
+Execute task 1 directly in main pane.
 
-## 完了報告
+## Completion
 
-「タスクを N 個のサブタスクに分割し、各ペインで並列実行を開始しました。」と報告してください。
+Report: "Split task into N subtasks and started parallel execution in each pane."

@@ -1,41 +1,41 @@
 ---
-description: zellijの別ペインでコマンドを実行
+description: Run a command in a separate zellij pane
 allowed-tools: Bash
 argument-hint: <command>
 ---
 
-別ペインで任意のコマンドを実行します。
+Run any command in a separate pane.
 
-## 引数
+## Arguments
 
 $ARGUMENTS
 
-## 実行
+## Execution
 
 ```bash
-# zellijセッション確認
+# Check zellij session
 if [ -z "$ZELLIJ" ]; then
-  echo "ERROR: zellijセッション内で実行してください"
+  echo "ERROR: Must run inside a zellij session"
   exit 1
 fi
 
-# 引数確認
+# Check arguments
 if [ -z "$ARGUMENTS" ]; then
-  echo "ERROR: 実行するコマンドを指定してください"
+  echo "ERROR: Please specify a command to run"
   exit 1
 fi
 
-# 下側にペイン作成
+# Create pane below
 zellij action new-pane --direction down --name "runner"
 
-# コマンド実行
+# Run command
 zellij action write-chars "$ARGUMENTS"
 zellij action write 10
 
-# メインに戻る
+# Return to main
 zellij action move-focus up
 ```
 
-## 完了報告
+## Completion
 
-「下側のペインでコマンドが実行されています。」と報告してください。
+Report: "Command is running in the bottom pane."

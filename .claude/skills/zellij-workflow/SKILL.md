@@ -1,9 +1,8 @@
 ---
 name: zellij-workflow
 description: |
-  zellijターミナルマルチプレクサを使った並列開発ワークフロースキル。
-  ユーザーが「別ペインで実行」「並列で」「zellij」「マルチペイン」「テストを別窓で」などと言った場合に使用。
-  テスト実行、サーバー起動、マルチエージェント構成をサポート。
+  Zellij terminal multiplexer workflow skill for parallel development.
+  Use when user says "run in separate pane", "parallel", "zellij", "multi-pane", etc.
 allowed-tools:
   - Bash
   - Read
@@ -11,44 +10,44 @@ allowed-tools:
 
 # Zellij Workflow for Claude Code
 
-zellijを使ってClaude Codeの作業を並列化するためのスキルです。
+Skill for parallelizing Claude Code work using zellij.
 
-## 重要: zellijセッション確認
+## Important: Check Zellij Session
 
-まず、zellijセッション内かどうかを確認してください：
+First, verify you're inside a zellij session:
 
 ```bash
 echo $ZELLIJ
 ```
 
-空の場合は `zellij` で新しいセッションを開始するよう促してください。
+If empty, prompt user to start a session with `zellij`.
 
-## コマンドリファレンス
+## Command Reference
 
-### 新しいペイン作成
+### Create New Pane
 
 ```bash
-# 右側に新しいペイン
-zellij action new-pane --direction right --name "ペイン名"
+# New pane on the right
+zellij action new-pane --direction right --name "pane-name"
 
-# 下側に新しいペイン
-zellij action new-pane --direction down --name "ペイン名"
+# New pane below
+zellij action new-pane --direction down --name "pane-name"
 
-# フローティングペイン（ポップアップ）
-zellij action new-pane --floating --name "ペイン名"
+# Floating pane (popup)
+zellij action new-pane --floating --name "pane-name"
 ```
 
-### コマンド送信
+### Send Commands
 
 ```bash
-# 文字を送信
-zellij action write-chars "コマンド文字列"
+# Send characters
+zellij action write-chars "command string"
 
-# Enterキーを送信（実行）
+# Send Enter key (execute)
 zellij action write 10
 ```
 
-### フォーカス移動
+### Move Focus
 
 ```bash
 zellij action move-focus left
@@ -57,84 +56,67 @@ zellij action move-focus up
 zellij action move-focus down
 ```
 
-## よく使うパターン
+## Common Patterns
 
-### パターン1: 別ペインでテスト実行
+### Pattern 1: Run Tests in Separate Pane
 
 ```bash
-# 1. 右側にテストペインを作成
+# 1. Create test pane on the right
 zellij action new-pane --direction right --name "tests"
 
-# 2. テストコマンドを送信
+# 2. Send test command
 zellij action write-chars "go test -v ./..."
 zellij action write 10
 
-# 3. メインペインに戻る
+# 3. Return to main pane
 zellij action move-focus left
 ```
 
-### パターン2: 別ペインでサーバー起動
+### Pattern 2: Run Server in Separate Pane
 
 ```bash
-# 1. 下側にサーバーペインを作成
+# 1. Create server pane below
 zellij action new-pane --direction down --name "server"
 
-# 2. サーバーを起動
+# 2. Start server
 zellij action write-chars "go run cmd/server/main.go"
 zellij action write 10
 
-# 3. メインペインに戻る
+# 3. Return to main pane
 zellij action move-focus up
 ```
 
-### パターン3: 別ペインでClaude Codeエージェント起動
+### Pattern 3: Launch Claude Code Agent in Separate Pane
 
 ```bash
-# 1. 右側にエージェントペインを作成
+# 1. Create agent pane on the right
 zellij action new-pane --direction right --name "agent"
 
-# 2. Claude Codeをタスク付きで起動
-zellij action write-chars "claude --print 'タスクの指示'"
+# 2. Launch Claude Code with task
+zellij action write-chars "claude --print 'Task instructions here'"
 zellij action write 10
 
-# 3. メインペインに戻る
+# 3. Return to main pane
 zellij action move-focus left
 ```
 
-### パターン4: 2x2グリッドで並列タスク
+### Pattern 4: 2x2 Grid for Parallel Tasks
 
 ```bash
-# グリッド作成
+# Create grid
 zellij action new-pane --direction right --name "task-2"
 zellij action move-focus left
 zellij action new-pane --direction down --name "task-3"
 zellij action move-focus right
 zellij action new-pane --direction down --name "task-4"
 
-# メインに戻る
+# Return to main
 zellij action move-focus up
 zellij action move-focus left
 ```
 
-## 実行例
+## Notes
 
-ユーザーが「テストを別ペインで実行して」と言った場合：
-
-```bash
-# zellijセッション確認
-echo $ZELLIJ
-
-# 別ペインでテスト
-zellij action new-pane --direction right --name "test-runner"
-zellij action write-chars "go test -v ./..."
-zellij action write 10
-zellij action move-focus left
-```
-
-ユーザーに「右側のペインでテストが実行されています」と報告してください。
-
-## 注意事項
-
-1. **Enter送信を忘れない**: `write-chars` だけではコマンドは実行されません。必ず `write 10` でEnterを送信。
-2. **フォーカスを戻す**: 作業後はメインペインにフォーカスを戻す。
-3. **ペイン名を付ける**: `--name` で識別しやすい名前を付ける。
+1. **Don't forget Enter**: `write-chars` alone doesn't execute. Always follow with `write 10`.
+2. **Return focus**: Return to main pane after setup.
+3. **Name panes**: Use `--name` for easy identification.

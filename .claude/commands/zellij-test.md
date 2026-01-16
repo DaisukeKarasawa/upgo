@@ -1,31 +1,31 @@
 ---
-description: zellijの別ペインでテストを実行
+description: Run tests in a separate zellij pane
 allowed-tools: Bash
 argument-hint: [test-pattern]
 ---
 
-別ペインでテストを実行します。
+Run tests in a separate pane.
 
-## 手順
+## Steps
 
-1. zellijセッション確認
-2. 右側に新しいペインを作成
-3. テストを実行
-4. メインペインに戻る
+1. Check zellij session
+2. Create new pane on the right
+3. Run tests
+4. Return to main pane
 
-## 実行
+## Execution
 
 ```bash
-# 1. zellijセッション確認
+# 1. Check zellij session
 if [ -z "$ZELLIJ" ]; then
-  echo "ERROR: zellijセッション内で実行してください"
+  echo "ERROR: Must run inside a zellij session"
   exit 1
 fi
 
-# 2. テストペイン作成
+# 2. Create test pane
 zellij action new-pane --direction right --name "test-runner"
 
-# 3. テスト実行
+# 3. Run tests
 TEST_PATTERN="$ARGUMENTS"
 if [ -n "$TEST_PATTERN" ]; then
   zellij action write-chars "go test -v -run '$TEST_PATTERN' ./..."
@@ -34,10 +34,10 @@ else
 fi
 zellij action write 10
 
-# 4. メインに戻る
+# 4. Return to main
 zellij action move-focus left
 ```
 
-## 完了報告
+## Completion
 
-「右側のペインでテストが実行されています。結果はそちらで確認できます。」と報告してください。
+Report: "Tests are running in the right pane. Check results there."

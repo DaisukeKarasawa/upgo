@@ -1,94 +1,94 @@
 ---
-description: golang/go の直近 PR をキャッチアップし、Go 思想を学ぶ
+description: Catch up on recent golang/go PRs and learn Go philosophy
 allowed-tools: Bash, WebFetch, Read
-argument-hint: [件数] [カテゴリ]
+argument-hint: [count] [category]
 ---
 
-# Go PR キャッチアップ
+# Go PR Catchup
 
-golang/go リポジトリの直近の PR を取得・分析し、Go の設計思想をキャッチアップします。
+Fetches and analyzes recent PRs from golang/go repository to learn Go design philosophy.
 
-## 引数
+## Arguments
 
-- `$1`: 取得件数（デフォルト: 10）
-- `$2`: カテゴリフィルタ（オプション: error-handling, performance, api-design, testing, runtime, compiler）
+- `$1`: Number of PRs to fetch (default: 10)
+- `$2`: Category filter (optional: error-handling, performance, api-design, testing, runtime, compiler)
 
-## 実行手順
+## Execution Steps
 
-### 1. 環境確認
+### 1. Environment Check
 
 ```bash
-# GitHub CLI 確認
-which gh || echo "ERROR: gh コマンドが見つかりません。GitHub CLI をインストールしてください。"
+# Check GitHub CLI
+which gh || echo "ERROR: gh command not found. Please install GitHub CLI."
 
-# 認証確認
+# Check authentication
 gh auth status
 ```
 
-### 2. PR 一覧取得
+### 2. Fetch PR List
 
 ```bash
-# 直近のマージ済み PR を取得
+# Fetch recent merged PRs
 LIMIT="${1:-10}"
 gh pr list --repo golang/go --state merged --limit $LIMIT --json number,title,author,mergedAt,labels
 ```
 
-### 3. 各 PR の分析
+### 3. Analyze Each PR
 
-取得した各 PR について：
+For each fetched PR:
 
-1. PR の詳細を取得
-2. コメント・議論を確認
-3. 変更内容を分析
-4. Go 思想との関連を抽出
+1. Get PR details
+2. Review comments and discussions
+3. Analyze changes
+4. Extract Go philosophy insights
 
-### 4. レポート作成
+### 4. Generate Report
 
-以下の形式でレポートを作成：
+Create report in the following format:
 
 ```markdown
-# Go PR キャッチアップレポート
+# Go PR Catchup Report
 
-**期間**: <oldest_date> 〜 <newest_date>
-**件数**: <count> 件
+**Period**: <oldest_date> - <newest_date>
+**Count**: <count> PRs
 
-## サマリー
+## Summary
 
-### カテゴリ別
-- error-handling: X 件
-- performance: Y 件
+### By Category
+- error-handling: X PRs
+- performance: Y PRs
 - ...
 
-### 注目の PR
-1. PR #XXXX: <title> - <一行説明>
-2. PR #YYYY: <title> - <一行説明>
+### Notable PRs
+1. PR #XXXX: <title> - <one-line description>
+2. PR #YYYY: <title> - <one-line description>
 
 ---
 
-## 詳細分析
+## Detailed Analysis
 
 ### PR #XXXX: <title>
 
-**概要**: <要約>
+**Summary**: <summary>
 
-**Go 思想**: <学べること>
+**Go Philosophy**: <learnings>
 
 ---
 
-## 今週の学び
+## Key Takeaways
 
-<全体を通じて学べる Go の思想・ベストプラクティス>
+<Overall Go philosophy and best practices learned>
 ```
 
-## 使用例
+## Usage Examples
 
 ```bash
-# 直近 10 件をキャッチアップ
+# Catch up on 10 recent PRs
 /go-catchup
 
-# 直近 20 件をキャッチアップ
+# Catch up on 20 PRs
 /go-catchup 20
 
-# error-handling 関連のみ
+# Filter by error-handling category
 /go-catchup 10 error-handling
 ```

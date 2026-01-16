@@ -8,7 +8,7 @@ Run comprehensive plugin tests in a separate pane.
 ## Steps
 
 1. Check zellij session
-2. Create new pane on the right
+2. Use existing right pane or create new one
 3. Run plugin test suite
 4. Return to main pane
 
@@ -21,8 +21,10 @@ if [ -z "$ZELLIJ" ]; then
   exit 1
 fi
 
-# 2. Create test pane
-zellij action new-pane --direction right --name "plugin-test"
+# 2. Use existing pane or create new one
+zellij action new-pane --direction right --name "plugin-test" 2>/dev/null || zellij action move-focus right
+zellij action write-chars "clear"
+zellij action write 10
 
 # 3. Run test suite
 zellij action write-chars "echo '=== Upgo Plugin Test Suite ==='"

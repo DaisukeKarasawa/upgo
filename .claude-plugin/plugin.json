@@ -1,0 +1,19 @@
+{
+  "name": "go-pr-insights",
+  "version": "1.0.0",
+  "description": "Automatically fetch and analyze golang/go PRs with Claude Code to learn Go design philosophy",
+  "author": {
+    "name": "DaisukeKarasawa",
+    "url": "https://github.com/DaisukeKarasawa"
+  },
+  "repository": "https://github.com/DaisukeKarasawa/upgo",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "go",
+    "golang",
+    "github-pr",
+    "code-analysis",
+    "learning"
+  ]
+}

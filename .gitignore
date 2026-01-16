@@ -1,27 +1,25 @@
-# データベース
+# Build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+main
+server
+bin/
+
+# Data
 data/
+backups/
+logs/
 *.db
 *.db-shm
 *.db-wal
 
-# バックアップ
-backups/
-
-# ログ
-logs/
-*.log
-
-# 環境変数・設定
-.env
-config.local.yaml
+# Config
 config.yaml
-
-# ビルド成果物
-dist/
-web/dist/
-web/node_modules/
-bin/
-server
+config.yaml.bak
+*.bak
 
 # IDE
 .idea/
@@ -32,3 +30,12 @@ server
 # OS
 .DS_Store
 Thumbs.db
+
+# Environment
+.env
+
+# Node
+node_modules/
+
+# Legacy
+legacy/

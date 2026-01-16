@@ -1,156 +1,97 @@
-# Upgo - Claude Code Skills for Go Development & Zellij Workflow
+# Go PR Insights - Claude Code Plugin
 
-Claude Code 専用の Go 開発・並列ワークフロースキルセットです。
+golang/go の PR を Claude Code で自動取得・分析し、Go の設計思想をキャッチアップするプラグインです。
 
 ## 特徴
 
-- **Go 開発スキル**: Go 言語の思想、エラーハンドリング、テスト、並行処理のベストプラクティス
-- **Zellij 並列ワークフロー**: zellij を使った別ペインでのテスト実行、マルチエージェント構成
+- **PR 自動取得**: GitHub API で golang/go の最新 PR を取得
+- **議論の分析**: レビューコメント・議論のポイントを抽出
+- **Go 思想の学習**: 変更の背景から Go の設計思想を学ぶ
 
 ## インストール
 
 ### 方法1: プラグインとしてインストール（推奨）
 
 ```bash
-# Claude Code でプラグインを追加
 /plugin marketplace add DaisukeKarasawa/upgo
 ```
 
 ### 方法2: 手動コピー
 
 ```bash
-# リポジトリをクローン
 git clone https://github.com/DaisukeKarasawa/upgo.git
-
-# Skills をコピー
 cp -r upgo/skills/* ~/.claude/skills/
-
-# Commands をコピー
 cp -r upgo/commands/* ~/.claude/commands/
-
-# Agents をコピー
-cp -r upgo/agents/* ~/.claude/agents/
 ```
 
-### 方法3: プロジェクトローカル
+## 必要な環境
 
-```bash
-# プロジェクトディレクトリにコピー
-cp -r upgo/skills/* your-project/.claude/skills/
-cp -r upgo/commands/* your-project/.claude/commands/
-cp -r upgo/agents/* your-project/.claude/agents/
+- GitHub CLI (`gh`) がインストールされていること
+- `gh auth login` で認証済みであること
+
+## 使い方
+
+### PR キャッチアップ
+
+```
+/go-catchup
+```
+
+直近のマージ済み PR を取得・分析し、Go の設計思想をレポートします。
+
+```
+/go-catchup 20
+```
+
+件数を指定して取得できます。
+
+### 個別 PR の分析
+
+Claude Code に直接依頼：
+
+```
+golang/go の PR #12345 を分析して、Go の思想を教えて
 ```
 
 ## 含まれるコンポーネント
 
-### Skills
+### Skills（ユーザー向け）
 
 | スキル | 説明 |
 |--------|------|
-| `go-philosophy` | Go の設計思想と Go Proverbs |
-| `go-error-handling` | エラーハンドリングパターン |
-| `go-testing` | テスト戦略と TDD |
-| `go-concurrency` | 並行処理パターン |
-| `go-code-review` | コードレビュー観点 |
-| `zellij-workflow` | zellij 並列ワークフロー |
+| `go-pr-fetcher` | GitHub API で PR を取得 |
+| `go-pr-analyzer` | PR を分析し Go 思想を抽出 |
 
-### Slash Commands
+### Commands（ユーザー向け）
 
 | コマンド | 説明 |
 |----------|------|
-| `/zellij-test [pattern]` | 別ペインでテストを実行 |
-| `/zellij-run <command>` | 別ペインでコマンドを実行 |
-| `/orchestrator <task>` | タスクを分割して並列実行 |
-| `/loop [prompt]` | ペアプログラミングパートナーを起動 |
-| `/go-review <file>` | Go コードをレビュー |
-| `/go-explain <code>` | Go コードを解説 |
+| `/go-catchup [件数]` | 直近 PR をキャッチアップ |
 
-### Agents
+## 分析で得られる情報
 
-| エージェント | 説明 |
-|--------------|------|
-| `go-mentor` | Go 言語のメンター |
-| `zellij-orchestrator` | 並列タスク実行オーケストレーター |
-
-## 使い方
-
-### Zellij ワークフロー
-
-zellij セッション内で Claude Code を使用してください：
-
-```bash
-# zellij セッション開始
-zellij
-
-# Claude Code 起動
-claude
-```
-
-#### 別ペインでテスト実行
-
-```
-/zellij-test
-```
-
-右側のペインでテストが実行されます。
-
-#### 別ペインでサーバー起動
-
-```
-/zellij-run go run cmd/server/main.go
-```
-
-下側のペインでサーバーが起動します。
-
-#### タスクを並列実行
-
-```
-/orchestrator API を実装してテストも書いて
-```
-
-タスクが分割され、複数ペインで並列実行されます。
-
-#### ペアプログラミング
-
-```
-/loop テストを担当してください
-```
-
-右側のペインでペアプログラミングパートナーが起動します。
-
-### Go スキルの活用
-
-Go に関する質問をすると、自動的に関連スキルが適用されます：
-
-- 「エラー処理どうすればいい？」→ `go-error-handling` スキル適用
-- 「テストの書き方教えて」→ `go-testing` スキル適用
-- 「goroutine の使い方」→ `go-concurrency` スキル適用
+- **変更の背景**: なぜこの変更が必要だったか
+- **議論のポイント**: レビューで何が議論されたか
+- **Go 思想との関連**: シンプルさ、明示性、直交性など
+- **学べること**: 実践的なベストプラクティス
 
 ## ディレクトリ構造
 
 ```
 upgo/
-├── .claude-plugin/       # Claude Code プラグインマニフェスト
+├── .claude-plugin/       # プラグインマニフェスト
 │   └── plugin.json
-├── skills/               # Skills
-│   ├── go-*/             # Go 関連スキル
-│   └── zellij-workflow/  # Zellij ワークフロースキル
-├── agents/               # Agents
-│   ├── go-mentor/        # Go メンター
-│   └── zellij-orchestrator/ # Zellij オーケストレーター
-└── commands/             # Slash Commands
-    ├── go-*.md           # Go 関連コマンド
-    ├── zellij-*.md       # Zellij 関連コマンド
-    ├── orchestrator.md   # タスク並列実行
-    └── loop.md           # ペアプログラミング
+├── skills/               # ユーザー向け Skills
+│   ├── go-pr-fetcher/    # PR 取得
+│   └── go-pr-analyzer/   # PR 分析
+├── commands/             # ユーザー向け Commands
+│   └── go-catchup.md     # キャッチアップコマンド
+└── .claude/              # 開発者向けツール（内部用）
+    ├── skills/           # zellij, Go 開発支援
+    ├── commands/         # 開発用コマンド
+    └── agents/           # 開発用エージェント
 ```
 
 ## ライセンス
 
 MIT License
-
-## 関連リンク
-
-- [Claude Code Documentation](https://docs.anthropic.com/en/docs/claude-code)
-- [Claude Code Skills](https://code.claude.com/docs/en/skills)
-- [Zellij](https://zellij.dev/)

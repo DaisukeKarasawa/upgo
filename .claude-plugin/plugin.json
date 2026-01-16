@@ -1,7 +1,7 @@
 {
-  "name": "upgo-claude-code-skills",
+  "name": "go-pr-insights",
   "version": "1.0.0",
-  "description": "Claude Code専用のGo開発・zellijワークフロースキルセット",
+  "description": "golang/go の PR を Claude Code で自動取得・分析し、Go の設計思想をキャッチアップ",
   "author": {
     "name": "DaisukeKarasawa",
     "url": "https://github.com/DaisukeKarasawa"
@@ -12,9 +12,8 @@
     "claude-code",
     "go",
     "golang",
-    "zellij",
-    "parallel-workflow",
-    "multi-agent",
-    "tdd"
+    "github-pr",
+    "code-analysis",
+    "learning"
   ]
 }

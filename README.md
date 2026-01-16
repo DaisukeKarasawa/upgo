@@ -132,9 +132,18 @@ upgo/
 │   ├── github/           # GitHub API クライアント
 │   ├── llm/              # LLM クライアント（Ollama）
 │   └── database/         # SQLite データストア
-├── skills/               # 生成された Skills（配布用）
+├── skills/               # Skills
+│   ├── go-*/             # Go 関連スキル
+│   └── zellij-workflow/  # Zellij ワークフロースキル
 ├── agents/               # サブエージェント
+│   ├── go-mentor/        # Go メンター
+│   └── zellij-orchestrator/ # Zellij オーケストレーター
 ├── commands/             # スラッシュコマンド
+│   ├── go-review.md      # Go コードレビュー
+│   ├── zellij-test.md    # 別ペインでテスト実行
+│   ├── zellij-run.md     # 別ペインでコマンド実行
+│   ├── orchestrator.md   # タスク並列実行
+│   └── loop.md           # ペアプログラミング
 └── legacy/               # 旧 Web UI
 ```
 
@@ -163,6 +172,54 @@ cron などで定期的に実行することで、最新の PR 情報をキャ�
 ```bash
 # 毎日朝9時に実行
 0 9 * * * cd /path/to/upgo && go run cmd/skillgen/main.go run
+```
+
+## Zellij ワークフロー
+
+zellij を使った並列開発ワークフローのための Skills / コマンド / サブエージェントを提供しています。
+
+### スラッシュコマンド
+
+| コマンド | 説明 |
+|----------|------|
+| `/zellij-test [pattern]` | 別ペインでテストを実行 |
+| `/zellij-run <command>` | 別ペインで任意のコマンドを実行 |
+| `/orchestrator <task>` | タスクを分割して複数ペインで並列実行 |
+| `/loop [prompt]` | 別ペインでペアプログラミングパートナーを起動 |
+
+### 使用例
+
+```bash
+# 別ペインでテスト実行
+/zellij-test
+
+# 特定のテストパターンのみ
+/zellij-test TestUserService
+
+# 開発サーバーを別ペインで起動
+/zellij-run go run cmd/server/main.go
+
+# タスクを並列実行
+/orchestrator APIエンドポイントを実装してテストも書いて
+
+# ペアプログラミング
+/loop テストを書いてください
+```
+
+### Skills
+
+`zellij-workflow` スキルに詳細なパターンとコマンドリファレンスがあります。
+
+### セットアップ
+
+zellij セッション内で Claude Code を使用してください：
+
+```bash
+# zellij セッション開始
+zellij
+
+# Claude Code 起動
+claude
 ```
 
 ## Legacy: Web UI 版

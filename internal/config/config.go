@@ -9,7 +9,7 @@ import (
 )
 
 type Config struct {
-	Repository RepositoryConfig `mapstructure:"repository"`
+	Repository RepositoryConfig  `mapstructure:"repository"`
 	GitHub     GitHubConfig      `mapstructure:"github"`
 	Scheduler  SchedulerConfig   `mapstructure:"scheduler"`
 	LLM        LLMConfig         `mapstructure:"llm"`
@@ -17,6 +17,7 @@ type Config struct {
 	Server     ServerConfig      `mapstructure:"server"`
 	Logging    LoggingConfig     `mapstructure:"logging"`
 	Backup     BackupConfig      `mapstructure:"backup"`
+	SkillGen   SkillGenConfig    `mapstructure:"skillgen"`
 }
 
 type RepositoryConfig struct {
@@ -59,10 +60,18 @@ type LoggingConfig struct {
 }
 
 type BackupConfig struct {
-	Enabled   bool   `mapstructure:"enabled"`
-	Interval  string `mapstructure:"interval"`
-	MaxBackups int   `mapstructure:"max_backups"`
-	Path      string `mapstructure:"path"`
+	Enabled    bool   `mapstructure:"enabled"`
+	Interval   string `mapstructure:"interval"`
+	MaxBackups int    `mapstructure:"max_backups"`
+	Path       string `mapstructure:"path"`
+}
+
+type SkillGenConfig struct {
+	OutputDir      string   `mapstructure:"output_dir"`
+	Categories     []string `mapstructure:"categories"`
+	AutoCategorize bool     `mapstructure:"auto_categorize"`
+	MergeSimilar   bool     `mapstructure:"merge_similar"`
+	MinConfidence  float64  `mapstructure:"min_confidence"`
 }
 
 var AppConfig *Config

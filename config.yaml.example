@@ -35,3 +35,18 @@ backup:
   interval: "24h"  # 自動バックアップ間隔
   max_backups: 7   # 保持するバックアップ数
   path: "./backups"
+
+# Skill generation settings for Claude Code integration
+skillgen:
+  output_dir: ".claude/skills"
+  categories:
+    - go-patterns
+    - code-review
+    - error-handling
+    - testing
+    - performance
+    - concurrency
+    - api-design
+  auto_categorize: true
+  merge_similar: true
+  min_confidence: 0.7

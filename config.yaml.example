@@ -37,16 +37,6 @@ backup:
   path: "./backups"
 
 # Skill generation settings for Claude Code integration
+# PRを分析してClaude Code用のスキルファイルを生成
 skillgen:
-  output_dir: ".claude/skills"
-  categories:
-    - go-patterns
-    - code-review
-    - error-handling
-    - testing
-    - performance
-    - concurrency
-    - api-design
-  auto_categorize: true
-  merge_similar: true
-  min_confidence: 0.7
+  output_dir: "skills"  # 生成されたスキルの出力先

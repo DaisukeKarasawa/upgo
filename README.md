@@ -1,144 +1,184 @@
-# Upgo - Go Development Skills for Claude Code
+# Upgo - Go 公式リポジトリ PR 分析 → Claude Code Skills
 
-Go言語の設計思想・哲学・ベストプラクティスを学べる Claude Code Skills セットです。
+golang/go リポジトリの PR を分析し、Go の設計思想・哲学・ベストプラクティスを Claude Code Skills として生成するツールです。
 
 ## 特徴
 
-- **Go の思想を理解**: 「なぜ Go はこう設計されているか」を学べる
-- **実践的なパターン**: エラーハンドリング、テスト、並行処理の実践的なパターン
-- **コードレビュー観点**: Go らしいコードを書くためのチェックリスト
-- **すぐに使える**: コピーするだけで導入完了
+- **リアルタイムキャッチアップ**: 直近1ヶ月の PR 情報を取得・分析
+- **議論の可視化**: PR のレビューコメントや議論のポイントを抽出
+- **Go 思想の理解**: 変更の背景にある Go の設計思想を学べる
+- **Skills 形式で配布**: Claude Code ですぐに使える形式で出力
 
-## スキル一覧
+## ワークフロー
 
-| スキル | 説明 |
-|--------|------|
-| `go-philosophy` | Go の設計思想と哲学（Go Proverbs、シンプルさ、明示性） |
-| `go-error-handling` | エラーハンドリングパターン（ラッピング、カスタムエラー、sentinel errors） |
-| `go-testing` | テスト戦略（TDD、テーブル駆動テスト、モック、ベンチマーク） |
-| `go-concurrency` | 並行処理パターン（goroutine、channel、context、sync） |
-| `go-code-review` | コードレビューガイド（チェックリスト、セキュリティ、パフォーマンス） |
-
-## インストール方法
-
-### 方法1: 手動コピー（推奨）
-
-```bash
-# リポジトリをクローン
-git clone https://github.com/DaisukeKarasawa/upgo.git
-
-# スキルをコピー（個人用）
-cp -r upgo/skills/* ~/.claude/skills/
-
-# または、プロジェクト単位で
-cp -r upgo/skills/* your-project/.claude/skills/
+```
+golang/go の PR 取得
+        ↓
+  議論・レビュー・変更内容を収集
+        ↓
+  LLM（Ollama）で分析
+        ↓
+  Skills 形式で出力
+        ↓
+  Claude Code でキャッチアップ
 ```
 
-### 方法2: エージェントとコマンドも含める
+## 必要な環境
+
+- Go 1.21 以上
+- Ollama（https://ollama.ai/）
+- GitHub Token
+
+## セットアップ
+
+### 1. Ollama のインストールとモデル取得
 
 ```bash
-# スキル、エージェント、コマンドをすべてコピー
-cp -r upgo/skills/* ~/.claude/skills/
-cp -r upgo/agents/* ~/.claude/agents/
-cp -r upgo/commands/* ~/.claude/commands/
+# Ollama をインストール後
+ollama pull llama3.2
 ```
 
-### 方法3: プラグインマーケットプレイス（将来対応予定）
+### 2. 環境変数の設定
 
 ```bash
-# Claude Code で実行
-/plugin marketplace add DaisukeKarasawa/upgo
-/plugin install go-skills@upgo
+export GITHUB_TOKEN=your_github_token_here
+```
+
+### 3. 設定ファイルの作成
+
+```bash
+cp config.yaml.example config.yaml
+```
+
+### 4. 依存関係のインストール
+
+```bash
+go mod download
 ```
 
 ## 使い方
 
-### スキル（自動適用）
-
-インストール後、Claude Code が自動的にスキルを活用します。
-
-```
-# 例: Go のエラーハンドリングについて質問
-> Go でエラーをどう処理すればいい？
-
-# → go-error-handling スキルが自動的に適用され、
-#   Go の思想に基づいた回答が得られます
-```
-
-### コマンド
+### フルパイプライン（推奨）
 
 ```bash
-# Go コードをレビュー
-/go-review path/to/file.go
-
-# Go コードを解説
-/go-explain path/to/file.go
+# PR 取得 → 分析 → Skills 生成を一括実行
+go run cmd/skillgen/main.go run
 ```
 
-### エージェント
+### 個別コマンド
 
-Go メンターエージェントが自動的に起動し、Go の学習をサポートします。
+```bash
+# PR データを同期（直近1ヶ月）
+go run cmd/skillgen/main.go sync
+
+# PR を分析
+go run cmd/skillgen/main.go analyze
+
+# Skills を生成
+go run cmd/skillgen/main.go generate
+
+# 生成された Skills を一覧表示
+go run cmd/skillgen/main.go list
+```
+
+### 生成された Skills を使う
+
+```bash
+# 個人の Claude Code に追加
+cp -r skills/* ~/.claude/skills/
+
+# または、プロジェクトに追加
+cp -r skills/* your-project/.claude/skills/
+```
+
+## 生成される Skills
+
+実行すると、以下のようなスキルが生成されます：
+
+| スキル | 説明 |
+|--------|------|
+| `go-error-handling` | エラーハンドリング関連の PR から抽出した知見 |
+| `go-testing` | テスト関連の PR から抽出した知見 |
+| `go-performance` | パフォーマンス関連の PR から抽出した知見 |
+| `go-concurrency` | 並行処理関連の PR から抽出した知見 |
+| `go-weekly-digest` | 全カテゴリのサマリー |
+
+## Skills の内容例
+
+```markdown
+# Go エラーハンドリング の最新動向
+
+## 注目のPR
+
+### PR #12345: errors: add ErrUnsupported
+
+**状態**: merged | **作成者**: rsc
+
+**概要**: 新しい標準エラー ErrUnsupported を追加...
+
+**議論のポイント**: os.ErrNotExist との一貫性について議論...
+
+**Go思想**: シンプルで予測可能な API 設計を重視...
+```
 
 ## ディレクトリ構造
 
 ```
 upgo/
-├── skills/                      # Claude Code Skills
-│   ├── go-philosophy/          # Go の設計思想
-│   ├── go-error-handling/      # エラーハンドリング
-│   ├── go-testing/             # テスト戦略
-│   ├── go-concurrency/         # 並行処理
-│   └── go-code-review/         # コードレビュー
-├── agents/                      # サブエージェント
-│   └── go-mentor/              # Go メンター
-├── commands/                    # スラッシュコマンド
-│   ├── go-review.md            # コードレビュー
-│   └── go-explain.md           # コード解説
-├── .claude-plugin/              # プラグイン設定
-└── legacy/                      # 旧 Web UI（参考用）
+├── cmd/skillgen/          # CLI ツール
+├── internal/
+│   ├── analyzer/         # PR 分析サービス
+│   ├── skillgen/         # Skills 生成サービス
+│   ├── github/           # GitHub API クライアント
+│   ├── llm/              # LLM クライアント（Ollama）
+│   └── database/         # SQLite データストア
+├── skills/               # 生成された Skills（配布用）
+├── agents/               # サブエージェント
+├── commands/             # スラッシュコマンド
+└── legacy/               # 旧 Web UI
 ```
 
-## 対象ユーザー
+## 設定
 
-- Go を始めたばかりの開発者
-- Go のベストプラクティスを学びたい中級者
-- チームの Go コード品質を向上させたいリーダー
-- Claude Code を Go 開発に活用したい人
+`config.yaml` で以下を設定できます：
 
-## 参考資料
+```yaml
+repository:
+  owner: "golang"  # 分析対象リポジトリ
+  name: "go"
 
-このスキルセットは以下の資料を参考に作成されています：
+llm:
+  base_url: "http://localhost:11434"
+  model: "llama3.2"
+  timeout: 300
 
-- [Effective Go](https://go.dev/doc/effective_go)
-- [Go Proverbs](https://go-proverbs.github.io/)
-- [Go Code Review Comments](https://go.dev/wiki/CodeReviewComments)
-- [Practical Go](https://dave.cheney.net/practical-go)
+skillgen:
+  output_dir: "skills"  # Skills 出力先
+```
+
+## 定期実行
+
+cron などで定期的に実行することで、最新の PR 情報をキャッチアップできます：
+
+```bash
+# 毎日朝9時に実行
+0 9 * * * cd /path/to/upgo && go run cmd/skillgen/main.go run
+```
 
 ## Legacy: Web UI 版
 
-以前の Web UI 版（GitHub PR 監視・分析システム）は `legacy/` ディレクトリに保存されています。
+以前の Web UI 版は `legacy/` ディレクトリに保存されています。
 
 ```bash
-# Legacy Web UI を起動する場合
 make legacy-dev
 ```
-
-詳細は [legacy/README.md](legacy/README.md) を参照してください。
 
 ## ライセンス
 
 MIT License
 
-## コントリビューション
-
-Issue や Pull Request を歓迎します。
-
-- スキルの改善提案
-- 新しいスキルの追加
-- ドキュメントの改善
-
 ## 関連リンク
 
+- [golang/go リポジトリ](https://github.com/golang/go)
 - [Claude Code Skills ドキュメント](https://code.claude.com/docs/en/skills)
-- [anthropics/skills](https://github.com/anthropics/skills) - 公式 Skills リポジトリ
-- [awesome-claude-skills](https://github.com/travisvn/awesome-claude-skills) - Skills キュレーションリスト
+- [Ollama](https://ollama.ai/)

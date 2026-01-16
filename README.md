@@ -92,6 +92,10 @@ upgo/
     └── agents/           # 開発用エージェント
 ```
 
+## 開発に貢献する
+
+プラグインの開発に参加したい方は [CONTRIBUTING.md](CONTRIBUTING.md) をご覧ください。
+
 ## ライセンス
 
 MIT License

@@ -1,29 +1,8 @@
-# Build artifacts
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-main
-server
-bin/
-
-# Data
-data/
-backups/
-logs/
-*.db
-*.db-shm
-*.db-wal
-
-# Config
-config.yaml
-config.yaml.bak
-*.bak
-
 # IDE
 .idea/
 .vscode/
+
+# Editor temporary files
 *.swp
 *.swo
 
@@ -31,11 +10,9 @@ config.yaml.bak
 .DS_Store
 Thumbs.db
 
-# Environment
-.env
+# Backup files
+*.bak
 
-# Node
-node_modules/
-
-# Legacy
-legacy/
+# IDE
+*.swp
+*.swo

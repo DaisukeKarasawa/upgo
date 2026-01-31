@@ -105,7 +105,7 @@ gerrit_api() {
   local endpoint="$1"
   local base_url="${GERRIT_BASE_URL:-https://go-review.googlesource.com}"
   curl -sf -u "${GERRIT_USER}:${GERRIT_HTTP_PASSWORD}" \
-    "${base_url}/a${endpoint}" | sed '1s/^)]\}\x27//'
+    "${base_url}/a${endpoint}" | sed "1s/^)]}'//"
 }
 
 echo "Testing Change fetch..."

@@ -4,11 +4,12 @@ This file contains project-specific instructions for Claude Code.
 
 ## Project Overview
 
-Upgo is a Claude Code plugin that automatically fetches and analyzes golang/go PRs to help learn Go design philosophy. It provides skills and commands for Claude Code to interact with GitHub PRs and extract insights about Go's design principles.
+Upgo is a Claude Code plugin that automatically fetches and analyzes golang/go Changes (CLs) via Gerrit to help learn Go design philosophy. It provides skills and commands for Claude Code to interact with Gerrit Changes and extract insights about Go's design principles.
 
 ## Technology Stack
 
-- **GitHub CLI**: `gh` command for GitHub API access
+- **Gerrit REST API**: HTTP API for accessing Gerrit code review system
+- **curl**: Command-line tool for HTTP requests
 - **Markdown**: Skills and commands are defined in Markdown files
 - **Claude Code Plugin**: Plugin manifest format
 
@@ -19,8 +20,8 @@ upgo/
 ├── .claude-plugin/       # Plugin manifest
 │   └── plugin.json
 ├── skills/               # User-facing Skills
-│   ├── go-pr-fetcher/    # PR fetching skill
-│   └── go-pr-analyzer/   # PR analysis skill
+│   ├── go-pr-fetcher/    # Change fetching skill
+│   └── go-pr-analyzer/   # Change analysis skill
 ├── commands/             # User-facing Commands
 │   └── go-catchup.md     # Catchup command
 └── .claude/              # Developer tools (internal)
@@ -45,21 +46,21 @@ Use the `plugin-test` skill to validate plugin structure and functionality.
 
 Use [gitmoji](https://gist.github.com/parmentf/035de27d6ed1dce0b36a) in commit messages:
 
-| Gitmoji | Usage |
-|---------|-------|
-| `:sparkles:` | New feature |
-| `:bug:` | Bug fix |
-| `:recycle:` | Refactor |
-| `:white_check_mark:` | Add/update tests |
-| `:memo:` | Documentation |
-| `:art:` | Improve structure/format |
-| `:zap:` | Performance improvement |
-| `:fire:` | Remove code/files |
-| `:construction:` | Work in progress |
+| Gitmoji              | Usage                    |
+| -------------------- | ------------------------ |
+| `:sparkles:`         | New feature              |
+| `:bug:`              | Bug fix                  |
+| `:recycle:`          | Refactor                 |
+| `:white_check_mark:` | Add/update tests         |
+| `:memo:`             | Documentation            |
+| `:art:`              | Improve structure/format |
+| `:zap:`              | Performance improvement  |
+| `:fire:`             | Remove code/files        |
+| `:construction:`     | Work in progress         |
 
 Format: `<gitmoji> <commit message>`
 
-Example: `:sparkles: Add new PR analysis feature`
+Example: `:sparkles: Add new Change analysis feature`
 
 ## Important Notes
 

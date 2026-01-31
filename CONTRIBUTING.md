@@ -17,7 +17,7 @@ upgo プラグインの開発に貢献していただきありがとうござい
 
 ```bash
 # 必須
-- GitHub CLI (gh)
+- curl (HTTP リクエスト用)
 - Claude Code CLI
 
 # オプション（推奨）
@@ -27,15 +27,20 @@ upgo プラグインの開発に貢献していただきありがとうござい
 ### インストール手順
 
 ```bash
-# GitHub CLI
+# curl (通常は既にインストール済み)
 # macOS
-brew install gh
+# 通常は標準インストール済み
 
 # Linux
-# https://github.com/cli/cli#installation
+# 通常は標準インストール済み、ない場合は:
+# sudo apt-get install curl  # Debian/Ubuntu
+# sudo yum install curl       # RHEL/CentOS
 
-# 認証
-gh auth login
+# Gerrit 認証情報の設定
+export GERRIT_USER="your-username"
+export GERRIT_HTTP_PASSWORD="your-http-password"
+# HTTP パスワードは以下から取得:
+# https://go-review.googlesource.com/settings/#HTTPCredentials
 
 # zellij（オプション）
 # macOS
@@ -63,34 +68,34 @@ ln -s $(pwd)/.claude/commands/* ~/.claude/commands/
 
 ### 開発用 Skills
 
-| スキル | 説明 |
-|--------|------|
-| `plugin-test` | プラグインの構造と機能をテスト |
-| `go-code-review` | Go コードレビューのチェックリスト |
-| `go-philosophy` | Go の設計思想と哲学 |
+| スキル              | 説明                                   |
+| ------------------- | -------------------------------------- |
+| `plugin-test`       | プラグインの構造と機能をテスト         |
+| `go-code-review`    | Go コードレビューのチェックリスト      |
+| `go-philosophy`     | Go の設計思想と哲学                    |
 | `go-error-handling` | エラーハンドリングのベストプラクティス |
-| `go-testing` | テスト戦略と TDD |
-| `go-concurrency` | 並行処理パターン |
-| `zellij-workflow` | zellij での並列開発ワークフロー |
+| `go-testing`        | テスト戦略と TDD                       |
+| `go-concurrency`    | 並行処理パターン                       |
+| `zellij-workflow`   | zellij での並列開発ワークフロー        |
 
 ### 開発用 Commands
 
-| コマンド | 説明 | 引数 |
-|----------|------|------|
-| `/test-plugin` | プラグインテストを別ペインで実行 | なし |
-| `/go-review` | Go コードをレビュー | `<file-path>` |
-| `/go-explain` | Go コードを解説 | `<file-path>` |
-| `/zellij-test` | テストを別ペインで実行 | `[test-pattern]` |
-| `/zellij-run` | コマンドを別ペインで実行 | `<command>` |
-| `/loop` | ペアプログラミングパートナーを起動 | なし |
-| `/orchestrator` | タスクを並列実行 | `<task>` |
+| コマンド        | 説明                               | 引数             |
+| --------------- | ---------------------------------- | ---------------- |
+| `/test-plugin`  | プラグインテストを別ペインで実行   | なし             |
+| `/go-review`    | Go コードをレビュー                | `<file-path>`    |
+| `/go-explain`   | Go コードを解説                    | `<file-path>`    |
+| `/zellij-test`  | テストを別ペインで実行             | `[test-pattern]` |
+| `/zellij-run`   | コマンドを別ペインで実行           | `<command>`      |
+| `/loop`         | ペアプログラミングパートナーを起動 | なし             |
+| `/orchestrator` | タスクを並列実行                   | `<task>`         |
 
 ### 開発用 Agents
 
-| エージェント | 説明 |
-|------------|------|
-| `go-mentor` | Go メンター（設計思想・ベストプラクティス指導） |
-| `zellij-orchestrator` | 並列タスク実行のオーケストレータ |
+| エージェント          | 説明                                            |
+| --------------------- | ----------------------------------------------- |
+| `go-mentor`           | Go メンター（設計思想・ベストプラクティス指導） |
+| `zellij-orchestrator` | 並列タスク実行のオーケストレータ                |
 
 ## 開発ワークフロー
 
@@ -103,11 +108,12 @@ ln -s $(pwd)/.claude/commands/* ~/.claude/commands/
 ```
 
 別ペインで以下のテストが実行されます:
+
 - ファイル構造の検証
 - `plugin.json` の妥当性チェック
-- 環境チェック（`gh` コマンド、認証）
+- 環境チェック（`curl` コマンド、Gerrit 認証情報）
 - Skills/Commands の定義フォーマット検証
-- 基本的な機能テスト（PR 取得）
+- 基本的な機能テスト（Change 取得）
 
 ### コードレビュー
 
@@ -118,6 +124,7 @@ Go コードレビューのチェックリストに基づいて改善点を提�
 ```
 
 レビュー観点:
+
 - エラーハンドリング
 - リソース管理
 - 並行処理の安全性
@@ -159,12 +166,14 @@ zellij セッション内で:
 ### ファイル構造
 
 必須ファイル:
+
 - `.claude-plugin/plugin.json` - プラグインメタデータ
 - `skills/*/SKILL.md` - ユーザー向け Skills
 - `commands/*.md` - ユーザー向け Commands
 - `README.md` - ユーザー向けドキュメント
 
 開発用ツール（オプション）:
+
 - `.claude/skills/` - 開発用 Skills
 - `.claude/commands/` - 開発用 Commands
 - `.claude/agents/` - 開発用 Agents
@@ -179,6 +188,7 @@ zellij セッション内で:
 ### コードレビュー
 
 コミット前に必ず:
+
 ```bash
 /go-review path/to/modified/file.go
 ```
@@ -186,6 +196,7 @@ zellij セッション内で:
 ### プラグインマニフェスト（plugin.json）
 
 必須フィールド:
+
 - `name`: プラグイン名
 - `version`: バージョン（セマンティックバージョニング）
 - `description`: 簡潔な説明
@@ -194,11 +205,12 @@ zellij セッション内で:
 - `license`: ライセンス
 
 例:
+
 ```json
 {
   "name": "upgo",
   "version": "1.0.0",
-  "description": "golang/go の PR を分析し Go の設計思想を学ぶ",
+  "description": "golang/go の Change (CL) を分析し Go の設計思想を学ぶ",
   "author": {
     "name": "Your Name",
     "url": "https://github.com/yourname"
@@ -216,13 +228,13 @@ upgo/
 │   └── plugin.json          # プラグインメタデータ
 │
 ├── skills/                   # ユーザー向け Skills
-│   ├── go-pr-fetcher/       # PR 取得スキル
+│   ├── go-pr-fetcher/       # Change 取得スキル
 │   │   └── SKILL.md
-│   └── go-pr-analyzer/      # PR 分析スキル
+│   └── go-pr-analyzer/      # Change 分析スキル
 │       └── SKILL.md
 │
 ├── commands/                 # ユーザー向け Commands
-│   └── go-catchup.md        # PR キャッチアップコマンド
+│   └── go-catchup.md        # Change キャッチアップコマンド
 │
 ├── .claude/                  # 開発者向けツール（内部用）
 │   ├── skills/              # 開発用 Skills
@@ -266,11 +278,13 @@ upgo/
 ### ディレクトリの役割
 
 #### ユーザー向け（配布対象）
+
 - `.claude-plugin/`: プラグインメタデータ
 - `skills/`: エンドユーザーが利用する Skills
 - `commands/`: エンドユーザーが利用する Commands
 
 #### 開発者向け（内部用）
+
 - `.claude/skills/`: プラグイン開発を支援する Skills
 - `.claude/commands/`: 開発タスクを効率化する Commands
 - `.claude/agents/`: 特殊な開発タスク用の Agents
@@ -281,17 +295,17 @@ upgo/
 
 ### よく使う gitmoji
 
-| Gitmoji | 使用場面 | 例 |
-|---------|---------|-----|
-| `:sparkles:` | 新機能追加 | `:sparkles: Add PR filtering by label` |
-| `:bug:` | バグ修正 | `:bug: Fix error handling in PR fetcher` |
-| `:recycle:` | リファクタリング | `:recycle: Refactor PR analysis logic` |
-| `:white_check_mark:` | テスト追加・更新 | `:white_check_mark: Add tests for go-catchup` |
-| `:memo:` | ドキュメント更新 | `:memo: Update README with new features` |
-| `:art:` | コード構造改善 | `:art: Improve SKILL.md formatting` |
-| `:zap:` | パフォーマンス改善 | `:zap: Optimize PR fetching logic` |
-| `:fire:` | コード削除 | `:fire: Remove deprecated skill` |
-| `:construction:` | WIP | `:construction: Work in progress on analyzer` |
+| Gitmoji              | 使用場面           | 例                                            |
+| -------------------- | ------------------ | --------------------------------------------- |
+| `:sparkles:`         | 新機能追加         | `:sparkles: Add Change filtering by label`    |
+| `:bug:`              | バグ修正           | `:bug: Fix error handling in Change fetcher`  |
+| `:recycle:`          | リファクタリング   | `:recycle: Refactor Change analysis logic`    |
+| `:white_check_mark:` | テスト追加・更新   | `:white_check_mark: Add tests for go-catchup` |
+| `:memo:`             | ドキュメント更新   | `:memo: Update README with new features`      |
+| `:art:`              | コード構造改善     | `:art: Improve SKILL.md formatting`           |
+| `:zap:`              | パフォーマンス改善 | `:zap: Optimize Change fetching logic`        |
+| `:fire:`             | コード削除         | `:fire: Remove deprecated skill`              |
+| `:construction:`     | WIP                | `:construction: Work in progress on analyzer` |
 
 ### コミットメッセージの形式
 
@@ -306,7 +320,7 @@ upgo/
 ```bash
 git commit -m ":sparkles: Add label filtering to go-pr-fetcher
 
-Users can now filter PRs by specific labels when using
+Users can now filter Changes by specific labels when using
 the go-pr-fetcher skill."
 ```
 
@@ -329,12 +343,13 @@ the go-pr-fetcher skill."
 コミットメッセージと同様に gitmoji を使用:
 
 ```
-:sparkles: Add new feature for PR filtering
+:sparkles: Add new feature for Change filtering
 ```
 
 ### PR 説明
 
 以下を含めてください:
+
 - **変更内容**: 何を変更したか
 - **理由**: なぜこの変更が必要か
 - **テスト**: どのようにテストしたか
@@ -343,6 +358,7 @@ the go-pr-fetcher skill."
 ## サポート
 
 質問や問題がある場合:
+
 - [Issues](https://github.com/DaisukeKarasawa/upgo/issues) で報告
 - 開発用ツール（`/test-plugin`, `/go-review` など）を活用
 - `go-mentor` エージェントに質問

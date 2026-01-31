@@ -12,6 +12,7 @@ Validates the upgo plugin structure, configuration, and basic functionality.
 ### 1. File Structure Validation
 
 **Required Files:**
+
 - `.claude-plugin/plugin.json`
 - `skills/go-pr-fetcher/SKILL.md`
 - `skills/go-pr-analyzer/SKILL.md`
@@ -19,6 +20,7 @@ Validates the upgo plugin structure, configuration, and basic functionality.
 - `README.md`
 
 **Validation:**
+
 ```bash
 # Check all required files exist
 test -f .claude-plugin/plugin.json && echo "✓ plugin.json" || echo "✗ plugin.json MISSING"
@@ -31,6 +33,7 @@ test -f README.md && echo "✓ README.md" || echo "✗ README.md MISSING"
 ### 2. Plugin Manifest Validation
 
 **Required Fields in plugin.json:**
+
 - `name`
 - `version`
 - `description`
@@ -39,6 +42,7 @@ test -f README.md && echo "✓ README.md" || echo "✗ README.md MISSING"
 - `license`
 
 **Validation:**
+
 ```bash
 # Read and validate plugin.json
 cat .claude-plugin/plugin.json | python3 -m json.tool > /dev/null 2>&1
@@ -57,46 +61,62 @@ done
 ### 3. Environment Check
 
 **Requirements:**
-- GitHub CLI (`gh`) installed
-- `gh` authenticated
+
+- `curl` command installed
+- Gerrit environment variables set (`GERRIT_USER`, `GERRIT_HTTP_PASSWORD`)
 
 **Validation:**
+
 ```bash
-# Check gh command
-which gh > /dev/null 2>&1
+# Check curl command
+which curl > /dev/null 2>&1
 if [ $? -eq 0 ]; then
-    echo "✓ gh command found"
-    gh --version
+    echo "✓ curl command found"
+    curl --version | head -1
 else
-    echo "✗ gh command NOT FOUND"
+    echo "✗ curl command NOT FOUND"
     exit 1
 fi
 
-# Check authentication
-gh auth status > /dev/null 2>&1
-if [ $? -eq 0 ]; then
-    echo "✓ gh authenticated"
-else
-    echo "✗ gh NOT authenticated"
-    echo "Run: gh auth login"
+# Check Gerrit environment variables
+if [ -z "$GERRIT_USER" ]; then
+    echo "✗ GERRIT_USER NOT SET"
+    echo "Set GERRIT_USER environment variable"
     exit 1
 fi
+
+if [ -z "$GERRIT_HTTP_PASSWORD" ]; then
+    echo "✗ GERRIT_HTTP_PASSWORD NOT SET"
+    echo "Get HTTP password from: https://go-review.googlesource.com/settings/#HTTPCredentials"
+    exit 1
+fi
+
+echo "✓ GERRIT_USER set"
+echo "✓ GERRIT_HTTP_PASSWORD set"
 ```
 
 ### 4. Basic Functionality Test
 
-**Test: Fetch 1 PR from golang/go**
+**Test: Fetch 1 Change from golang/go**
 
 ```bash
-echo "Testing PR fetch..."
-PR_DATA=$(gh pr list --repo golang/go --state merged --limit 1 --json number,title,author 2>&1)
+# Helper function to fetch Gerrit API and strip XSSI prefix
+gerrit_api() {
+  local endpoint="$1"
+  local base_url="${GERRIT_BASE_URL:-https://go-review.googlesource.com}"
+  curl -s -u "${GERRIT_USER}:${GERRIT_HTTP_PASSWORD}" \
+    "${base_url}/a${endpoint}" | sed '1s/^)]\}\x27//'
+}
 
-if [ $? -eq 0 ]; then
-    echo "✓ PR fetch successful"
-    echo "$PR_DATA" | python3 -m json.tool
+echo "Testing Change fetch..."
+CHANGE_DATA=$(gerrit_api "/changes/?q=project:go+status:merged&n=1&o=DETAILED_ACCOUNTS" 2>&1)
+
+if [ $? -eq 0 ] && echo "$CHANGE_DATA" | python3 -m json.tool > /dev/null 2>&1; then
+    echo "✓ Change fetch successful"
+    echo "$CHANGE_DATA" | python3 -m json.tool | head -20
 else
-    echo "✗ PR fetch FAILED"
-    echo "$PR_DATA"
+    echo "✗ Change fetch FAILED"
+    echo "$CHANGE_DATA"
     exit 1
 fi
 ```
@@ -164,6 +184,7 @@ Run all tests in sequence:
 6. Basic functionality test
 
 Generate test report showing:
+
 - ✓ Passed tests
 - ✗ Failed tests
 - Summary statistics
@@ -172,7 +193,7 @@ Generate test report showing:
 
 - `0`: All tests passed
 - `1`: One or more tests failed
-- `2`: Critical error (missing gh, not authenticated)
+- `2`: Critical error (missing curl, Gerrit credentials not set)
 
 ## Usage
 

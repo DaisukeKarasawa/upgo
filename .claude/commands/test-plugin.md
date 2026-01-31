@@ -65,9 +65,11 @@ zellij action write 10
 # Test 3: Environment Check
 zellij action write-chars "echo '3. Environment Check'"
 zellij action write 10
-zellij action write-chars "which gh > /dev/null 2>&1 && echo '✓ gh command found' || echo '✗ gh NOT FOUND'"
+zellij action write-chars "which curl > /dev/null 2>&1 && echo '✓ curl command found' || echo '✗ curl NOT FOUND'"
 zellij action write 10
-zellij action write-chars "gh auth status > /dev/null 2>&1 && echo '✓ gh authenticated' || echo '✗ gh NOT authenticated'"
+zellij action write-chars "[ -n \"\$GERRIT_USER\" ] && echo '✓ GERRIT_USER set' || echo '✗ GERRIT_USER NOT SET'"
+zellij action write 10
+zellij action write-chars "[ -n \"\$GERRIT_HTTP_PASSWORD\" ] && echo '✓ GERRIT_HTTP_PASSWORD set' || echo '✗ GERRIT_HTTP_PASSWORD NOT SET'"
 zellij action write 10
 zellij action write-chars "echo ''"
 zellij action write 10
@@ -99,9 +101,11 @@ zellij action write 10
 # Test 6: Basic Functionality
 zellij action write-chars "echo '6. Basic Functionality Test'"
 zellij action write 10
-zellij action write-chars "echo 'Fetching 1 PR from golang/go...'"
+zellij action write-chars "echo 'Fetching 1 Change from golang/go...'"
 zellij action write 10
-zellij action write-chars "gh pr list --repo golang/go --state merged --limit 1 --json number,title,author 2>&1 | python3 -m json.tool"
+zellij action write-chars "gerrit_api() { local e=\"\$1\"; local b=\"\${GERRIT_BASE_URL:-https://go-review.googlesource.com}\"; curl -s -u \"\${GERRIT_USER}:\${GERRIT_HTTP_PASSWORD}\" \"\${b}/a\${e}\" | sed '1s/^)]\\}\\x27//'; }"
+zellij action write 10
+zellij action write-chars "gerrit_api '/changes/?q=project:go+status:merged&n=1&o=DETAILED_ACCOUNTS' 2>&1 | python3 -m json.tool | head -20"
 zellij action write 10
 zellij action write-chars "echo ''"
 zellij action write 10
@@ -124,7 +128,7 @@ Report: "Plugin tests are running in the right pane. Check results there."
 
 - File structure validation
 - Plugin manifest (plugin.json) validation
-- Environment requirements (gh command, authentication)
+- Environment requirements (curl command, Gerrit credentials)
 - Skill definition format validation
 - Command definition format validation
-- Basic API functionality (fetch 1 PR from golang/go)
+- Basic API functionality (fetch 1 Change from golang/go via Gerrit)

@@ -71,7 +71,7 @@ gerrit_api() {
     "${base_url}/a${endpoint}" | sed "1s/^)]}'//"
 }
 
-CHANGE_ID="<change-number>"  # e.g., 3965 or go~master~3965
+CHANGE_ID="<change-number>"  # e.g., 3965 (numeric) or go~master~I8473b95934b5732ac55d26311a706c9c2bde9940 (full format)
 
 # Get change details with labels, messages, and reviewer updates
 gerrit_api "/changes/${CHANGE_ID}/detail?o=LABELS&o=DETAILED_LABELS&o=MESSAGES&o=REVIEWER_UPDATES&o=CURRENT_REVISION&o=CURRENT_COMMIT&o=CURRENT_FILES" | jq '.'

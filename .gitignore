@@ -12,7 +12,3 @@ Thumbs.db
 
 # Backup files
 *.bak
-
-# IDE
-*.swp
-*.swo

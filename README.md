@@ -73,25 +73,25 @@ golang/go の Change #3965 を分析して、Go の思想を教えて
 
 ## コンポーネント間の相互作用
 
-### ユーザーコマンドからPR分析までのフロー
+### ユーザーコマンドから Change 分析までのフロー
 
 1. **コマンド実行**: ユーザーが `/go-catchup` コマンドを実行
-2. **PR取得**: `go-pr-fetcher` スキルが GitHub CLI (`gh`) を使用して golang/go リポジトリからPR情報を取得
-3. **分析処理**: `go-pr-analyzer` スキルが取得したPR情報を分析し、Goの設計思想を抽出
+2. **Change 取得**: `go-pr-fetcher` スキルが Gerrit REST API を使用して golang/go リポジトリから Change 情報を取得
+3. **分析処理**: `go-pr-analyzer` スキルが取得した Change 情報を分析し、Goの設計思想を抽出
 4. **レポート生成**: 分析結果をまとめたレポートを生成
 
-### GitHub CLIとの統合
+### Gerrit との統合
 
-- **PR情報取得**: `gh pr list` および `gh pr view` コマンドを使用してPRの基本情報、コメント、レビュー、差分を取得
-- **認証**: `gh auth login` で認証済みである必要があります
-- **エラーハンドリング**: GitHub CLIが見つからない場合や認証エラーが発生した場合、適切なエラーメッセージを表示
+- **Change 情報取得**: Gerrit REST API（`curl` + 認証）で Change 一覧・詳細・コメント・パッチを取得。`go-pr-fetcher` スキル内の `gerrit_api` ヘルパーを参照
+- **認証**: `GERRIT_USER` と `GERRIT_HTTP_PASSWORD` を設定（[設定ページ](https://go-review.googlesource.com/settings/#HTTPCredentials)）
+- **エラーハンドリング**: `curl` または認証情報が未設定の場合はエラーメッセージを表示
 
 ### SkillsとCommandsの関係
 
 - **Commands**: ユーザーが直接実行するスラッシュコマンド（例: `/go-catchup`）
 - **Skills**: Commandsから呼び出される再利用可能な機能モジュール
-  - `go-pr-fetcher`: PR情報の取得を担当
-  - `go-pr-analyzer`: PRの分析とGo思想の抽出を担当
+  - `go-pr-fetcher`: Change 情報の取得を担当
+  - `go-pr-analyzer`: Change の分析と Go 思想の抽出を担当
 - **役割分担**: Commandsがワークフローを定義し、Skillsが具体的な処理を実行する構造
 
 ## 分析で得られる情報

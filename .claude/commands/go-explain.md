@@ -1,70 +1,85 @@
 ---
-description: Goコードの動作と設計意図を解説
+description: Explain Go code behavior and design intent
 allowed-tools: Read, Grep, Glob
 argument-hint: <file-path or code-snippet>
 ---
 
 # Go Code Explain
 
-## 対象
+## Target
 
 $ARGUMENTS
 
-## 解説手順
+## Explanation Process
 
-1. 対象コードを読み込む
-2. Go の設計思想に基づいて解説
-3. 以下の観点で説明
+1. Read the target code
+2. Explain based on Go's design philosophy
+3. Explain from the following perspectives
 
-## 解説の観点
+## Explanation Perspectives
 
-### 1. 概要
-- このコードは何をしているか
-- なぜこのように実装されているか（Go の思想との関連）
+### 1. Overview
 
-### 2. 詳細解説
-- 各部分の役割と動作
-- 使用されているパターンやイディオム
-- 重要な Go の機能（interface, goroutine, channel など）
+- What does this code do?
+- Why is it implemented this way? (Relationship with Go's philosophy)
 
-### 3. 設計のポイント
-- なぜこの設計が選ばれたか
-- 代替案との比較
-- トレードオフ
+### 2. Detailed Explanation
 
-### 4. 学習ポイント
-- このコードから学べる Go のベストプラクティス
-- 関連する Go Proverbs
-- 参考にすべきスキル
+- Role and behavior of each part
+- Patterns and idioms used
+- Important Go features (interface, goroutine, channel, etc.)
 
-## 出力フォーマット
+### 3. Design Points
 
-```markdown
-## コード解説: [対象]
+- Why was this design chosen?
+- Comparison with alternatives
+- Trade-offs
 
-### 概要
-このコードは...
+### 4. Learning Points
 
-### 詳細解説
+- Go best practices that can be learned from this code
+- Related Go Proverbs
+- Skills to reference
 
-#### [セクション1]
+## Output Format
+
+````markdown
+## Code Explanation: [Target]
+
+### Overview
+
+This code...
+
+### Detailed Explanation
+
+#### [Section 1]
+
 ```go
-// 該当コード
+// Relevant code
 ```
-この部分は...
+````
 
-#### [セクション2]
+This part...
+
+#### [Section 2]
+
 ...
 
-### 設計のポイント
-- **なぜこの設計か**: ...
-- **Go の思想との関連**: ...
+### Design Points
 
-### 学習ポイント
-1. **[ポイント1]**: ...
-2. **[ポイント2]**: ...
+- **Why this design**: ...
+- **Relationship with Go's philosophy**: ...
 
-### 関連するスキル
+### Learning Points
+
+1. **[Point 1]**: ...
+2. **[Point 2]**: ...
+
+### Related Skills
+
 - go-philosophy: ...
 - go-error-handling: ...
+
+```
+
 ```

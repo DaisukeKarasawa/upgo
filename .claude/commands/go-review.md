@@ -1,61 +1,73 @@
 ---
-description: Goコードをレビューし、改善点を提案
+description: Review Go code and suggest improvements
 allowed-tools: Read, Grep, Glob
 argument-hint: <file-path>
 ---
 
 # Go Code Review
 
-## 対象ファイル
+## Target File
 
 $ARGUMENTS
 
-## レビュー手順
+## Review Process
 
-1. 対象ファイルを読み込む
-2. go-code-review スキルに基づいてレビュー
-3. 以下の観点で問題点と改善案を提示
+1. Read the target file
+2. Review based on go-code-review skill
+3. Present issues and improvements from the following perspectives
 
-## レビュー観点
+## Review Perspectives
 
-### 必須チェック項目
-- [ ] エラーは適切に処理されているか
-- [ ] リソース（ファイル、接続）は適切にクローズされているか
-- [ ] 並行処理は安全か（データ競合、goroutine リーク）
-- [ ] 入力検証は行われているか
+### Required Check Items
 
-### コードスタイル
-- [ ] 命名は明確か
-- [ ] 関数は適切な長さか
-- [ ] 早期リターンを使っているか
-- [ ] コメントは適切か
+- [ ] Are errors handled appropriately?
+- [ ] Are resources (files, connections) properly closed?
+- [ ] Is concurrency safe? (data races, goroutine leaks)
+- [ ] Is input validation performed?
 
-### パフォーマンス
-- [ ] 不要なメモリ割り当てはないか
-- [ ] 大きな構造体はポインタで渡しているか
+### Code Style
 
-### セキュリティ
-- [ ] SQL インジェクション対策
-- [ ] 機密情報のログ出力チェック
+- [ ] Are names clear?
+- [ ] Are functions appropriately sized?
+- [ ] Is early return used?
+- [ ] Are comments appropriate?
 
-## 出力フォーマット
+### Performance
 
-```markdown
-## レビュー結果: [ファイル名]
+- [ ] Are there unnecessary memory allocations?
+- [ ] Are large structs passed by pointer?
 
-### 良い点
+### Security
+
+- [ ] SQL injection prevention
+- [ ] Check for logging sensitive information
+
+## Output Format
+
+````markdown
+## Review Results: [File Name]
+
+### Good Points
+
 - ...
 
-### 改善が必要な点
+### Points Needing Improvement
 
-#### 1. [問題の概要] (優先度: 高/中/低)
-**場所**: 行 XX
-**問題**: ...
-**改善案**:
+#### 1. [Issue Summary] (Priority: High/Medium/Low)
+
+**Location**: Line XX
+**Issue**: ...
+**Improvement**:
+
 ```go
-// 改善後のコード
+// Improved code
+```
+````
+
+### Overall Comments
+
+...
+
 ```
 
-### 全体的なコメント
-...
 ```

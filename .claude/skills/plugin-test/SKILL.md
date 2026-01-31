@@ -12,6 +12,7 @@ Validates the upgo plugin structure, configuration, and basic functionality.
 ### 1. File Structure Validation
 
 **Required Files:**
+
 - `.claude-plugin/plugin.json`
 - `skills/go-pr-fetcher/SKILL.md`
 - `skills/go-pr-analyzer/SKILL.md`
@@ -19,6 +20,7 @@ Validates the upgo plugin structure, configuration, and basic functionality.
 - `README.md`
 
 **Validation:**
+
 ```bash
 # Check all required files exist
 test -f .claude-plugin/plugin.json && echo "✓ plugin.json" || echo "✗ plugin.json MISSING"
@@ -31,6 +33,7 @@ test -f README.md && echo "✓ README.md" || echo "✗ README.md MISSING"
 ### 2. Plugin Manifest Validation
 
 **Required Fields in plugin.json:**
+
 - `name`
 - `version`
 - `description`
@@ -39,6 +42,7 @@ test -f README.md && echo "✓ README.md" || echo "✗ README.md MISSING"
 - `license`
 
 **Validation:**
+
 ```bash
 # Read and validate plugin.json
 cat .claude-plugin/plugin.json | python3 -m json.tool > /dev/null 2>&1
@@ -57,10 +61,12 @@ done
 ### 3. Environment Check
 
 **Requirements:**
+
 - GitHub CLI (`gh`) installed
 - `gh` authenticated
 
 **Validation:**
+
 ```bash
 # Check gh command
 which gh > /dev/null 2>&1
@@ -85,7 +91,7 @@ fi
 
 ### 4. Basic Functionality Test
 
-**Test: Fetch 1 PR from golang/go**
+#### Test: Fetch 1 PR from golang/go
 
 ```bash
 echo "Testing PR fetch..."
@@ -164,6 +170,7 @@ Run all tests in sequence:
 6. Basic functionality test
 
 Generate test report showing:
+
 - ✓ Passed tests
 - ✗ Failed tests
 - Summary statistics

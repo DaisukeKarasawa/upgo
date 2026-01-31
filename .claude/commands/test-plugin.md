@@ -14,6 +14,7 @@ Run comprehensive plugin tests in a separate pane.
 **Expected Result（期待される結果）**: すべての必須ファイルが存在する場合、各ファイル名の前に `✓` マーカーが表示されます。
 
 **Example Output（サンプル出力）**:
+
 ```
 1. File Structure Validation
 ✓ plugin.json
@@ -24,7 +25,8 @@ Run comprehensive plugin tests in a separate pane.
 ```
 
 **Troubleshooting（トラブルシューティング）**:
-- **ファイルが見つからない場合**: 
+
+- **ファイルが見つからない場合**:
   - ファイルが削除された場合は、gitから復元: `git checkout -- <file-path>`
   - ファイルが移動された場合は、正しいパスに戻すか、gitで確認: `git status`
   - 新規作成が必要な場合は、既存のファイルを参考に作成
@@ -40,6 +42,7 @@ Run comprehensive plugin tests in a separate pane.
 **Expected Result（期待される結果）**: JSONが有効で、必須フィールドがすべて存在する場合、各項目の前に `✓` マーカーが表示されます。
 
 **Example Output（サンプル出力）**:
+
 ```
 2. Plugin Manifest Validation
 ✓ Valid JSON
@@ -49,11 +52,12 @@ Run comprehensive plugin tests in a separate pane.
 ```
 
 **Troubleshooting（トラブルシューティング）**:
-- **無効なJSONの場合**: 
+
+- **無効なJSONの場合**:
   - JSON構文エラーを確認: `cat .claude-plugin/plugin.json | python3 -m json.tool`
   - カンマの欠落、引用符の不一致、閉じ括弧の欠落などを修正
   - オンラインJSONバリデーター（例: jsonlint.com）で検証
-- **必須フィールドが欠落している場合**: 
+- **必須フィールドが欠落している場合**:
   - `name`: プラグイン名を追加（例: `"name": "go-pr-insights"`）
   - `version`: バージョン番号を追加（例: `"version": "1.0.0"`）
   - `description`: プラグインの説明を追加
@@ -64,30 +68,39 @@ Run comprehensive plugin tests in a separate pane.
 
 ### Test 3: Environment Check
 
-**Purpose（目的）**: プラグインが動作するために必要な環境（GitHub CLI `gh` コマンドと認証状態）が整っていることを確認します。
+**Purpose（目的）**: プラグインが動作するために必要な環境（GitHub CLI `gh` コマンド、認証状態、およびPython 3）が整っていることを確認します。
 
-**Expected Result（期待される結果）**: `gh` コマンドがインストールされており、認証済みの場合、両方の項目の前に `✓` マーカーが表示されます。
+**Expected Result（期待される結果）**: `gh` コマンドがインストールされており、認証済み、かつPython 3が利用可能な場合、すべての項目の前に `✓` マーカーが表示されます。
 
 **Example Output（サンプル出力）**:
+
 ```
 3. Environment Check
 ✓ gh command found
 ✓ gh authenticated
+✓ Python 3 available
 ```
 
 **Troubleshooting（トラブルシューティング）**:
-- **`gh` コマンドが見つからない場合**: 
+
+- **`gh` コマンドが見つからない場合**:
   - macOS: `brew install gh`
   - Linux: パッケージマネージャーでインストール（例: `sudo apt install gh` または `sudo dnf install gh`）
   - Windows: [GitHub CLI公式サイト](https://cli.github.com/)からインストーラーをダウンロード
   - インストール後、シェルを再起動して `which gh` で確認
-- **認証されていない場合**: 
+- **認証されていない場合**:
   - `gh auth login` を実行
   - ブラウザで認証を完了するか、トークンを入力
   - 認証状態を確認: `gh auth status`
   - 認証が期限切れの場合は再認証: `gh auth refresh`
+- **Python 3が見つからない場合**:
+  - macOS: `brew install python3` または [python.org](https://www.python.org/downloads/)からインストール
+  - Linux: パッケージマネージャーでインストール（例: `sudo apt install python3` または `sudo dnf install python3`）
+  - Windows: [python.org](https://www.python.org/downloads/)からインストーラーをダウンロード
+  - インストール後、`python3 --version` で確認（Python 3.6以上が必要）
+  - **注意**: テストスクリプトは `python3 -m json.tool` を使用してJSONの検証とフォーマットを行います（Test 2とTest 6で使用）
 
-**Why it matters（重要性）**: `gh` コマンドと認証は、GitHub APIからPR情報を取得するために必須です。これらが整っていないと、プラグインの主要機能が動作しません。
+**Why it matters（重要性）**: `gh` コマンドと認証は、GitHub APIからPR情報を取得するために必須です。Python 3は、JSONの検証とフォーマット（`python3 -m json.tool`）のために必要です。これらが整っていないと、プラグインの主要機能が動作しません。
 
 ---
 
@@ -98,6 +111,7 @@ Run comprehensive plugin tests in a separate pane.
 **Expected Result（期待される結果）**: 各Skillファイルの必須フィールドが存在する場合、各項目の前に `✓` マーカーが表示されます。
 
 **Example Output（サンプル出力）**:
+
 ```
 4. Skill Definition Validation
 ✓ go-pr-fetcher description
@@ -107,7 +121,8 @@ Run comprehensive plugin tests in a separate pane.
 ```
 
 **Troubleshooting（トラブルシューティング）**:
-- **フィールドが欠落している場合**: 
+
+- **フィールドが欠落している場合**:
   - Skillファイルの先頭にfrontmatterセクションを追加:
     ```yaml
     ---
@@ -132,6 +147,7 @@ Run comprehensive plugin tests in a separate pane.
 **Expected Result（期待される結果）**: Commandファイルの必須フィールドが存在する場合、各項目の前に `✓` マーカーが表示されます。
 
 **Example Output（サンプル出力）**:
+
 ```
 5. Command Definition Validation
 ✓ go-catchup description
@@ -139,7 +155,8 @@ Run comprehensive plugin tests in a separate pane.
 ```
 
 **Troubleshooting（トラブルシューティング）**:
-- **フィールドが欠落している場合**: 
+
+- **フィールドが欠落している場合**:
   - Commandファイルの先頭にfrontmatterセクションを追加:
     ```yaml
     ---
@@ -161,6 +178,7 @@ Run comprehensive plugin tests in a separate pane.
 **Expected Result（期待される結果）**: APIアクセスが成功した場合、golang/goリポジトリから取得したPR情報がJSON形式で表示されます。
 
 **Example Output（サンプル出力）**:
+
 ```
 6. Basic Functionality Test
 Fetching 1 PR from golang/go...
@@ -176,19 +194,20 @@ Fetching 1 PR from golang/go...
 ```
 
 **Troubleshooting（トラブルシューティング）**:
-- **認証エラーの場合**: 
+
+- **認証エラーの場合**:
   - `gh auth status` で認証状態を確認
   - 認証が無効な場合は `gh auth login` を再実行
   - トークンの有効期限を確認: `gh auth status`
-- **レート制限エラーの場合**: 
+- **レート制限エラーの場合**:
   - GitHub APIのレート制限に達している可能性があります
   - しばらく待ってから再試行
   - 認証済みユーザーはより高いレート制限があります: `gh auth login`
-- **ネットワークエラーの場合**: 
+- **ネットワークエラーの場合**:
   - インターネット接続を確認
   - プロキシ設定を確認: `gh api --hostname github.com`
-  - GitHubのステータスを確認: [status.github.com](https://www.githubstatus.com/)
-- **リポジトリアクセスエラーの場合**: 
+  - GitHubのステータスを確認: [www.githubstatus.com](https://www.githubstatus.com/)
+- **リポジトリアクセスエラーの場合**:
   - golang/goリポジトリへのアクセス権限を確認（通常は公開リポジトリなので問題ありません）
   - リポジトリ名が正しいか確認
 
@@ -260,6 +279,8 @@ zellij action write-chars "which gh > /dev/null 2>&1 && echo '✓ gh command fou
 zellij action write 10
 zellij action write-chars "gh auth status > /dev/null 2>&1 && echo '✓ gh authenticated' || echo '✗ gh NOT authenticated'"
 zellij action write 10
+zellij action write-chars "python3 --version > /dev/null 2>&1 && echo '✓ Python 3 available' || echo '✗ Python 3 NOT FOUND'"
+zellij action write 10
 zellij action write-chars "echo ''"
 zellij action write 10
 
@@ -320,11 +341,13 @@ zellij action move-focus left
 ### 成功の判断基準
 
 **すべてのテストが成功した場合**:
+
 - すべてのテスト項目の前に `✓` マーカーが表示されている
 - Test 6でPR情報がJSON形式で正常に表示されている
 - エラーメッセージ（`✗` マーカー）が一切表示されていない
 
 **成功時の表示例**:
+
 ```
 === Upgo Plugin Test Suite ===
 
@@ -344,6 +367,7 @@ zellij action move-focus left
 3. Environment Check
 ✓ gh command found
 ✓ gh authenticated
+✓ Python 3 available
 
 4. Skill Definition Validation
 ✓ go-pr-fetcher description
@@ -373,10 +397,12 @@ Review results above. All ✓ means plugin is ready for distribution.
 4. **再テスト**: 修正後、再度テストを実行して確認
 
 **よくある失敗パターンと対処**:
+
 - **ファイルが見つからない**: gitでファイルを復元するか、正しいパスに配置
 - **JSONエラー**: `plugin.json` の構文エラーを修正
 - **ghコマンドが見つからない**: GitHub CLIをインストール
 - **認証エラー**: `gh auth login` を実行して再認証
+- **Python 3が見つからない**: Python 3をインストール（`python3 --version` で確認）
 - **APIエラー**: ネットワーク接続とGitHubのステータスを確認
 
 **すべてのテストが成功したら**:
@@ -390,7 +416,7 @@ Report: "Plugin tests are running in the right pane. Check results there. All �
 
 - File structure validation
 - Plugin manifest (plugin.json) validation
-- Environment requirements (gh command, authentication)
+- Environment requirements (gh command, authentication, Python 3)
 - Skill definition format validation
 - Command definition format validation
 - Basic API functionality (fetch 1 PR from golang/go)

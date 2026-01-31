@@ -105,12 +105,11 @@ fi
 
 echo "✓ GERRIT_USER set"
 echo "✓ GERRIT_HTTP_PASSWORD set"
-echo "✓ jq command found"
 ```
 
 ### 4. Basic Functionality Test
 
-**Test: Fetch 1 Change from golang/go**
+#### Test: Fetch 1 Change from golang/go
 
 ```bash
 # Helper function to fetch Gerrit API and strip XSSI prefix

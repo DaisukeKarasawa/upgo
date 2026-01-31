@@ -63,6 +63,7 @@ done
 **Requirements:**
 
 - `curl` command installed
+- `jq` command installed
 - Gerrit environment variables set (`GERRIT_USER`, `GERRIT_HTTP_PASSWORD`)
 
 **Validation:**
@@ -75,6 +76,17 @@ if [ $? -eq 0 ]; then
     curl --version | head -1
 else
     echo "✗ curl command NOT FOUND"
+    exit 1
+fi
+
+# Check jq command
+which jq > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "✓ jq command found"
+    jq --version
+else
+    echo "✗ jq command NOT FOUND"
+    echo "Install jq for JSON processing: https://jqlang.github.io/jq/download/"
     exit 1
 fi
 
@@ -93,6 +105,7 @@ fi
 
 echo "✓ GERRIT_USER set"
 echo "✓ GERRIT_HTTP_PASSWORD set"
+echo "✓ jq command found"
 ```
 
 ### 4. Basic Functionality Test
@@ -193,7 +206,7 @@ Generate test report showing:
 
 - `0`: All tests passed
 - `1`: One or more tests failed
-- `2`: Critical error (missing curl, Gerrit credentials not set)
+- `2`: Critical error (missing curl or jq, Gerrit credentials not set)
 
 ## Usage
 

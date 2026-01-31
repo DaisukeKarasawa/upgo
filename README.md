@@ -108,7 +108,6 @@ golang/go の Change #3965 を分析して、Go の思想を教えて
 - **`.claude-plugin/`**: プラグインマニフェストとメタデータ（plugin.json）
 - **`skills/`**: Claude Codeによって自動読み込みされるエンドユーザー向けSkills
 - **`commands/`**: Markdownで定義されたユーザー向けスラッシュコマンド
-- **`.claude/`**: 開発/テスト/デバッグ用の内部開発者向けツール
 
 ### 構造
 
@@ -119,17 +118,9 @@ upgo/
 ├── skills/               # ユーザー向け Skills
 │   ├── go-pr-fetcher/    # Change 取得
 │   └── go-pr-analyzer/   # Change 分析
-├── commands/             # ユーザー向け Commands
-│   └── go-catchup.md     # キャッチアップコマンド
-└── .claude/              # 開発者向けツール（内部用）
-    ├── skills/           # zellij, Go 開発支援
-    ├── commands/         # 開発用コマンド
-    └── agents/           # 開発用エージェント
+└── commands/             # ユーザー向け Commands
+    └── go-catchup.md     # キャッチアップコマンド
 ```
-
-## 開発に貢献する
-
-プラグインの開発に参加したい方は [CONTRIBUTING.md](CONTRIBUTING.md) をご覧ください。
 
 ## ライセンス
 

@@ -15,7 +15,7 @@ Run comprehensive plugin tests in a separate pane.
 
 **Example Output（サンプル出力）**:
 
-```
+```text
 1. File Structure Validation
 ✓ plugin.json
 ✓ go-pr-fetcher
@@ -43,7 +43,7 @@ Run comprehensive plugin tests in a separate pane.
 
 **Example Output（サンプル出力）**:
 
-```
+```text
 2. Plugin Manifest Validation
 ✓ Valid JSON
 ✓ name field
@@ -74,7 +74,7 @@ Run comprehensive plugin tests in a separate pane.
 
 **Example Output（サンプル出力）**:
 
-```
+```text
 3. Environment Check
 ✓ gh command found
 ✓ gh authenticated
@@ -112,7 +112,7 @@ Run comprehensive plugin tests in a separate pane.
 
 **Example Output（サンプル出力）**:
 
-```
+```text
 4. Skill Definition Validation
 ✓ go-pr-fetcher description
 ✓ go-pr-fetcher allowed-tools
@@ -148,7 +148,7 @@ Run comprehensive plugin tests in a separate pane.
 
 **Example Output（サンプル出力）**:
 
-```
+```text
 5. Command Definition Validation
 ✓ go-catchup description
 ✓ go-catchup allowed-tools
@@ -179,7 +179,7 @@ Run comprehensive plugin tests in a separate pane.
 
 **Example Output（サンプル出力）**:
 
-```
+```text
 6. Basic Functionality Test
 Fetching 1 PR from golang/go...
 [
@@ -348,7 +348,7 @@ zellij action move-focus left
 
 **成功時の表示例**:
 
-```
+```text
 === Upgo Plugin Test Suite ===
 
 1. File Structure Validation

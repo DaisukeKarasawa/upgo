@@ -9,11 +9,11 @@ Run comprehensive plugin tests in a separate pane.
 
 ### Test 1: File Structure Validation
 
-**Purpose（目的）**: プラグインの基本構造が正しく存在することを確認します。プラグインが正常に動作するためには、必要なファイルとディレクトリがすべて存在している必要があります。
+**Purpose**: Validates that the plugin's basic structure exists correctly. For the plugin to function properly, all required files and directories must be present.
 
-**Expected Result（期待される結果）**: すべての必須ファイルが存在する場合、各ファイル名の前に `✓` マーカーが表示されます。
+**Expected Result**: When all required files exist, a `✓` marker is displayed before each filename.
 
-**Example Output（サンプル出力）**:
+**Example Output**:
 
 ```text
 1. File Structure Validation
@@ -24,24 +24,24 @@ Run comprehensive plugin tests in a separate pane.
 ✓ README.md
 ```
 
-**Troubleshooting（トラブルシューティング）**:
+**Troubleshooting**:
 
-- **ファイルが見つからない場合**:
-  - ファイルが削除された場合は、gitから復元: `git checkout -- <file-path>`
-  - ファイルが移動された場合は、正しいパスに戻すか、gitで確認: `git status`
-  - 新規作成が必要な場合は、既存のファイルを参考に作成
+- **If files are not found**:
+  - If files were deleted, restore from git: `git checkout -- <file-path>`
+  - If files were moved, restore to the correct path or check with git: `git status`
+  - If new files need to be created, reference existing files as examples
 
-**Why it matters（重要性）**: これらのファイルが欠落していると、プラグインがClaude Codeで正しく認識されず、機能が動作しません。
+**Why it matters**: Missing these files prevents the plugin from being recognized correctly by Claude Code and causes functionality to fail.
 
 ---
 
 ### Test 2: Plugin Manifest Validation
 
-**Purpose（目的）**: `.claude-plugin/plugin.json` が有効なJSON形式で、プラグインの動作に必要な必須フィールド（name、version、description）を含むことを確認します。
+**Purpose**: Validates that `.claude-plugin/plugin.json` is valid JSON and contains required fields (name, version, description) necessary for plugin operation.
 
-**Expected Result（期待される結果）**: JSONが有効で、必須フィールドがすべて存在する場合、各項目の前に `✓` マーカーが表示されます。
+**Expected Result**: When JSON is valid and all required fields exist, a `✓` marker is displayed before each item.
 
-**Example Output（サンプル出力）**:
+**Example Output**:
 
 ```text
 2. Plugin Manifest Validation
@@ -51,28 +51,28 @@ Run comprehensive plugin tests in a separate pane.
 ✓ description field
 ```
 
-**Troubleshooting（トラブルシューティング）**:
+**Troubleshooting**:
 
-- **無効なJSONの場合**:
-  - JSON構文エラーを確認: `cat .claude-plugin/plugin.json | python3 -m json.tool`
-  - カンマの欠落、引用符の不一致、閉じ括弧の欠落などを修正
-  - オンラインJSONバリデーター（例: jsonlint.com）で検証
-- **必須フィールドが欠落している場合**:
-  - `name`: プラグイン名を追加（例: `"name": "go-pr-insights"`）
-  - `version`: バージョン番号を追加（例: `"version": "1.0.0"`）
-  - `description`: プラグインの説明を追加
+- **If JSON is invalid**:
+  - Check JSON syntax errors: `cat .claude-plugin/plugin.json | python3 -m json.tool`
+  - Fix missing commas, mismatched quotes, missing closing brackets, etc.
+  - Validate with an online JSON validator (e.g., jsonlint.com)
+- **If required fields are missing**:
+  - `name`: Add plugin name (e.g., `"name": "go-pr-insights"`)
+  - `version`: Add version number (e.g., `"version": "1.0.0"`)
+  - `description`: Add plugin description
 
-**Why it matters（重要性）**: 無効なマニフェストファイルは、プラグインのインストールや認識を妨げます。Claude Codeはこのファイルを読み込んでプラグインのメタデータを取得します。
+**Why it matters**: Invalid manifest files prevent plugin installation and recognition. Claude Code reads this file to obtain plugin metadata.
 
 ---
 
 ### Test 3: Environment Check
 
-**Purpose（目的）**: プラグインが動作するために必要な環境（GitHub CLI `gh` コマンド、認証状態、およびPython 3）が整っていることを確認します。
+**Purpose**: Validates that the required environment (GitHub CLI `gh` command, authentication status, and Python 3) is properly set up for the plugin to function.
 
-**Expected Result（期待される結果）**: `gh` コマンドがインストールされており、認証済み、かつPython 3が利用可能な場合、すべての項目の前に `✓` マーカーが表示されます。
+**Expected Result**: When the `gh` command is installed, authenticated, and Python 3 is available, a `✓` marker is displayed before all items.
 
-**Example Output（サンプル出力）**:
+**Example Output**:
 
 ```text
 3. Environment Check
@@ -81,36 +81,36 @@ Run comprehensive plugin tests in a separate pane.
 ✓ Python 3 available
 ```
 
-**Troubleshooting（トラブルシューティング）**:
+**Troubleshooting**:
 
-- **`gh` コマンドが見つからない場合**:
+- **If `gh` command is not found**:
   - macOS: `brew install gh`
-  - Linux: パッケージマネージャーでインストール（例: `sudo apt install gh` または `sudo dnf install gh`）
-  - Windows: [GitHub CLI公式サイト](https://cli.github.com/)からインストーラーをダウンロード
-  - インストール後、シェルを再起動して `which gh` で確認
-- **認証されていない場合**:
-  - `gh auth login` を実行
-  - ブラウザで認証を完了するか、トークンを入力
-  - 認証状態を確認: `gh auth status`
-  - 認証が期限切れの場合は再認証: `gh auth refresh`
-- **Python 3が見つからない場合**:
-  - macOS: `brew install python3` または [python.org](https://www.python.org/downloads/)からインストール
-  - Linux: パッケージマネージャーでインストール（例: `sudo apt install python3` または `sudo dnf install python3`）
-  - Windows: [python.org](https://www.python.org/downloads/)からインストーラーをダウンロード
-  - インストール後、`python3 --version` で確認（Python 3.6以上が必要）
-  - **注意**: テストスクリプトは `python3 -m json.tool` を使用してJSONの検証とフォーマットを行います（Test 2とTest 6で使用）
+  - Linux: Install via package manager (e.g., `sudo apt install gh` or `sudo dnf install gh`)
+  - Windows: Download installer from [GitHub CLI official site](https://cli.github.com/)
+  - After installation, restart shell and verify with `which gh`
+- **If not authenticated**:
+  - Run `gh auth login`
+  - Complete authentication in browser or enter token
+  - Check authentication status: `gh auth status`
+  - If authentication expired, re-authenticate: `gh auth refresh`
+- **If Python 3 is not found**:
+  - macOS: `brew install python3` or install from [python.org](https://www.python.org/downloads/)
+  - Linux: Install via package manager (e.g., `sudo apt install python3` or `sudo dnf install python3`)
+  - Windows: Download installer from [python.org](https://www.python.org/downloads/)
+  - After installation, verify with `python3 --version` (Python 3.6+ required)
+  - **Note**: Test scripts use `python3 -m json.tool` for JSON validation and formatting (used in Test 2 and Test 6)
 
-**Why it matters（重要性）**: `gh` コマンドと認証は、GitHub APIからPR情報を取得するために必須です。Python 3は、JSONの検証とフォーマット（`python3 -m json.tool`）のために必要です。これらが整っていないと、プラグインの主要機能が動作しません。
+**Why it matters**: The `gh` command and authentication are required to fetch PR information from the GitHub API. Python 3 is needed for JSON validation and formatting (`python3 -m json.tool`). Without these, the plugin's core functionality will not work.
 
 ---
 
 ### Test 4: Skill Definition Validation
 
-**Purpose（目的）**: Skillファイル（`skills/*/SKILL.md`）が正しいフォーマットを持ち、必須フィールド（`description`、`allowed-tools`）が含まれていることを確認します。
+**Purpose**: Validates that Skill files (`skills/*/SKILL.md`) have the correct format and contain required fields (`description`, `allowed-tools`).
 
-**Expected Result（期待される結果）**: 各Skillファイルの必須フィールドが存在する場合、各項目の前に `✓` マーカーが表示されます。
+**Expected Result**: When required fields exist in each Skill file, a `✓` marker is displayed before each item.
 
-**Example Output（サンプル出力）**:
+**Example Output**:
 
 ```text
 4. Skill Definition Validation
@@ -120,33 +120,33 @@ Run comprehensive plugin tests in a separate pane.
 ✓ go-pr-analyzer allowed-tools
 ```
 
-**Troubleshooting（トラブルシューティング）**:
+**Troubleshooting**:
 
-- **フィールドが欠落している場合**:
-  - Skillファイルの先頭にfrontmatterセクションを追加:
+- **If fields are missing**:
+  - Add frontmatter section at the beginning of the Skill file:
     ```yaml
     ---
     description: |
-      Skillの説明をここに記載
+      Describe the skill here
     allowed-tools:
       - Bash
       - WebFetch
     ---
     ```
-  - YAMLフォーマットが正しいか確認（インデント、コロンの後にスペース）
-  - 既存のSkillファイルを参考にフォーマットを確認
+  - Verify YAML format is correct (indentation, space after colon)
+  - Reference existing Skill files for format
 
-**Why it matters（重要性）**: Skillファイルのフォーマットが正しくないと、Claude CodeがSkillを認識できず、ユーザーがSkillを使用できません。
+**Why it matters**: If Skill file format is incorrect, Claude Code cannot recognize the skill and users cannot use it.
 
 ---
 
 ### Test 5: Command Definition Validation
 
-**Purpose（目的）**: Commandファイル（`commands/*.md`）が正しいフォーマットを持ち、必須フィールド（`description`、`allowed-tools`）が含まれていることを確認します。
+**Purpose**: Validates that Command files (`commands/*.md`) have the correct format and contain required fields (`description`, `allowed-tools`).
 
-**Expected Result（期待される結果）**: Commandファイルの必須フィールドが存在する場合、各項目の前に `✓` マーカーが表示されます。
+**Expected Result**: When required fields exist in the Command file, a `✓` marker is displayed before each item.
 
-**Example Output（サンプル出力）**:
+**Example Output**:
 
 ```text
 5. Command Definition Validation
@@ -154,30 +154,30 @@ Run comprehensive plugin tests in a separate pane.
 ✓ go-catchup allowed-tools
 ```
 
-**Troubleshooting（トラブルシューティング）**:
+**Troubleshooting**:
 
-- **フィールドが欠落している場合**:
-  - Commandファイルの先頭にfrontmatterセクションを追加:
+- **If fields are missing**:
+  - Add frontmatter section at the beginning of the Command file:
     ```yaml
     ---
-    description: Commandの説明をここに記載
+    description: Describe the command here
     allowed-tools: Bash
     ---
     ```
-  - YAMLフォーマットが正しいか確認
-  - 既存のCommandファイルを参考にフォーマットを確認
+  - Verify YAML format is correct
+  - Reference existing Command files for format
 
-**Why it matters（重要性）**: Commandファイルのフォーマットが正しくないと、Claude Codeがコマンドを認識できず、ユーザーがコマンドを実行できません。
+**Why it matters**: If Command file format is incorrect, Claude Code cannot recognize the command and users cannot execute it.
 
 ---
 
 ### Test 6: Basic Functionality Test
 
-**Purpose（目的）**: GitHub APIへのアクセスが正常に動作し、実際にPR情報を取得できることを確認します。これにより、プラグインの主要機能が動作することを検証します。
+**Purpose**: Validates that GitHub API access works correctly and can actually fetch PR information. This verifies that the plugin's core functionality works.
 
-**Expected Result（期待される結果）**: APIアクセスが成功した場合、golang/goリポジトリから取得したPR情報がJSON形式で表示されます。
+**Expected Result**: When API access succeeds, PR information fetched from the golang/go repository is displayed in JSON format.
 
-**Example Output（サンプル出力）**:
+**Example Output**:
 
 ```text
 6. Basic Functionality Test
@@ -193,25 +193,25 @@ Fetching 1 PR from golang/go...
 ]
 ```
 
-**Troubleshooting（トラブルシューティング）**:
+**Troubleshooting**:
 
-- **認証エラーの場合**:
-  - `gh auth status` で認証状態を確認
-  - 認証が無効な場合は `gh auth login` を再実行
-  - トークンの有効期限を確認: `gh auth status`
-- **レート制限エラーの場合**:
-  - GitHub APIのレート制限に達している可能性があります
-  - しばらく待ってから再試行
-  - 認証済みユーザーはより高いレート制限があります: `gh auth login`
-- **ネットワークエラーの場合**:
-  - インターネット接続を確認
-  - プロキシ設定を確認: `gh api --hostname github.com`
-  - GitHubのステータスを確認: [www.githubstatus.com](https://www.githubstatus.com/)
-- **リポジトリアクセスエラーの場合**:
-  - golang/goリポジトリへのアクセス権限を確認（通常は公開リポジトリなので問題ありません）
-  - リポジトリ名が正しいか確認
+- **If authentication error occurs**:
+  - Check authentication status: `gh auth status`
+  - If authentication is invalid, re-run `gh auth login`
+  - Check token expiration: `gh auth status`
+- **If rate limit error occurs**:
+  - GitHub API rate limit may have been reached
+  - Wait a while and retry
+  - Authenticated users have higher rate limits: `gh auth login`
+- **If network error occurs**:
+  - Check internet connection
+  - Check proxy settings: `gh api --hostname github.com`
+  - Check GitHub status: [www.githubstatus.com](https://www.githubstatus.com/)
+- **If repository access error occurs**:
+  - Verify access permissions to golang/go repository (usually not an issue as it's a public repository)
+  - Verify repository name is correct
 
-**Why it matters（重要性）**: このテストは、プラグインの主要機能（PR情報の取得）が実際に動作することを確認します。APIアクセスが失敗すると、プラグインの目的を達成できません。
+**Why it matters**: This test verifies that the plugin's core functionality (fetching PR information) actually works. If API access fails, the plugin cannot achieve its purpose.
 
 ---
 
@@ -324,29 +324,29 @@ zellij action write 10
 zellij action write-chars "echo 'Review results above. All ✓ means plugin is ready for distribution.'"
 zellij action write 10
 
-# 4. Return to main
+# 4. Return to main pane
 zellij action move-focus left
 ```
 
 ## Completion
 
-### 結果の確認
+### Result Verification
 
-テストは右側のペインで実行されます。テストが完了したら、以下の手順で結果を確認してください：
+Tests run in the right pane. After tests complete, follow these steps to verify results:
 
-1. **右側のペインを確認**: zellijの右側ペイン（`plugin-test`）にテスト結果が表示されます
-2. **各テストセクションを確認**: 6つのテストカテゴリそれぞれの結果を確認します
-3. **✓マーカーを確認**: すべての項目が `✓` で表示されているか確認します
+1. **Check the right pane**: Test results are displayed in zellij's right pane (`plugin-test`)
+2. **Check each test section**: Verify results for each of the 6 test categories
+3. **Check ✓ markers**: Verify all items are displayed with `✓` markers
 
-### 成功の判断基準
+### Success Criteria
 
-**すべてのテストが成功した場合**:
+**When all tests succeed**:
 
-- すべてのテスト項目の前に `✓` マーカーが表示されている
-- Test 6でPR情報がJSON形式で正常に表示されている
-- エラーメッセージ（`✗` マーカー）が一切表示されていない
+- All test items display `✓` markers
+- Test 6 displays PR information in JSON format correctly
+- No error messages (`✗` markers) are displayed
 
-**成功時の表示例**:
+**Example output on success**:
 
 ```text
 === Upgo Plugin Test Suite ===
@@ -381,32 +381,32 @@ zellij action move-focus left
 
 6. Basic Functionality Test
 Fetching 1 PR from golang/go...
-[正常なJSON出力]
+[Valid JSON output]
 
 === Test Complete ===
 Review results above. All ✓ means plugin is ready for distribution.
 ```
 
-### テスト失敗時の次のステップ
+### Next Steps on Test Failure
 
-**一部のテストが失敗した場合**:
+**If some tests fail**:
 
-1. **失敗した項目を特定**: `✗` マーカーが表示されている項目を確認
-2. **該当するトラブルシューティングセクションを参照**: 上記の「Test Details」セクションで、失敗したテストのトラブルシューティング手順を確認
-3. **問題を修正**: トラブルシューティング手順に従って問題を解決
-4. **再テスト**: 修正後、再度テストを実行して確認
+1. **Identify failed items**: Check items displaying `✗` markers
+2. **Refer to relevant troubleshooting section**: Check troubleshooting steps for failed tests in the "Test Details" section above
+3. **Fix the issue**: Resolve problems following troubleshooting steps
+4. **Re-test**: After fixes, run tests again to verify
 
-**よくある失敗パターンと対処**:
+**Common failure patterns and solutions**:
 
-- **ファイルが見つからない**: gitでファイルを復元するか、正しいパスに配置
-- **JSONエラー**: `plugin.json` の構文エラーを修正
-- **ghコマンドが見つからない**: GitHub CLIをインストール
-- **認証エラー**: `gh auth login` を実行して再認証
-- **Python 3が見つからない**: Python 3をインストール（`python3 --version` で確認）
-- **APIエラー**: ネットワーク接続とGitHubのステータスを確認
+- **Files not found**: Restore files from git or place in correct path
+- **JSON error**: Fix syntax errors in `plugin.json`
+- **gh command not found**: Install GitHub CLI
+- **Authentication error**: Run `gh auth login` to re-authenticate
+- **Python 3 not found**: Install Python 3 (verify with `python3 --version`)
+- **API error**: Check network connection and GitHub status
 
-**すべてのテストが成功したら**:
-プラグインは配布可能な状態です。プラグインをパッケージ化して配布する準備が整いました。
+**When all tests succeed**:
+The plugin is ready for distribution. The plugin is ready to be packaged and distributed.
 
 ### Report Message
 

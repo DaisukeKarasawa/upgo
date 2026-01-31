@@ -1,29 +1,29 @@
 ---
 name: go-error-handling
-description: Goのエラーハンドリングパターンとベストプラクティス。エラー処理、カスタムエラー型、エラーラッピング、sentinel errors について質問されたときに使用。
+description: Go error handling patterns and best practices. Use when asked about error handling, custom error types, error wrapping, or sentinel errors.
 ---
 
-# Go エラーハンドリング
+# Go Error Handling
 
-## 基本原則
+## Basic Principles
 
-### 1. エラーは常にチェックする
+### 1. Always Check Errors
 
 ```go
-// Good: エラーをチェック
+// Good: Check error
 result, err := doSomething()
 if err != nil {
     return err
 }
 
-// Avoid: エラーを無視
-result, _ := doSomething()  // 危険
+// Avoid: Ignore error
+result, _ := doSomething()  // Dangerous
 ```
 
-### 2. エラーは一度だけ処理する
+### 2. Handle Errors Only Once
 
 ```go
-// Good: 一度だけ処理
+// Good: Handle once
 func process() error {
     if err := step1(); err != nil {
         return fmt.Errorf("step1 failed: %w", err)
@@ -31,17 +31,17 @@ func process() error {
     return nil
 }
 
-// Avoid: ログして返す（二重処理）
+// Avoid: Log and return (double handling)
 func process() error {
     if err := step1(); err != nil {
-        log.Printf("step1 failed: %v", err)  // ログ
-        return err                            // さらに返す
+        log.Printf("step1 failed: %v", err)  // Log
+        return err                            // Also return
     }
     return nil
 }
 ```
 
-## エラーラッピング
+## Error Wrapping
 
 ### fmt.Errorf with %w
 
@@ -49,7 +49,7 @@ func process() error {
 func ReadConfig(path string) (*Config, error) {
     data, err := os.ReadFile(path)
     if err != nil {
-        // %w でラップ（errors.Is/As で検査可能）
+        // Wrap with %w (can be inspected with errors.Is/As)
         return nil, fmt.Errorf("read config file %s: %w", path, err)
     }
 
@@ -62,24 +62,24 @@ func ReadConfig(path string) (*Config, error) {
 }
 ```
 
-### errors.Is と errors.As
+### errors.Is and errors.As
 
 ```go
-// errors.Is: 特定のエラーかチェック
+// errors.Is: Check for specific error
 if errors.Is(err, os.ErrNotExist) {
-    // ファイルが存在しない
+    // File does not exist
 }
 
-// errors.As: エラーを特定の型に変換
+// errors.As: Convert error to specific type
 var pathErr *os.PathError
 if errors.As(err, &pathErr) {
     fmt.Printf("operation: %s, path: %s\n", pathErr.Op, pathErr.Path)
 }
 ```
 
-## カスタムエラー型
+## Custom Error Types
 
-### シンプルなカスタムエラー
+### Simple Custom Error
 
 ```go
 type ValidationError struct {
@@ -99,13 +99,13 @@ func Validate(user User) error {
 }
 ```
 
-### Unwrap を実装したカスタムエラー
+### Custom Error with Unwrap
 
 ```go
 type AppError struct {
     Code    int
     Message string
-    Err     error  // 元のエラー
+    Err     error  // Original error
 }
 
 func (e *AppError) Error() string {
@@ -119,7 +119,7 @@ func (e *AppError) Unwrap() error {
     return e.Err
 }
 
-// 使用例
+// Usage example
 func fetchUser(id string) (*User, error) {
     user, err := db.GetUser(id)
     if err != nil {
@@ -135,10 +135,10 @@ func fetchUser(id string) (*User, error) {
 
 ## Sentinel Errors
 
-### 定義
+### Definition
 
 ```go
-// パッケージレベルで定義
+// Define at package level
 var (
     ErrNotFound     = errors.New("not found")
     ErrUnauthorized = errors.New("unauthorized")
@@ -146,7 +146,7 @@ var (
 )
 ```
 
-### 使用
+### Usage
 
 ```go
 func GetUser(id string) (*User, error) {
@@ -157,19 +157,19 @@ func GetUser(id string) (*User, error) {
     return user, nil
 }
 
-// 呼び出し側
+// Caller side
 user, err := GetUser(id)
 if errors.Is(err, ErrNotFound) {
-    // 404 を返す
+    // Return 404
 }
 ```
 
-## エラーハンドリングパターン
+## Error Handling Patterns
 
-### 早期リターン
+### Early Return
 
 ```go
-// Good: 早期リターン（フラットな構造）
+// Good: Early return (flat structure)
 func process(data []byte) error {
     if len(data) == 0 {
         return errors.New("empty data")
@@ -187,7 +187,7 @@ func process(data []byte) error {
     return save(result)
 }
 
-// Avoid: ネストが深い
+// Avoid: Deep nesting
 func process(data []byte) error {
     if len(data) > 0 {
         result, err := parse(data)
@@ -205,7 +205,7 @@ func process(data []byte) error {
 }
 ```
 
-### defer でクリーンアップ
+### Cleanup with defer
 
 ```go
 func processFile(path string) error {
@@ -213,14 +213,14 @@ func processFile(path string) error {
     if err != nil {
         return err
     }
-    defer f.Close()  // 確実にクローズ
+    defer f.Close()  // Ensure close
 
-    // 処理...
+    // Process...
     return nil
 }
 ```
 
-### エラーの集約
+### Error Aggregation
 
 ```go
 func validateUser(u User) error {
@@ -240,7 +240,7 @@ func validateUser(u User) error {
 }
 ```
 
-## HTTP エラーハンドリング
+## HTTP Error Handling
 
 ```go
 func handleGetUser(w http.ResponseWriter, r *http.Request) {
@@ -264,16 +264,16 @@ func handleGetUser(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-## panic と recover
+## panic and recover
 
-### panic は本当に回復不能な場合のみ
+### panic Only for Truly Unrecoverable Cases
 
 ```go
-// OK: 初期化時の致命的エラー
+// OK: Fatal error during initialization
 func MustCompile(pattern string) *regexp.Regexp {
     re, err := regexp.Compile(pattern)
     if err != nil {
-        panic(err)  // プログラマのミス
+        panic(err)  // Programmer error
     }
     return re
 }
@@ -281,7 +281,7 @@ func MustCompile(pattern string) *regexp.Regexp {
 var emailRegex = MustCompile(`^[a-z]+@[a-z]+\.[a-z]+$`)
 ```
 
-### recover はミドルウェアで
+### recover in Middleware
 
 ```go
 func recoveryMiddleware(next http.Handler) http.Handler {
@@ -297,21 +297,21 @@ func recoveryMiddleware(next http.Handler) http.Handler {
 }
 ```
 
-## アンチパターン
+## Anti-patterns
 
-### 1. エラーメッセージの重複
+### 1. Duplicate Error Messages
 
 ```go
 // Avoid
 return fmt.Errorf("failed to read file: %w", err)
-// err が "open /path: no such file" なら
-// "failed to read file: open /path: no such file" になる
+// If err is "open /path: no such file"
+// Result: "failed to read file: open /path: no such file"
 
-// Good: コンテキストを追加
+// Good: Add context
 return fmt.Errorf("loading config: %w", err)
 ```
 
-### 2. エラーの握りつぶし
+### 2. Swallowing Errors
 
 ```go
 // Avoid
@@ -320,17 +320,17 @@ result, _ := riskyOperation()
 // Good
 result, err := riskyOperation()
 if err != nil {
-    // 少なくともログに残す
+    // At least log it
     log.Printf("riskyOperation failed (ignored): %v", err)
 }
 ```
 
-### 3. 過度なエラーラッピング
+### 3. Excessive Error Wrapping
 
 ```go
-// Avoid: 各層でラップしすぎ
+// Avoid: Wrapping at every layer
 // "handler: service: repository: sql: connection refused"
 
-// Good: 意味のある境界でのみラップ
+// Good: Wrap only at meaningful boundaries
 // "get user 123: connection refused"
 ```

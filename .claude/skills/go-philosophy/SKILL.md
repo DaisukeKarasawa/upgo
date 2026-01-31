@@ -1,18 +1,18 @@
 ---
 name: go-philosophy
-description: Go言語の設計思想と哲学を理解し、Goらしいコードを書くためのガイド。「なぜGoはこう設計されたのか」を理解したいとき、Goのイディオムを学びたいときに使用。
+description: Guide to understanding Go's design philosophy and writing idiomatic Go code. Use when you want to understand "why Go is designed this way" or learn Go idioms.
 ---
 
-# Go の設計思想と哲学
+# Go Design Philosophy
 
-## 核となる原則
+## Core Principles
 
-### 1. シンプルさ (Simplicity)
+### 1. Simplicity
 
-Go は意図的に機能を制限しています。これは欠点ではなく、設計思想です。
+Go intentionally limits features. This is not a weakness, but a design philosophy.
 
 ```go
-// Good: シンプルで明確
+// Good: Simple and clear
 func Process(items []Item) error {
     for _, item := range items {
         if err := item.Validate(); err != nil {
@@ -22,7 +22,7 @@ func Process(items []Item) error {
     return nil
 }
 
-// Avoid: 過度な抽象化
+// Avoid: Excessive abstraction
 type Processor interface {
     Process(Processable) error
 }
@@ -31,29 +31,29 @@ type Processable interface {
 }
 ```
 
-**Rob Pike**: "少ないものでより多くを達成する"
+**Rob Pike**: "Do more with less"
 
-### 2. 明示性 (Explicitness)
+### 2. Explicitness
 
-Go は暗黙の動作を避け、コードの意図を明確にします。
+Go avoids implicit behavior and makes code intent clear.
 
 ```go
-// Good: エラーを明示的に処理
+// Good: Explicitly handle errors
 result, err := doSomething()
 if err != nil {
     return fmt.Errorf("doSomething failed: %w", err)
 }
 
-// Avoid: エラーを無視
-result, _ := doSomething()  // なぜ無視するのか不明
+// Avoid: Ignore errors
+result, _ := doSomething()  // Unclear why ignored
 ```
 
-### 3. 合成 (Composition over Inheritance)
+### 3. Composition over Inheritance
 
-Go には継承がありません。代わりに合成を使います。
+Go has no inheritance. Instead, use composition.
 
 ```go
-// Good: 埋め込みによる合成
+// Good: Composition via embedding
 type Logger struct {
     prefix string
 }
@@ -63,19 +63,19 @@ func (l *Logger) Log(msg string) {
 }
 
 type Server struct {
-    Logger  // 埋め込み
+    Logger  // Embedding
     addr string
 }
 
-// Server は Logger のメソッドを持つ
+// Server has Logger's methods
 server := &Server{Logger: Logger{prefix: "HTTP"}, addr: ":8080"}
-server.Log("Starting...")  // Logger.Log を呼び出し
+server.Log("Starting...")  // Calls Logger.Log
 ```
 
-### 4. インターフェースは小さく
+### 4. Small Interfaces
 
 ```go
-// Good: 単一メソッドのインターフェース
+// Good: Single-method interfaces
 type Reader interface {
     Read(p []byte) (n int, err error)
 }
@@ -84,30 +84,30 @@ type Writer interface {
     Write(p []byte) (n int, err error)
 }
 
-// 必要に応じて合成
+// Compose as needed
 type ReadWriter interface {
     Reader
     Writer
 }
 
-// Avoid: 大きなインターフェース
+// Avoid: Large interfaces
 type Everything interface {
     Read(p []byte) (n int, err error)
     Write(p []byte) (n int, err error)
     Close() error
     Seek(offset int64, whence int) (int64, error)
-    // ...多すぎる
+    // ...too many
 }
 ```
 
-## Go Proverbs (Go の格言)
+## Go Proverbs
 
-Rob Pike による Go の格言を理解しましょう。
+Understand Go proverbs by Rob Pike.
 
 ### "Don't communicate by sharing memory, share memory by communicating"
 
 ```go
-// Avoid: 共有メモリ + mutex
+// Avoid: Shared memory + mutex
 var (
     counter int
     mu      sync.Mutex
@@ -119,7 +119,7 @@ func increment() {
     mu.Unlock()
 }
 
-// Good: チャネルで通信
+// Good: Communicate via channels
 func counter(ch chan int) {
     count := 0
     for delta := range ch {
@@ -131,17 +131,17 @@ func counter(ch chan int) {
 ### "The bigger the interface, the weaker the abstraction"
 
 ```go
-// Weak: 大きなインターフェース
+// Weak: Large interface
 type UserService interface {
     Create(user User) error
     Update(user User) error
     Delete(id string) error
     Get(id string) (User, error)
     List() ([]User, error)
-    // 使う側は全メソッドに依存
+    // Users depend on all methods
 }
 
-// Strong: 必要最小限
+// Strong: Minimal necessary
 type UserCreator interface {
     Create(user User) error
 }
@@ -154,22 +154,22 @@ func RegisterUser(creator UserCreator, user User) error {
 ### "Make the zero value useful"
 
 ```go
-// Good: ゼロ値が有用
+// Good: Zero value is useful
 type Buffer struct {
     buf []byte
 }
 
 func (b *Buffer) Write(p []byte) (int, error) {
-    b.buf = append(b.buf, p...)  // nil スライスへの append は OK
+    b.buf = append(b.buf, p...)  // Append to nil slice is OK
     return len(p), nil
 }
 
-var buf Buffer  // 初期化なしで使える
+var buf Buffer  // Can use without initialization
 buf.Write([]byte("hello"))
 
-// sync.Mutex もゼロ値で使える
+// sync.Mutex is also usable with zero value
 var mu sync.Mutex
-mu.Lock()  // 初期化不要
+mu.Lock()  // No initialization needed
 ```
 
 ### "Clear is better than clever"
@@ -180,16 +180,16 @@ func f(n int) int { return n & (n - 1) }
 
 // Clear
 func clearLowestBit(n int) int {
-    return n & (n - 1)  // 最下位ビットをクリア
+    return n & (n - 1)  // Clear lowest bit
 }
 ```
 
-## エラー処理の哲学
+## Error Handling Philosophy
 
-### エラーは値である
+### Errors are Values
 
 ```go
-// エラーを値として扱う
+// Treat errors as values
 type PathError struct {
     Op   string
     Path string
@@ -205,25 +205,25 @@ func (e *PathError) Unwrap() error {
 }
 ```
 
-### エラーを装飾する
+### Decorate Errors
 
 ```go
 func ReadConfig(path string) (*Config, error) {
     data, err := os.ReadFile(path)
     if err != nil {
-        // コンテキストを追加
+        // Add context
         return nil, fmt.Errorf("read config %s: %w", path, err)
     }
     // ...
 }
 ```
 
-## 並行処理の哲学
+## Concurrency Philosophy
 
-### Goroutine は軽量
+### Goroutines are Lightweight
 
 ```go
-// goroutine を躊躇なく使う
+// Don't hesitate to use goroutines
 func processItems(items []Item) {
     var wg sync.WaitGroup
     for _, item := range items {
@@ -237,7 +237,7 @@ func processItems(items []Item) {
 }
 ```
 
-### Context でキャンセルを伝播
+### Propagate Cancellation with Context
 
 ```go
 func fetchData(ctx context.Context, url string) ([]byte, error) {
@@ -245,25 +245,25 @@ func fetchData(ctx context.Context, url string) ([]byte, error) {
     if err != nil {
         return nil, err
     }
-    // ctx がキャンセルされるとリクエストも中断
+    // Request is cancelled when ctx is cancelled
     resp, err := http.DefaultClient.Do(req)
     // ...
 }
 ```
 
-## パッケージ設計の哲学
+## Package Design Philosophy
 
-### 循環依存を避ける
+### Avoid Circular Dependencies
 
 ```
-// Good: 一方向の依存
+// Good: One-way dependency
 main → handler → service → repository
 
-// Avoid: 循環依存
-service → repository → service  // コンパイルエラー
+// Avoid: Circular dependency
+service → repository → service  // Compile error
 ```
 
-### パッケージ名は簡潔に
+### Keep Package Names Concise
 
 ```go
 // Good
@@ -275,7 +275,7 @@ import "encoding/jsonencoder"
 jsonencoder.Marshal(data)
 ```
 
-## 参考資料
+## References
 
 - [Effective Go](https://go.dev/doc/effective_go)
 - [Go Proverbs](https://go-proverbs.github.io/)

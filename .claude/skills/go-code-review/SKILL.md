@@ -1,65 +1,65 @@
 ---
 name: go-code-review
-description: Goコードレビューのチェックリストとベストプラクティス。コードレビュー時、PRレビュー時、コード品質改善時に使用。
+description: Checklist and best practices for Go code review. Use when reviewing code, PRs, or improving code quality.
 ---
 
-# Go コードレビューガイド
+# Go Code Review Guide
 
-## レビューの優先順位
+## Review Priority
 
-1. **正確性** - 正しく動作するか
-2. **セキュリティ** - 脆弱性はないか
-3. **パフォーマンス** - 効率的か
-4. **可読性** - 理解しやすいか
-5. **保守性** - 変更しやすいか
+1. **Correctness** - Does it work correctly?
+2. **Security** - Are there vulnerabilities?
+3. **Performance** - Is it efficient?
+4. **Readability** - Is it easy to understand?
+5. **Maintainability** - Is it easy to modify?
 
-## 必須チェック項目
+## Required Check Items
 
-### 1. エラーハンドリング
+### 1. Error Handling
 
 ```go
-// Check: エラーは無視されていないか
+// Check: Are errors not ignored?
 result, err := doSomething()
 if err != nil {
-    return err  // または適切に処理
+    return err  // or handle appropriately
 }
 
-// Check: エラーメッセージにコンテキストがあるか
+// Check: Do error messages have context?
 return fmt.Errorf("fetch user %s: %w", id, err)
 
-// Check: sentinel errors は errors.Is で比較しているか
+// Check: Are sentinel errors compared with errors.Is?
 if errors.Is(err, ErrNotFound) {
     // ...
 }
 ```
 
-### 2. リソース管理
+### 2. Resource Management
 
 ```go
-// Check: Close() は defer で確実に呼ばれているか
+// Check: Is Close() called reliably with defer?
 f, err := os.Open(path)
 if err != nil {
     return err
 }
 defer f.Close()
 
-// Check: HTTP Response Body はクローズされているか
+// Check: Is HTTP Response Body closed?
 resp, err := http.Get(url)
 if err != nil {
     return err
 }
 defer resp.Body.Close()
 
-// Check: database 接続はプールされているか
-// (毎回 Open() していないか)
+// Check: Are database connections pooled?
+// (Not calling Open() every time)
 ```
 
-### 3. 並行処理
+### 3. Concurrency
 
 ```go
-// Check: goroutine リークの可能性はないか
-// Check: データ競合はないか (go test -race)
-// Check: context によるキャンセルに対応しているか
+// Check: Is there a possibility of goroutine leaks?
+// Check: Are there data races? (go test -race)
+// Check: Does it handle cancellation via context?
 
 func worker(ctx context.Context) error {
     select {
@@ -70,7 +70,7 @@ func worker(ctx context.Context) error {
     }
 }
 
-// Check: WaitGroup の Add/Done の対応は正しいか
+// Check: Are WaitGroup Add/Done pairs correct?
 wg.Add(1)
 go func() {
     defer wg.Done()
@@ -78,10 +78,10 @@ go func() {
 }()
 ```
 
-### 4. 入力検証
+### 4. Input Validation
 
 ```go
-// Check: ユーザー入力は検証されているか
+// Check: Is user input validated?
 func CreateUser(name string, age int) error {
     if name == "" {
         return errors.New("name is required")
@@ -92,7 +92,7 @@ func CreateUser(name string, age int) error {
     // ...
 }
 
-// Check: SQL インジェクション対策
+// Check: SQL injection prevention
 // Avoid
 query := fmt.Sprintf("SELECT * FROM users WHERE id = '%s'", id)
 
@@ -101,15 +101,15 @@ query := "SELECT * FROM users WHERE id = ?"
 db.Query(query, id)
 ```
 
-### 5. API 設計
+### 5. API Design
 
 ```go
-// Check: 関数シグネチャは適切か
-// - context.Context は第一引数
-// - エラーは最後の戻り値
+// Check: Is the function signature appropriate?
+// - context.Context is the first argument
+// - Error is the last return value
 func GetUser(ctx context.Context, id string) (*User, error)
 
-// Check: Option パターンは適切に使われているか
+// Check: Is the Option pattern used appropriately?
 type Option func(*Config)
 
 func WithTimeout(d time.Duration) Option {
@@ -119,24 +119,24 @@ func WithTimeout(d time.Duration) Option {
 }
 ```
 
-## コードスタイル
+## Code Style
 
-### 命名
+### Naming
 
 ```go
-// Check: 変数名は明確か
+// Check: Are variable names clear?
 // Avoid
-var d int  // 何？
-var data int  // まだ不明確
+var d int  // What?
+var data int  // Still unclear
 
 // Good
 var daysSinceLastLogin int
 
-// Check: 省略形は一般的か
+// Check: Are abbreviations common?
 // OK: id, url, http, ctx, err, req, resp
-// Avoid: 独自の省略形
+// Avoid: Custom abbreviations
 
-// Check: パッケージ名と重複していないか
+// Check: Does it conflict with package name?
 // Avoid
 package user
 type User struct{}  // user.User
@@ -146,17 +146,17 @@ package user
 type Info struct{}  // user.Info
 ```
 
-### 構造
+### Structure
 
 ```go
-// Check: 関数は適切な長さか (目安: 40行以下)
-// Check: ネストは深すぎないか (目安: 3レベル以下)
+// Check: Are functions appropriately sized? (Guideline: under 40 lines)
+// Check: Is nesting too deep? (Guideline: under 3 levels)
 
-// Check: 早期リターンを使っているか
+// Check: Is early return used?
 // Avoid
 func process(x int) int {
     if x > 0 {
-        // 長い処理
+        // long process
         return result
     } else {
         return 0
@@ -168,15 +168,15 @@ func process(x int) int {
     if x <= 0 {
         return 0
     }
-    // 長い処理
+    // long process
     return result
 }
 ```
 
-### コメント
+### Comments
 
 ```go
-// Check: 公開 API にはドキュメントがあるか
+// Check: Do public APIs have documentation?
 // Package user provides user management functionality.
 package user
 
@@ -190,22 +190,22 @@ type User struct {
 // It returns ErrNotFound if the user does not exist.
 func GetByID(id string) (*User, error)
 
-// Check: コメントは「なぜ」を説明しているか
-// Avoid: 何をしているかの説明
-// i をインクリメント
+// Check: Do comments explain "why"?
+// Avoid: Explaining what it does
+// Increment i
 i++
 
-// Good: なぜそうするかの説明
-// GitHub API のレート制限を回避するため 1 秒待機
+// Good: Explaining why
+// Wait 1 second to avoid GitHub API rate limits
 time.Sleep(1 * time.Second)
 ```
 
-## パフォーマンス
+## Performance
 
-### メモリ割り当て
+### Memory Allocation
 
 ```go
-// Check: スライスの容量は事前確保されているか
+// Check: Is slice capacity pre-allocated?
 // Avoid
 var items []Item
 for _, raw := range rawItems {
@@ -218,7 +218,7 @@ for _, raw := range rawItems {
     items = append(items, parse(raw))
 }
 
-// Check: strings.Builder を使っているか
+// Check: Is strings.Builder used?
 // Avoid
 var s string
 for _, item := range items {
@@ -233,49 +233,49 @@ for _, item := range items {
 s := sb.String()
 ```
 
-### 不要なコピー
+### Unnecessary Copies
 
 ```go
-// Check: 大きな構造体はポインタで渡しているか
+// Check: Are large structs passed by pointer?
 type LargeStruct struct {
     Data [1024]byte
 }
 
-// Avoid: 値渡し（コピー発生）
+// Avoid: Pass by value (copy occurs)
 func process(s LargeStruct)
 
-// Good: ポインタ渡し
+// Good: Pass by pointer
 func process(s *LargeStruct)
 
-// Check: range でのコピーを意識しているか
+// Check: Are copies in range loops considered?
 for i := range items {
-    process(&items[i])  // コピーを避ける
+    process(&items[i])  // Avoid copy
 }
 ```
 
-## セキュリティ
+## Security
 
-### チェックリスト
+### Checklist
 
 ```go
-// [ ] SQL インジェクション対策（プレースホルダ使用）
-// [ ] XSS 対策（html/template 使用）
-// [ ] パスワードは平文で保存していない（bcrypt 等）
-// [ ] 機密情報はログに出力していない
-// [ ] HTTPS を強制している
-// [ ] CORS 設定は適切か
-// [ ] 認証・認可は正しく実装されているか
+// [ ] SQL injection prevention (use placeholders)
+// [ ] XSS prevention (use html/template)
+// [ ] Passwords not stored in plain text (use bcrypt, etc.)
+// [ ] Sensitive information not logged
+// [ ] HTTPS enforced
+// [ ] CORS settings appropriate?
+// [ ] Authentication and authorization correctly implemented?
 ```
 
 ```go
-// Check: 機密情報のログ出力
+// Check: Logging sensitive information
 // Avoid
 log.Printf("user login: %s, password: %s", user, password)
 
 // Good
 log.Printf("user login: %s", user)
 
-// Check: タイミング攻撃対策
+// Check: Timing attack prevention
 // Avoid
 if password == storedPassword {
 
@@ -283,20 +283,20 @@ if password == storedPassword {
 if subtle.ConstantTimeCompare([]byte(password), []byte(storedPassword)) == 1 {
 ```
 
-## テスト
+## Testing
 
 ```go
-// Check: テストは十分にあるか
-// Check: エッジケースはテストされているか
-// - nil 入力
-// - 空文字列
-// - 境界値
-// - エラーケース
+// Check: Are there sufficient tests?
+// Check: Are edge cases tested?
+// - nil input
+// - empty string
+// - boundary values
+// - error cases
 
-// Check: テストは独立しているか（順序依存していないか）
-// Check: テストは決定的か（time.Now() に依存していないか）
+// Check: Are tests independent? (not order-dependent)
+// Check: Are tests deterministic? (not dependent on time.Now())
 
-// Check: テストヘルパーは t.Helper() を呼んでいるか
+// Check: Do test helpers call t.Helper()?
 func assertEqual(t *testing.T, got, want int) {
     t.Helper()
     if got != want {
@@ -305,48 +305,48 @@ func assertEqual(t *testing.T, got, want int) {
 }
 ```
 
-## レビューコメントの書き方
+## How to Write Review Comments
 
-### 良いコメントの例
+### Examples of Good Comments
 
 ```
-// 提案
+// Suggestion
 Consider using `errors.Is()` here to handle wrapped errors correctly.
 
-// 質問
+// Question
 Could you explain why we need this sleep? Is there a way to use
 channels or WaitGroup instead?
 
-// 必須
+// Required
 This SQL query is vulnerable to injection. Please use parameterized queries.
 
-// 称賛
+// Praise
 Great use of table-driven tests! This makes it easy to add new cases.
 ```
 
-### 避けるべきコメント
+### Comments to Avoid
 
 ```
-// 曖昧
+// Vague
 This looks wrong.
 
-// 人格攻撃
+// Personal attack
 Who wrote this terrible code?
 
-// 過度に細かい
-Change `i` to `index` (意味のある改善でない場合)
+// Overly nitpicky
+Change `i` to `index` (when it's not a meaningful improvement)
 ```
 
-## レビュー効率化
+## Review Efficiency
 
 ```bash
-# 静的解析を活用
+# Use static analysis
 go vet ./...
 golangci-lint run
 
-# データ競合検出
+# Detect data races
 go test -race ./...
 
-# テストカバレッジ確認
+# Check test coverage
 go test -cover ./...
 ```

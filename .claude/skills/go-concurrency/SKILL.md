@@ -1,16 +1,16 @@
 ---
 name: go-concurrency
-description: Goの並行処理パターンとベストプラクティス。goroutine、channel、sync パッケージ、context について質問されたときに使用。
+description: Go concurrency patterns and best practices. Use when asked about goroutines, channels, sync package, or context.
 ---
 
-# Go 並行処理パターン
+# Go Concurrency Patterns
 
-## 基本原則
+## Basic Principles
 
 ### "Don't communicate by sharing memory, share memory by communicating"
 
 ```go
-// Avoid: 共有メモリ
+// Avoid: Shared memory
 var (
     data   map[string]int
     mu     sync.Mutex
@@ -22,7 +22,7 @@ func update(key string, value int) {
     mu.Unlock()
 }
 
-// Good: チャネルで通信
+// Good: Communicate via channels
 type update struct {
     key   string
     value int
@@ -36,20 +36,20 @@ func manager(updates <-chan update) {
 }
 ```
 
-## Goroutine パターン
+## Goroutine Patterns
 
-### 基本的な起動
+### Basic Launch
 
 ```go
-// 引数を渡す
+// Pass arguments
 for _, item := range items {
-    item := item  // ループ変数をキャプチャ
+    item := item  // Capture loop variable
     go func() {
         process(item)
     }()
 }
 
-// または引数として渡す
+// Or pass as argument
 for _, item := range items {
     go func(item Item) {
         process(item)
@@ -57,7 +57,7 @@ for _, item := range items {
 }
 ```
 
-### WaitGroup で待機
+### Wait with WaitGroup
 
 ```go
 func processAll(items []Item) {
@@ -71,38 +71,38 @@ func processAll(items []Item) {
         }(item)
     }
 
-    wg.Wait()  // 全完了を待機
+    wg.Wait()  // Wait for all to complete
 }
 ```
 
-## Channel パターン
+## Channel Patterns
 
-### 基本操作
+### Basic Operations
 
 ```go
-// unbuffered channel（同期）
+// unbuffered channel (synchronous)
 ch := make(chan int)
 
-// buffered channel（非同期）
+// buffered channel (asynchronous)
 ch := make(chan int, 10)
 
-// 送信
+// Send
 ch <- 42
 
-// 受信
+// Receive
 value := <-ch
 
-// クローズ
+// Close
 close(ch)
 
-// クローズ確認
+// Check if closed
 value, ok := <-ch
 if !ok {
-    // channel はクローズされている
+    // channel is closed
 }
 ```
 
-### Generator パターン
+### Generator Pattern
 
 ```go
 func generate(nums ...int) <-chan int {
@@ -116,7 +116,7 @@ func generate(nums ...int) <-chan int {
     return out
 }
 
-// 使用
+// Usage
 for n := range generate(1, 2, 3, 4, 5) {
     fmt.Println(n)
 }
@@ -125,7 +125,7 @@ for n := range generate(1, 2, 3, 4, 5) {
 ### Fan-out / Fan-in
 
 ```go
-// Fan-out: 複数のワーカーに分散
+// Fan-out: Distribute to multiple workers
 func fanOut(in <-chan int, workers int) []<-chan int {
     outs := make([]<-chan int, workers)
     for i := 0; i < workers; i++ {
@@ -145,7 +145,7 @@ func worker(in <-chan int) <-chan int {
     return out
 }
 
-// Fan-in: 複数のチャネルを1つに集約
+// Fan-in: Aggregate multiple channels into one
 func fanIn(channels ...<-chan int) <-chan int {
     var wg sync.WaitGroup
     out := make(chan int)
@@ -199,9 +199,9 @@ func square(in <-chan int) <-chan int {
 }
 ```
 
-## Select パターン
+## Select Patterns
 
-### 複数チャネルの待機
+### Waiting on Multiple Channels
 
 ```go
 select {
@@ -216,7 +216,7 @@ default:
 }
 ```
 
-### タイムアウト
+### Timeout
 
 ```go
 select {
@@ -227,14 +227,14 @@ case <-time.After(5 * time.Second):
 }
 ```
 
-### キャンセル
+### Cancellation
 
 ```go
 func worker(ctx context.Context, jobs <-chan Job) {
     for {
         select {
         case <-ctx.Done():
-            return  // キャンセルされた
+            return  // Cancelled
         case job := <-jobs:
             process(job)
         }
@@ -242,9 +242,9 @@ func worker(ctx context.Context, jobs <-chan Job) {
 }
 ```
 
-## Context パターン
+## Context Patterns
 
-### キャンセル伝播
+### Cancellation Propagation
 
 ```go
 func main() {
@@ -253,7 +253,7 @@ func main() {
 
     go worker(ctx)
 
-    // シグナルでキャンセル
+    // Cancel on signal
     sigCh := make(chan os.Signal, 1)
     signal.Notify(sigCh, syscall.SIGINT)
     <-sigCh
@@ -273,7 +273,7 @@ func worker(ctx context.Context) {
 }
 ```
 
-### タイムアウト付きコンテキスト
+### Context with Timeout
 
 ```go
 func fetchData(ctx context.Context) error {
@@ -286,7 +286,7 @@ func fetchData(ctx context.Context) error {
 }
 ```
 
-### 値の伝播
+### Value Propagation
 
 ```go
 type ctxKey string
@@ -305,7 +305,7 @@ func getRequestID(ctx context.Context) string {
 }
 ```
 
-## sync パッケージ
+## sync Package
 
 ### Mutex
 
@@ -408,7 +408,7 @@ func workerPool(jobs <-chan Job, results chan<- Result, workers int) {
 }
 ```
 
-## Semaphore パターン
+## Semaphore Pattern
 
 ```go
 type Semaphore chan struct{}
@@ -425,8 +425,8 @@ func (s Semaphore) Release() {
     <-s
 }
 
-// 使用例
-sem := NewSemaphore(10)  // 最大10並列
+// Usage example
+sem := NewSemaphore(10)  // Max 10 concurrent
 
 for _, item := range items {
     sem.Acquire()
@@ -437,21 +437,21 @@ for _, item := range items {
 }
 ```
 
-## アンチパターン
+## Anti-patterns
 
-### 1. Goroutine リーク
+### 1. Goroutine Leak
 
 ```go
-// Avoid: チャネルが受信されないと goroutine がリーク
+// Avoid: Goroutine leaks if channel is never received
 func leak() <-chan int {
     ch := make(chan int)
     go func() {
-        ch <- expensiveComputation()  // 永遠にブロック
+        ch <- expensiveComputation()  // Blocks forever
     }()
     return ch
 }
 
-// Good: context でキャンセル可能に
+// Good: Cancellable with context
 func noLeak(ctx context.Context) <-chan int {
     ch := make(chan int)
     go func() {
@@ -464,15 +464,15 @@ func noLeak(ctx context.Context) <-chan int {
 }
 ```
 
-### 2. データ競合
+### 2. Data Race
 
 ```go
-// Avoid: データ競合
+// Avoid: Data race
 var counter int
 go func() { counter++ }()
 go func() { counter++ }()
 
-// Good: 適切な同期
+// Good: Proper synchronization
 var (
     counter int
     mu      sync.Mutex

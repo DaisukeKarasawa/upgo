@@ -111,7 +111,7 @@ ln -s $(pwd)/.claude/commands/* ~/.claude/commands/
 
 - ファイル構造の検証
 - `plugin.json` の妥当性チェック
-- 環境チェック（`curl` コマンド、Gerrit 認証情報）
+- 環境チェック（`curl` コマンド、`jq` コマンド、Gerrit 認証情報）
 - Skills/Commands の定義フォーマット検証
 - 基本的な機能テスト（Change 取得）
 

@@ -49,18 +49,31 @@ if jq -e . .claude-plugin/plugin.json > /dev/null 2>&1; then
     echo "✓ plugin.json is valid JSON"
 else
     echo "✗ plugin.json is INVALID JSON"
+    exit 1
 fi
 
 # Check required fields
+MISSING_FIELDS=0
 for field in name version description repository license; do
-    grep -q "\"$field\"" .claude-plugin/plugin.json && echo "✓ $field" || echo "✗ $field MISSING"
+    if jq -e "has(\"$field\")" .claude-plugin/plugin.json > /dev/null 2>&1; then
+        echo "✓ $field"
+    else
+        echo "✗ $field MISSING"
+        MISSING_FIELDS=1
+    fi
 done
 
 # Check author sub-fields
-if jq -e '.author.name and .author.url' .claude-plugin/plugin.json > /dev/null 2>&1; then
+if jq -e '.author | type=="object" and has("name") and has("url")' .claude-plugin/plugin.json > /dev/null 2>&1; then
     echo "✓ author (with name and url)"
 else
     echo "✗ author (with name and url) MISSING or incomplete"
+    MISSING_FIELDS=1
+fi
+
+# Exit if any required fields are missing
+if [ $MISSING_FIELDS -eq 1 ]; then
+    exit 1
 fi
 ```
 

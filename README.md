@@ -49,7 +49,7 @@ cp -r upgo/commands/* ~/.claude/commands/
 
 Claude Code に直接依頼：
 
-```
+```plaintext
 golang/go の PR #12345 を分析して、Go の思想を教えて
 ```
 
@@ -68,6 +68,29 @@ golang/go の PR #12345 を分析して、Go の思想を教えて
 |----------|------|
 | `/go-catchup [カテゴリ]` | 直近 30 日間の PR をキャッチアップ |
 
+## コンポーネント間の相互作用
+
+### ユーザーコマンドからPR分析までのフロー
+
+1. **コマンド実行**: ユーザーが `/go-catchup` コマンドを実行
+2. **PR取得**: `go-pr-fetcher` スキルが GitHub CLI (`gh`) を使用して golang/go リポジトリからPR情報を取得
+3. **分析処理**: `go-pr-analyzer` スキルが取得したPR情報を分析し、Goの設計思想を抽出
+4. **レポート生成**: 分析結果をまとめたレポートを生成
+
+### GitHub CLIとの統合
+
+- **PR情報取得**: `gh pr list` および `gh pr view` コマンドを使用してPRの基本情報、コメント、レビュー、差分を取得
+- **認証**: `gh auth login` で認証済みである必要があります
+- **エラーハンドリング**: GitHub CLIが見つからない場合や認証エラーが発生した場合、適切なエラーメッセージを表示
+
+### SkillsとCommandsの関係
+
+- **Commands**: ユーザーが直接実行するスラッシュコマンド（例: `/go-catchup`）
+- **Skills**: Commandsから呼び出される再利用可能な機能モジュール
+  - `go-pr-fetcher`: PR情報の取得を担当
+  - `go-pr-analyzer`: PRの分析とGo思想の抽出を担当
+- **役割分担**: Commandsがワークフローを定義し、Skillsが具体的な処理を実行する構造
+
 ## 分析で得られる情報
 
 - **変更の背景**: なぜこの変更が必要だったか
@@ -77,7 +100,16 @@ golang/go の PR #12345 を分析して、Go の思想を教えて
 
 ## ディレクトリ構造
 
-```
+### ディレクトリの役割
+
+- **`.claude-plugin/`**: プラグインマニフェストとメタデータ（plugin.json）
+- **`skills/`**: Claude Codeによって自動読み込みされるエンドユーザー向けSkills
+- **`commands/`**: Markdownで定義されたユーザー向けスラッシュコマンド
+- **`.claude/`**: 開発/テスト/デバッグ用の内部開発者向けツール
+
+### 構造
+
+```plaintext
 upgo/
 ├── .claude-plugin/       # プラグインマニフェスト
 │   └── plugin.json

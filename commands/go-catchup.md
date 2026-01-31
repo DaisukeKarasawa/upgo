@@ -20,6 +20,9 @@ Fetches and analyzes Changes (CLs) updated in the last month from golang/go repo
 # Check curl command
 which curl || echo "ERROR: curl command not found. Please install curl."
 
+# Check jq command
+which jq || echo "ERROR: jq command not found. Please install jq."
+
 # Check Gerrit environment variables
 if [ -z "$GERRIT_USER" ] || [ -z "$GERRIT_HTTP_PASSWORD" ]; then
   echo "ERROR: GERRIT_USER and GERRIT_HTTP_PASSWORD must be set"
@@ -31,8 +34,8 @@ fi
 gerrit_api() {
   local endpoint="$1"
   local base_url="${GERRIT_BASE_URL:-https://go-review.googlesource.com}"
-  curl -s -u "${GERRIT_USER}:${GERRIT_HTTP_PASSWORD}" \
-    "${base_url}/a${endpoint}" | sed '1s/^)]\}\x27//'
+  curl -sf -u "${GERRIT_USER}:${GERRIT_HTTP_PASSWORD}" \
+    "${base_url}/a${endpoint}" | sed "1s/^)]}'//""
 }
 ```
 
@@ -110,5 +113,5 @@ Create report in the following format:
 ## Notes
 
 - Changes are fetched from Gerrit (go-review.googlesource.com), not GitHub
-- Use Change numbers (e.g., 3965) or full Change IDs (e.g., go~master~3965)
+- Use Change numbers (e.g., 3965) or full Change IDs (e.g., go~master~I8473b95934b5732ac55d26311a706c9c2bde9940)
 - Analysis includes patch set evolution, which shows how changes were refined through review

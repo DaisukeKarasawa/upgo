@@ -28,7 +28,7 @@ echo $GERRIT_HTTP_PASSWORD
 
 If not set, prompt the user to set them. To get HTTP password:
 
-1. Visit https://go-review.googlesource.com/settings/#HTTPCredentials
+1. Visit [Gerrit HTTP Credentials](https://go-review.googlesource.com/settings/#HTTPCredentials)
 2. Generate HTTP password
 3. Set it as `GERRIT_HTTP_PASSWORD`
 
@@ -41,8 +41,8 @@ All Gerrit API responses start with `)]}'` (XSSI protection). Strip it before pa
 gerrit_api() {
   local endpoint="$1"
   local base_url="${GERRIT_BASE_URL:-https://go-review.googlesource.com}"
-  curl -s -u "${GERRIT_USER}:${GERRIT_HTTP_PASSWORD}" \
-    "${base_url}/a${endpoint}" | sed '1s/^)]\}\x27//'
+  curl -sf -u "${GERRIT_USER}:${GERRIT_HTTP_PASSWORD}" \
+    "${base_url}/a${endpoint}" | sed "1s/^)]}'//""
 }
 ```
 
@@ -151,7 +151,7 @@ Gerrit supports multiple change ID formats:
 For the `go` project, you can use:
 
 - Change number: `3965`
-- Full format: `go~master~3965`
+- Full format: `go~master~I8473b95934b5732ac55d26311a706c9c2bde9940`
 
 ## Error Handling
 

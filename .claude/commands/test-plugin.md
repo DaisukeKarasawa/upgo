@@ -103,7 +103,7 @@ zellij action write-chars "echo '6. Basic Functionality Test'"
 zellij action write 10
 zellij action write-chars "echo 'Fetching 1 Change from golang/go...'"
 zellij action write 10
-zellij action write-chars "gerrit_api() { local e=\"\$1\"; local b=\"\${GERRIT_BASE_URL:-https://go-review.googlesource.com}\"; curl -s -u \"\${GERRIT_USER}:\${GERRIT_HTTP_PASSWORD}\" \"\${b}/a\${e}\" | sed '1s/^)]\\}\\x27//'; }"
+zellij action write-chars "gerrit_api() { local e=\"\$1\"; local b=\"\${GERRIT_BASE_URL:-https://go-review.googlesource.com}\"; curl -sf -u \"\${GERRIT_USER}:\${GERRIT_HTTP_PASSWORD}\" \"\${b}/a\${e}\" | sed '1s/^)]\\}\\x27//'; }"
 zellij action write 10
 zellij action write-chars "gerrit_api '/changes/?q=project:go+status:merged&n=1&o=DETAILED_ACCOUNTS' 2>&1 | python3 -m json.tool | head -20"
 zellij action write 10

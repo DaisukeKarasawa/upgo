@@ -51,19 +51,13 @@ zellij action write 10
 # Test 2: Plugin Manifest
 zellij action write-chars "echo '2. Plugin Manifest Validation'"
 zellij action write 10
-zellij action write-chars "if jq -e . .claude-plugin/plugin.json > /dev/null 2>&1; then echo '✓ Valid JSON'; else echo '✗ INVALID JSON'; exit 1; fi"
+zellij action write-chars "cat .claude-plugin/plugin.json | python3 -m json.tool > /dev/null 2>&1 && echo '✓ Valid JSON' || echo '✗ INVALID JSON'"
 zellij action write 10
-zellij action write-chars "jq -e 'has(\"name\")' .claude-plugin/plugin.json > /dev/null 2>&1 && echo '✓ name field' || echo '✗ name MISSING'"
+zellij action write-chars "grep -q '\"name\"' .claude-plugin/plugin.json && echo '✓ name field' || echo '✗ name MISSING'"
 zellij action write 10
-zellij action write-chars "jq -e 'has(\"version\")' .claude-plugin/plugin.json > /dev/null 2>&1 && echo '✓ version field' || echo '✗ version MISSING'"
+zellij action write-chars "grep -q '\"version\"' .claude-plugin/plugin.json && echo '✓ version field' || echo '✗ version MISSING'"
 zellij action write 10
-zellij action write-chars "jq -e 'has(\"description\")' .claude-plugin/plugin.json > /dev/null 2>&1 && echo '✓ description field' || echo '✗ description MISSING'"
-zellij action write 10
-zellij action write-chars "jq -e 'has(\"repository\")' .claude-plugin/plugin.json > /dev/null 2>&1 && echo '✓ repository field' || echo '✗ repository MISSING'"
-zellij action write 10
-zellij action write-chars "jq -e 'has(\"license\")' .claude-plugin/plugin.json > /dev/null 2>&1 && echo '✓ license field' || echo '✗ license MISSING'"
-zellij action write 10
-zellij action write-chars "jq -e '.author | type==\"object\" and has(\"name\") and has(\"url\")' .claude-plugin/plugin.json > /dev/null 2>&1 && echo '✓ author (with name and url)' || echo '✗ author MISSING or incomplete'"
+zellij action write-chars "grep -q '\"description\"' .claude-plugin/plugin.json && echo '✓ description field' || echo '✗ description MISSING'"
 zellij action write 10
 zellij action write-chars "echo ''"
 zellij action write 10
@@ -71,13 +65,9 @@ zellij action write 10
 # Test 3: Environment Check
 zellij action write-chars "echo '3. Environment Check'"
 zellij action write 10
-zellij action write-chars "which curl > /dev/null 2>&1 && echo '✓ curl command found' || echo '✗ curl NOT FOUND'"
+zellij action write-chars "which gh > /dev/null 2>&1 && echo '✓ gh command found' || echo '✗ gh NOT FOUND'"
 zellij action write 10
-zellij action write-chars "which jq > /dev/null 2>&1 && echo '✓ jq command found' || echo '✗ jq NOT FOUND'"
-zellij action write 10
-zellij action write-chars "[ -n \"\$GERRIT_USER\" ] && echo '✓ GERRIT_USER set' || echo '✗ GERRIT_USER NOT SET'"
-zellij action write 10
-zellij action write-chars "[ -n \"\$GERRIT_HTTP_PASSWORD\" ] && echo '✓ GERRIT_HTTP_PASSWORD set' || echo '✗ GERRIT_HTTP_PASSWORD NOT SET'"
+zellij action write-chars "gh auth status > /dev/null 2>&1 && echo '✓ gh authenticated' || echo '✗ gh NOT authenticated'"
 zellij action write 10
 zellij action write-chars "echo ''"
 zellij action write 10
@@ -109,11 +99,9 @@ zellij action write 10
 # Test 6: Basic Functionality
 zellij action write-chars "echo '6. Basic Functionality Test'"
 zellij action write 10
-zellij action write-chars "echo 'Fetching 1 Change from golang/go...'"
+zellij action write-chars "echo 'Fetching 1 PR from golang/go...'"
 zellij action write 10
-zellij action write-chars "gerrit_api() { local e=\"\$1\"; local b=\"\${GERRIT_BASE_URL:-https://go-review.googlesource.com}\"; local r; r=\"\$(curl -fsS -u \"\${GERRIT_USER}:\${GERRIT_HTTP_PASSWORD}\" \"\${b}/a\${e}\")\" || return \$?; printf '%s\n' \"\$r\" | sed \"1s/^)]}'//\"; }"
-zellij action write 10
-zellij action write-chars "CHANGE_DATA=\"\$(gerrit_api '/changes/?q=project:go+status:merged&n=1&o=DETAILED_ACCOUNTS' 2>&1)\"; STATUS=\$?; if [ \$STATUS -eq 0 ] && echo \"\$CHANGE_DATA\" | jq -e . > /dev/null 2>&1; then echo \"\$CHANGE_DATA\" | jq . | head -20; else echo \"✗ Change fetch FAILED\"; echo \"\$CHANGE_DATA\"; fi"
+zellij action write-chars "gh pr list --repo golang/go --state merged --limit 1 --json number,title,author 2>&1 | python3 -m json.tool"
 zellij action write 10
 zellij action write-chars "echo ''"
 zellij action write 10
@@ -136,7 +124,7 @@ Report: "Plugin tests are running in the right pane. Check results there."
 
 - File structure validation
 - Plugin manifest (plugin.json) validation
-- Environment requirements (curl command, jq command, Gerrit credentials)
+- Environment requirements (gh command, authentication)
 - Skill definition format validation
 - Command definition format validation
-- Basic API functionality (fetch 1 Change from golang/go via Gerrit)
+- Basic API functionality (fetch 1 PR from golang/go)

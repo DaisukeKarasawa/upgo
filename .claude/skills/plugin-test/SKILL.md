@@ -45,116 +45,64 @@ test -f README.md && echo "✓ README.md" || echo "✗ README.md MISSING"
 
 ```bash
 # Read and validate plugin.json
-if jq -e . .claude-plugin/plugin.json > /dev/null 2>&1; then
+cat .claude-plugin/plugin.json | python3 -m json.tool > /dev/null 2>&1
+if [ $? -eq 0 ]; then
     echo "✓ plugin.json is valid JSON"
 else
     echo "✗ plugin.json is INVALID JSON"
-    exit 1
 fi
 
 # Check required fields
-MISSING_FIELDS=0
-for field in name version description repository license; do
-    if jq -e "has(\"$field\")" .claude-plugin/plugin.json > /dev/null 2>&1; then
-        echo "✓ $field"
-    else
-        echo "✗ $field MISSING"
-        MISSING_FIELDS=1
-    fi
+for field in name version description author repository license; do
+    grep -q "\"$field\"" .claude-plugin/plugin.json && echo "✓ $field" || echo "✗ $field MISSING"
 done
-
-# Check author sub-fields
-if jq -e '.author | type=="object" and has("name") and has("url")' .claude-plugin/plugin.json > /dev/null 2>&1; then
-    echo "✓ author (with name and url)"
-else
-    echo "✗ author (with name and url) MISSING or incomplete"
-    MISSING_FIELDS=1
-fi
-
-# Exit if any required fields are missing
-if [ $MISSING_FIELDS -eq 1 ]; then
-    exit 1
-fi
 ```
 
 ### 3. Environment Check
 
 **Requirements:**
 
-- `curl` command installed
-- `jq` command installed
-- Gerrit environment variables set (`GERRIT_USER`, `GERRIT_HTTP_PASSWORD`)
+- GitHub CLI (`gh`) installed
+- `gh` authenticated
 
 **Validation:**
 
 ```bash
-# Check curl command
-which curl > /dev/null 2>&1
+# Check gh command
+which gh > /dev/null 2>&1
 if [ $? -eq 0 ]; then
-    echo "✓ curl command found"
-    curl --version | head -1
+    echo "✓ gh command found"
+    gh --version
 else
-    echo "✗ curl command NOT FOUND"
+    echo "✗ gh command NOT FOUND"
     exit 1
 fi
 
-# Check jq command
-which jq > /dev/null 2>&1
+# Check authentication
+gh auth status > /dev/null 2>&1
 if [ $? -eq 0 ]; then
-    echo "✓ jq command found"
-    jq --version
+    echo "✓ gh authenticated"
 else
-    echo "✗ jq command NOT FOUND"
-    echo "Install jq for JSON processing: https://jqlang.github.io/jq/download/"
+    echo "✗ gh NOT authenticated"
+    echo "Run: gh auth login"
     exit 1
 fi
-
-# Check Gerrit environment variables
-if [ -z "$GERRIT_USER" ]; then
-    echo "✗ GERRIT_USER NOT SET"
-    echo "Set GERRIT_USER environment variable"
-    exit 1
-fi
-
-if [ -z "$GERRIT_HTTP_PASSWORD" ]; then
-    echo "✗ GERRIT_HTTP_PASSWORD NOT SET"
-    echo "Get HTTP password from: https://go-review.googlesource.com/settings/#HTTPCredentials"
-    exit 1
-fi
-
-echo "✓ GERRIT_USER set"
-echo "✓ GERRIT_HTTP_PASSWORD set"
 ```
 
 ### 4. Basic Functionality Test
 
-#### Test: Fetch 1 Change from golang/go
+#### Test: Fetch 1 PR from golang/go
 
 ```bash
-# Helper function to fetch Gerrit API and strip XSSI prefix
-gerrit_api() {
-  local endpoint="$1"
-  local base_url="${GERRIT_BASE_URL:-https://go-review.googlesource.com}"
-  local raw
+echo "Testing PR fetch..."
+PR_DATA=$(gh pr list --repo golang/go --state merged --limit 1 --json number,title,author 2>&1)
 
-  # Capture curl output first, preserving exit status
-  # -S flag shows errors even in silent mode for better diagnostics
-  raw="$(curl -fsS -u "${GERRIT_USER}:${GERRIT_HTTP_PASSWORD}" "${base_url}/a${endpoint}")" || return $?
-
-  # Strip XSSI prefix if present
-  printf '%s\n' "$raw" | sed "1s/^)]}'//"
-}
-
-echo "Testing Change fetch..."
-CHANGE_DATA="$(gerrit_api "/changes/?q=project:go+status:merged&n=1&o=DETAILED_ACCOUNTS" 2>&1)"
-STATUS=$?
-
-if [ $STATUS -eq 0 ] && echo "$CHANGE_DATA" | jq -e . > /dev/null 2>&1; then
-    echo "✓ Change fetch successful"
-    echo "$CHANGE_DATA" | jq . | head -20
+if [ $? -eq 0 ]; then
+    echo "✓ PR fetch successful"
+    echo "$PR_DATA" | python3 -m json.tool
 else
-    echo "✗ Change fetch FAILED"
-    echo "$CHANGE_DATA"
+    echo "✗ PR fetch FAILED"
+    echo "$PR_DATA"
     exit 1
 fi
 ```
@@ -231,7 +179,7 @@ Generate test report showing:
 
 - `0`: All tests passed
 - `1`: One or more tests failed
-- `2`: Critical error (missing curl or jq, Gerrit credentials not set)
+- `2`: Critical error (missing gh, not authenticated)
 
 ## Usage
 

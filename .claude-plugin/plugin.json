@@ -1,7 +1,7 @@
 {
   "name": "go-pr-insights",
   "version": "1.0.0",
-  "description": "Automatically fetch and analyze golang/go PRs with Claude Code to learn Go design philosophy",
+  "description": "Automatically fetch and analyze golang/go Changes (CLs) via Gerrit with Claude Code to learn Go design philosophy",
   "author": {
     "name": "DaisukeKarasawa",
     "url": "https://github.com/DaisukeKarasawa"
@@ -12,7 +12,8 @@
     "claude-code",
     "go",
     "golang",
-    "github-pr",
+    "gerrit",
+    "code-review",
     "code-analysis",
     "learning"
   ]

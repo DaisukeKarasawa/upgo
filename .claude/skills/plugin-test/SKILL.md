@@ -45,17 +45,23 @@ test -f README.md && echo "✓ README.md" || echo "✗ README.md MISSING"
 
 ```bash
 # Read and validate plugin.json
-cat .claude-plugin/plugin.json | python3 -m json.tool > /dev/null 2>&1
-if [ $? -eq 0 ]; then
+if jq -e . .claude-plugin/plugin.json > /dev/null 2>&1; then
     echo "✓ plugin.json is valid JSON"
 else
     echo "✗ plugin.json is INVALID JSON"
 fi
 
 # Check required fields
-for field in name version description author repository license; do
+for field in name version description repository license; do
     grep -q "\"$field\"" .claude-plugin/plugin.json && echo "✓ $field" || echo "✗ $field MISSING"
 done
+
+# Check author sub-fields
+if jq -e '.author.name and .author.url' .claude-plugin/plugin.json > /dev/null 2>&1; then
+    echo "✓ author (with name and url)"
+else
+    echo "✗ author (with name and url) MISSING or incomplete"
+fi
 ```
 
 ### 3. Environment Check
@@ -123,9 +129,9 @@ gerrit_api() {
 echo "Testing Change fetch..."
 CHANGE_DATA=$(gerrit_api "/changes/?q=project:go+status:merged&n=1&o=DETAILED_ACCOUNTS" 2>&1)
 
-if [ $? -eq 0 ] && echo "$CHANGE_DATA" | python3 -m json.tool > /dev/null 2>&1; then
+if [ $? -eq 0 ] && echo "$CHANGE_DATA" | jq -e . > /dev/null 2>&1; then
     echo "✓ Change fetch successful"
-    echo "$CHANGE_DATA" | python3 -m json.tool | head -20
+    echo "$CHANGE_DATA" | jq . | head -20
 else
     echo "✗ Change fetch FAILED"
     echo "$CHANGE_DATA"

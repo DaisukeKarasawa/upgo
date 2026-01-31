@@ -135,14 +135,21 @@ echo "✓ GERRIT_HTTP_PASSWORD set"
 gerrit_api() {
   local endpoint="$1"
   local base_url="${GERRIT_BASE_URL:-https://go-review.googlesource.com}"
-  curl -sf -u "${GERRIT_USER}:${GERRIT_HTTP_PASSWORD}" \
-    "${base_url}/a${endpoint}" | sed "1s/^)]}'//"
+  local raw
+
+  # Capture curl output first, preserving exit status
+  # -S flag shows errors even in silent mode for better diagnostics
+  raw="$(curl -fsS -u "${GERRIT_USER}:${GERRIT_HTTP_PASSWORD}" "${base_url}/a${endpoint}")" || return $?
+
+  # Strip XSSI prefix if present
+  printf '%s\n' "$raw" | sed "1s/^)]}'//"
 }
 
 echo "Testing Change fetch..."
-CHANGE_DATA=$(gerrit_api "/changes/?q=project:go+status:merged&n=1&o=DETAILED_ACCOUNTS" 2>&1)
+CHANGE_DATA="$(gerrit_api "/changes/?q=project:go+status:merged&n=1&o=DETAILED_ACCOUNTS" 2>&1)"
+STATUS=$?
 
-if [ $? -eq 0 ] && echo "$CHANGE_DATA" | jq -e . > /dev/null 2>&1; then
+if [ $STATUS -eq 0 ] && echo "$CHANGE_DATA" | jq -e . > /dev/null 2>&1; then
     echo "✓ Change fetch successful"
     echo "$CHANGE_DATA" | jq . | head -20
 else

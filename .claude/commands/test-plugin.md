@@ -111,9 +111,9 @@ zellij action write-chars "echo '6. Basic Functionality Test'"
 zellij action write 10
 zellij action write-chars "echo 'Fetching 1 Change from golang/go...'"
 zellij action write 10
-zellij action write-chars "gerrit_api() { local e=\"\$1\"; local b=\"\${GERRIT_BASE_URL:-https://go-review.googlesource.com}\"; curl -sf -u \"\${GERRIT_USER}:\${GERRIT_HTTP_PASSWORD}\" \"\${b}/a\${e}\" | sed \"1s/^)]}'//\"; }"
+zellij action write-chars "gerrit_api() { local e=\"\$1\"; local b=\"\${GERRIT_BASE_URL:-https://go-review.googlesource.com}\"; local r; r=\"\$(curl -fsS -u \"\${GERRIT_USER}:\${GERRIT_HTTP_PASSWORD}\" \"\${b}/a\${e}\")\" || return \$?; printf '%s\n' \"\$r\" | sed \"1s/^)]}'//\"; }"
 zellij action write 10
-zellij action write-chars "CHANGE_DATA=\$(gerrit_api '/changes/?q=project:go+status:merged&n=1&o=DETAILED_ACCOUNTS' 2>&1); if [ \$? -eq 0 ] && echo \"\$CHANGE_DATA\" | jq -e . > /dev/null 2>&1; then echo \"\$CHANGE_DATA\" | jq . | head -20; else echo \"✗ Change fetch FAILED\"; echo \"\$CHANGE_DATA\"; fi"
+zellij action write-chars "CHANGE_DATA=\"\$(gerrit_api '/changes/?q=project:go+status:merged&n=1&o=DETAILED_ACCOUNTS' 2>&1)\"; STATUS=\$?; if [ \$STATUS -eq 0 ] && echo \"\$CHANGE_DATA\" | jq -e . > /dev/null 2>&1; then echo \"\$CHANGE_DATA\" | jq . | head -20; else echo \"✗ Change fetch FAILED\"; echo \"\$CHANGE_DATA\"; fi"
 zellij action write 10
 zellij action write-chars "echo ''"
 zellij action write 10

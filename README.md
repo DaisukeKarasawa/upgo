@@ -1,10 +1,10 @@
-# Go PR Insights - Claude Code Plugin
+# Go Change Insights - Claude Code Plugin
 
-golang/go の PR を Claude Code で自動取得・分析し、Go の設計思想をキャッチアップするプラグインです。
+golang/go の Change (CL) を Claude Code で自動取得・分析し、Go の設計思想をキャッチアップするプラグインです。
 
 ## 特徴
 
-- **PR 自動取得**: GitHub CLI (gh) で golang/go の最新 PR を取得
+- **Change 自動取得**: Gerrit REST API で golang/go の最新 Change を取得
 - **議論の分析**: レビューコメント・議論のポイントを抽出
 - **Go 思想の学習**: 変更の背景から Go の設計思想を学ぶ
 
@@ -26,18 +26,21 @@ cp -r upgo/commands/* ~/.claude/commands/
 
 ## 必要な環境
 
-- GitHub CLI (`gh`) がインストールされていること
-- `gh auth login` で認証済みであること
+- `curl` がインストールされていること
+- Gerrit の認証情報が設定されていること:
+  - `GERRIT_USER`: Gerrit ユーザー名
+  - `GERRIT_HTTP_PASSWORD`: Gerrit HTTP パスワード（[設定ページ](https://go-review.googlesource.com/settings/#HTTPCredentials)から取得）
+  - `GERRIT_BASE_URL`: Gerrit サーバーURL（オプション、デフォルト: `https://go-review.googlesource.com`）
 
 ## 使い方
 
-### PR キャッチアップ
+### Change キャッチアップ
 
 ```bash
 /go-catchup
 ```
 
-直近 30 日間のマージ済み PR を取得・分析し、Go の設計思想をレポートします。
+直近 30 日間のマージ済み Change を取得・分析し、Go の設計思想をレポートします。
 
 ```bash
 /go-catchup compiler
@@ -45,28 +48,28 @@ cp -r upgo/commands/* ~/.claude/commands/
 
 カテゴリフィルタを指定して取得できます(例: compiler, runtime など)。
 
-### 個別 PR の分析
+### 個別 Change の分析
 
 Claude Code に直接依頼：
 
-```plaintext
-golang/go の PR #12345 を分析して、Go の思想を教えて
+```
+golang/go の Change #3965 を分析して、Go の思想を教えて
 ```
 
 ## 含まれるコンポーネント
 
 ### Skills（ユーザー向け）
 
-| スキル | 説明 |
-|--------|------|
-| `go-pr-fetcher` | GitHub CLI (gh) で PR を取得 |
-| `go-pr-analyzer` | PR を分析し Go 思想を抽出 |
+| スキル           | 説明                             |
+| ---------------- | -------------------------------- |
+| `go-pr-fetcher`  | Gerrit REST API で Change を取得 |
+| `go-pr-analyzer` | Change を分析し Go 思想を抽出    |
 
 ### Commands（ユーザー向け）
 
-| コマンド | 説明 |
-|----------|------|
-| `/go-catchup [カテゴリ]` | 直近 30 日間の PR をキャッチアップ |
+| コマンド                 | 説明                                   |
+| ------------------------ | -------------------------------------- |
+| `/go-catchup [カテゴリ]` | 直近 30 日間の Change をキャッチアップ |
 
 ## コンポーネント間の相互作用
 
@@ -114,8 +117,8 @@ upgo/
 ├── .claude-plugin/       # プラグインマニフェスト
 │   └── plugin.json
 ├── skills/               # ユーザー向け Skills
-│   ├── go-pr-fetcher/    # PR 取得
-│   └── go-pr-analyzer/   # PR 分析
+│   ├── go-pr-fetcher/    # Change 取得
+│   └── go-pr-analyzer/   # Change 分析
 ├── commands/             # ユーザー向け Commands
 │   └── go-catchup.md     # キャッチアップコマンド
 └── .claude/              # 開発者向けツール（内部用）

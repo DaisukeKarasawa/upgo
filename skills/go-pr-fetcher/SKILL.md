@@ -1,89 +1,168 @@
 ---
 name: go-pr-fetcher
 description: |
-  Fetches PR information from golang/go repository.
-  Use when user says "fetch Go PRs", "latest PRs from golang/go", "check Go changes", etc.
+  Fetches Change (CL) information from golang/go repository via Gerrit.
+  Use when user says "fetch Go changes", "latest CLs from golang/go", "check Go changes", etc.
 allowed-tools:
   - Bash
   - WebFetch
 ---
 
-# Go PR Fetcher
+# Go Change Fetcher
 
-Fetches PR information from golang/go repository using GitHub API.
+Fetches Change (CL) information from golang/go repository using Gerrit REST API.
 
 ## Prerequisites
 
-Environment variable `GITHUB_TOKEN` must be set.
+Environment variables for Gerrit authentication must be set:
+
+- `GERRIT_BASE_URL`: Gerrit server URL (default: `https://go-review.googlesource.com`)
+- `GERRIT_USER`: Gerrit username
+- `GERRIT_HTTP_PASSWORD`: Gerrit HTTP password (from Settings > HTTP Password)
 
 ```bash
-echo $GITHUB_TOKEN
+echo $GERRIT_BASE_URL
+echo $GERRIT_USER
+echo $GERRIT_HTTP_PASSWORD
 ```
 
-If not set, prompt the user to set it.
+If not set, prompt the user to set them. To get HTTP password:
 
-## Fetching PR List
+1. Visit [Gerrit HTTP Credentials](https://go-review.googlesource.com/settings/#HTTPCredentials)
+2. Generate HTTP password
+3. Set it as `GERRIT_HTTP_PASSWORD`
 
-### Get recent PRs (default: 30)
+## Helper Function
+
+All Gerrit API responses start with `)]}'` (XSSI protection). Strip it before parsing JSON:
 
 ```bash
-gh pr list --repo golang/go --state all --limit 30 --json number,title,state,author,createdAt,updatedAt,labels
+# Helper function to fetch Gerrit API and strip XSSI prefix
+gerrit_api() {
+  local endpoint="$1"
+  local base_url="${GERRIT_BASE_URL:-https://go-review.googlesource.com}"
+  local raw
+
+  # Capture curl output first, preserving exit status
+  # -S flag shows errors even in silent mode for better diagnostics
+  raw="$(curl -fsS -u "${GERRIT_USER}:${GERRIT_HTTP_PASSWORD}" "${base_url}/a${endpoint}")" || return $?
+
+  # Strip XSSI prefix if present
+  printf '%s\n' "$raw" | sed "1s/^)]}'//"
+}
 ```
 
-### Get merged PRs only
+## Fetching Change List
+
+### Get recent changes (default: 30)
 
 ```bash
-gh pr list --repo golang/go --state merged --limit 30 --json number,title,author,mergedAt,labels
+# Get all changes from go project, limit 30, with labels and detailed accounts
+gerrit_api "/changes/?q=project:go+status:open&n=30&o=LABELS&o=DETAILED_ACCOUNTS" | jq '.[] | {_number, subject, status, owner, updated, labels}'
 ```
 
-### Get PRs from specific period
+### Get merged changes only
 
 ```bash
-# Last 7 days
-gh pr list --repo golang/go --state all --search "updated:>=$(date -v-7d +%Y-%m-%d 2>/dev/null || date -d '7 days ago' +%Y-%m-%d)" --limit 50 --json number,title,state,author,updatedAt
+# Get merged changes from go project
+gerrit_api "/changes/?q=project:go+status:merged&n=30&o=LABELS&o=DETAILED_ACCOUNTS" | jq '.[] | {_number, subject, owner, submitted, labels}'
 ```
 
-## Fetching Individual PR Details
-
-### PR basic info
+### Get changes from specific period
 
 ```bash
-gh pr view <PR_NUMBER> --repo golang/go --json number,title,body,state,author,labels,comments,reviews
+# Last 7 days (updated after date)
+DATE_7DAYS_AGO=$(date -v-7d +%Y-%m-%d 2>/dev/null || date -d '7 days ago' +%Y-%m-%d)
+gerrit_api "/changes/?q=project:go+after:${DATE_7DAYS_AGO}&n=50&o=LABELS&o=DETAILED_ACCOUNTS" | jq '.[] | {_number, subject, status, owner, updated}'
 ```
 
-### PR comments and discussions
+### Get changes updated in last month
 
 ```bash
-gh pr view <PR_NUMBER> --repo golang/go --comments
+# Last 30 days using -age operator
+gerrit_api "/changes/?q=project:go+-age:30d&n=50&o=LABELS&o=DETAILED_ACCOUNTS" | jq '.[] | {_number, subject, status, owner, updated, labels}'
 ```
 
-### PR diff
+## Fetching Individual Change Details
+
+### Change basic info
 
 ```bash
-gh pr diff <PR_NUMBER> --repo golang/go
+# Get change detail with labels, messages, and reviewer updates
+# Change ID format: go~master~I<change-id> or just <change-number>
+CHANGE_ID="go~master~I<change-id>"  # or use change number: <change-number>
+gerrit_api "/changes/${CHANGE_ID}/detail?o=LABELS&o=DETAILED_LABELS&o=MESSAGES&o=REVIEWER_UPDATES" | jq '{_number, subject, status, owner, created, updated, labels, messages}'
+```
+
+### Change comments and discussions
+
+```bash
+# Get all published comments across all revisions
+gerrit_api "/changes/${CHANGE_ID}/comments" | jq '.'
+
+# Get change messages (cover messages and system messages)
+gerrit_api "/changes/${CHANGE_ID}/messages" | jq '.[] | {id, author, date, message, _revision_number}'
+```
+
+### Change diff
+
+```bash
+# Get raw patch (unified diff format)
+gerrit_api "/changes/${CHANGE_ID}/revisions/current/patch?raw" | cat
+
+# Get structured diff for a specific file
+FILE_PATH="src/example.go"  # URL encode if needed
+gerrit_api "/changes/${CHANGE_ID}/revisions/current/files/${FILE_PATH}/diff" | jq '.'
+```
+
+### Change commit message
+
+```bash
+# Get commit message
+gerrit_api "/changes/${CHANGE_ID}/message" | jq '{subject, full_message, footers}'
 ```
 
 ## Output Format
 
-Format fetched PR information as follows:
+Format fetched Change information as follows:
 
 ```markdown
-## PR #<number>: <title>
+## Change #<number>: <subject>
 
-**State**: <state> | **Author**: <author> | **Updated**: <updatedAt>
+**Status**: <status> | **Owner**: <owner.name> | **Updated**: <updated>
 
 **Labels**: <labels>
 
+- Code-Review: <value>
+- Verified: <value>
+
 ### Summary
-<body summary>
+
+<commit message summary>
 
 ### Changed Files
+
 - <file1>
 - <file2>
 ```
 
+## Change ID Formats
+
+Gerrit supports multiple change ID formats:
+
+- Full format: `go~master~I<change-id>` (e.g., `go~master~I8473b95934b5732ac55d26311a706c9c2bde9940`)
+- Change number: `<number>` (e.g., `3965`)
+- Change-Id only: `I<change-id>` (if unique)
+
+For the `go` project, you can use:
+
+- Change number: `3965`
+- Full format: `go~master~I8473b95934b5732ac55d26311a706c9c2bde9940`
+
 ## Error Handling
 
-- `gh` command not found: Guide user to install GitHub CLI
-- Authentication error: Guide user to run `gh auth login`
-- Rate limit: Advise to wait and retry
+- `curl` command not found: Guide user to install curl
+- Authentication error (401): Guide user to set `GERRIT_USER` and `GERRIT_HTTP_PASSWORD`
+- Change not found (404): Verify change ID format and that change exists
+- Rate limit (429): Advise to wait and retry with exponential backoff
+- XSSI prefix error: Ensure `)]}'` is stripped before JSON parsing

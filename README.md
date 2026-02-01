@@ -139,7 +139,11 @@ upgo/
 │   ├── go-pr-fetcher/    # Change 取得
 │   └── go-pr-analyzer/   # Change 分析
 └── commands/             # ユーザー向け Commands
-    └── go-catchup.md     # キャッチアップコマンド
+    ├── CLAUDE.md         # エージェント向けドキュメント
+    ├── NAMING.md         # 命名規則ガイド
+    ├── go-catchup.md     # キャッチアップコマンド
+    ├── go-change-analyze.md  # Change 分析コマンド
+    └── go-changes-fetch.md   # Change 取得コマンド
 ```
 
 ## ライセンス

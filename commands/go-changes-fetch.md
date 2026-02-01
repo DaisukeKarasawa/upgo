@@ -132,8 +132,9 @@ gerrit_api "/changes/?q=${QUERY}&n=${LIMIT}&o=LABELS&o=DETAILED_ACCOUNTS&o=CURRE
 # Pipe output to file
 /go-changes-fetch > changes.json
 
-# Pipe output to analyze command (if available)
-/go-changes-fetch | /go-change-analyze
+# Extract change numbers and analyze each
+# Note: /go-change-analyze requires change-id as argument, not stdin
+/go-changes-fetch | jq -r '._number' | while read id; do /go-change-analyze "$id"; done
 ```
 
 ## Related Commands

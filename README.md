@@ -75,10 +75,10 @@ golang/go の Change #3965 を分析して、Go の思想を教えて
 
 #### プリミティブコマンド（単一目的）
 
-| コマンド                            | 説明                                 |
-| ----------------------------------- | ------------------------------------ |
-| `/go-changes-fetch [days] [status]` | Change 一覧を取得（JSON出力）        |
-| `/go-change-analyze <change-id>`    | 単一 Change を分析して Go 思想を抽出 |
+| コマンド                                    | 説明                                 |
+| ------------------------------------------- | ------------------------------------ |
+| `/go-changes-fetch [days] [status] [limit]` | Change 一覧を取得（JSON出力）        |
+| `/go-change-analyze <change-id>`            | 単一 Change を分析して Go 思想を抽出 |
 
 **命名規則**: `commands/NAMING.md` を参照。`go-` プレフィックスで名前空間化し、1コマンド=1目的を原則としています。
 
@@ -95,8 +95,8 @@ golang/go の Change #3965 を分析して、Go の思想を教えて
 
 #### プリミティブコマンド（柔軟な組み合わせ）
 
-- `/go-changes-fetch`: Change 一覧を取得（JSON出力）
-- `/go-change-analyze`: 特定の Change を分析
+- `/go-changes-fetch [days] [status] [limit]`: Change 一覧を取得（JSON出力）
+- `/go-change-analyze <change-id>`: 特定の Change を分析
 
 これらを組み合わせてカスタムワークフローを構築できます。
 

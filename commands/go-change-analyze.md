@@ -1,6 +1,6 @@
 ---
 description: Analyze a single golang/go Change (CL) and extract Go philosophy
-allowed-tools: Bash, WebFetch, Read
+allowed-tools: Bash
 argument-hint: <change-id>
 ---
 
@@ -38,16 +38,17 @@ Analyzes a single Change (CL) by fetching its details, comments, and patch, then
   - Key learnings
 - **Side Effects**:
   - Makes API calls to Gerrit (default: `https://go-review.googlesource.com`) over the network
+  - Requires authentication via `GERRIT_USER` and `GERRIT_HTTP_PASSWORD` environment variables
   - Does not create or update local files (paste the output if you want to save it)
 
 ## Prerequisites (Required State / Permissions / Files)
 
 - **Required Commands**: `curl`, `jq`, `sed`
 - **Environment Variables (Required)**:
-  - `GERRIT_USER`
-  - `GERRIT_HTTP_PASSWORD` (obtain from `https://go-review.googlesource.com/settings/#HTTPCredentials`)
+  - `GERRIT_USER`: Gerrit username
+  - `GERRIT_HTTP_PASSWORD`: Gerrit HTTP password (obtain from `https://go-review.googlesource.com/settings/#HTTPCredentials`)
 - **Environment Variables (Optional)**:
-  - `GERRIT_BASE_URL` (default: `https://go-review.googlesource.com`)
+  - `GERRIT_BASE_URL`: Gerrit server URL (default: `https://go-review.googlesource.com`)
 - **Prerequisites**: Network access to Gerrit must be available
 
 ## Expected State After Execution
@@ -59,20 +60,20 @@ Analyzes a single Change (CL) by fetching its details, comments, and patch, then
 
 ### 1. Environment Check
 
+Use the environment check pattern from `go-gerrit-reference` skill. See `skills/go-gerrit-reference/REFERENCE.md` for complete helper function and authentication setup.
+
 ```bash
-# Check curl command
+# Check required commands
 if ! command -v curl >/dev/null 2>&1; then
   echo "ERROR: curl command not found. Please install curl."
   exit 1
 fi
 
-# Check jq command
 if ! command -v jq >/dev/null 2>&1; then
   echo "ERROR: jq command not found. Please install jq."
   exit 1
 fi
 
-# Check sed command
 if ! command -v sed >/dev/null 2>&1; then
   echo "ERROR: sed command not found. Please install sed."
   exit 1
@@ -94,17 +95,13 @@ fi
 
 CHANGE_ID="$1"
 
-# Helper function to fetch Gerrit API and strip XSSI prefix
+# Load gerrit_api() helper function (see skills/go-gerrit-reference/REFERENCE.md)
 gerrit_api() {
   local endpoint="$1"
   local base_url="${GERRIT_BASE_URL:-https://go-review.googlesource.com}"
   local raw
 
-  # Capture curl output first, preserving exit status
-  # -S flag shows errors even in silent mode for better diagnostics
   raw="$(curl -fsS -u "${GERRIT_USER}:${GERRIT_HTTP_PASSWORD}" "${base_url}/a${endpoint}")" || return $?
-
-  # Strip XSSI prefix if present
   printf '%s\n' "$raw" | sed "1s/^)]}'//"
 }
 ```
@@ -128,6 +125,8 @@ gerrit_api "/changes/${CHANGE_ID}/revisions/current/patch?raw" | cat
 gerrit_api "/changes/${CHANGE_ID}/message" | jq '{subject, full_message, footers}'
 ```
 
+For complete API reference and change ID formats, see `skills/go-gerrit-reference/REFERENCE.md`.
+
 ### 3. Perform Analysis
 
 Analyze fetched information for:
@@ -136,6 +135,8 @@ Analyze fetched information for:
 2. **Review Discussion Points**: Extract from review comments and change messages
 3. **Go Design Philosophy Alignment**: Map to Go principles (Simplicity, Explicitness, Orthogonality, Practicality)
 4. **Category Classification**: Classify into categories (error-handling, performance, api-design, testing, documentation, tooling, runtime, compiler)
+
+Use `go-pr-analyzer` skill for detailed analysis patterns. See `skills/go-pr-analyzer/SKILL.md` for analysis perspectives and output format.
 
 ### 4. Generate Analysis Report
 
@@ -192,4 +193,5 @@ Create report in the following format:
 - This command focuses on **analyzing a single Change**. Use `/go-changes-fetch` to get a list first.
 - Changes are fetched from Gerrit (go-review.googlesource.com), not GitHub
 - Analysis includes patch set evolution, which shows how changes were refined through review
+- For Gerrit API helper function and common patterns, see `skills/go-gerrit-reference/REFERENCE.md`
 - See `skills/go-pr-analyzer/SKILL.md` for detailed analysis perspectives and patterns

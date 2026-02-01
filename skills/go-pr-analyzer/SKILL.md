@@ -5,13 +5,38 @@ description: |
   Use when user says "analyze change", "explain Go philosophy", "why was this change made", etc.
 allowed-tools:
   - Bash
-  - WebFetch
-  - Read
 ---
 
 # Go Change Analyzer
 
 Analyzes golang/go Changes (CLs) to extract Go design philosophy, best practices, and insights.
+
+## Side Effects
+
+- **Network Access**: Makes API calls to Gerrit server (default: `https://go-review.googlesource.com`) to fetch Change data
+- **Authentication Required**: Requires `GERRIT_USER` and `GERRIT_HTTP_PASSWORD` environment variables
+- **No Local File Changes**: Does not create or modify local files
+
+## Prerequisites
+
+### Required Commands
+
+- `curl`: HTTP client for API requests
+- `jq`: JSON processor for parsing responses
+- `sed`: Text processing for XSSI prefix removal
+
+### Required Environment Variables
+
+- `GERRIT_USER`: Gerrit username
+- `GERRIT_HTTP_PASSWORD`: Gerrit HTTP password (obtain from [Gerrit HTTP Credentials](https://go-review.googlesource.com/settings/#HTTPCredentials))
+
+### Optional Environment Variables
+
+- `GERRIT_BASE_URL`: Gerrit server URL (default: `https://go-review.googlesource.com`)
+
+## Quick Start
+
+Use the `gerrit_api()` helper function from `go-gerrit-reference` skill to fetch Change data. See [go-gerrit-reference/REFERENCE.md](../go-gerrit-reference/REFERENCE.md) for complete helper function and authentication setup.
 
 ## Analysis Perspectives
 
@@ -45,38 +70,23 @@ Map changes to Go design principles:
 
 Classify Changes into categories:
 
-| Category         | Description                 |
-| ---------------- | --------------------------- |
-| `error-handling` | Error handling improvements |
-| `performance`    | Performance optimization    |
-| `api-design`     | API design changes          |
-| `testing`        | Test additions/improvements |
-| `documentation`  | Documentation updates       |
-| `tooling`        | Toolchain improvements      |
-| `runtime`        | Runtime changes             |
-| `compiler`       | Compiler improvements       |
+- `error-handling`: Error handling improvements
+- `performance`: Performance optimization
+- `api-design`: API design changes
+- `testing`: Test additions/improvements
+- `documentation`: Documentation updates
+- `tooling`: Toolchain improvements
+- `runtime`: Runtime changes
+- `compiler`: Compiler improvements
 
 ## Analysis Steps
 
 ### Step 1: Fetch Change Information
 
-Use the `gerrit_api` helper function from `go-pr-fetcher` skill:
+Use the `gerrit_api()` helper function from `go-gerrit-reference` skill:
 
 ```bash
-# Helper function (same as in go-pr-fetcher)
-gerrit_api() {
-  local endpoint="$1"
-  local base_url="${GERRIT_BASE_URL:-https://go-review.googlesource.com}"
-  local raw
-
-  # Capture curl output first, preserving exit status
-  # -S flag shows errors even in silent mode for better diagnostics
-  raw="$(curl -fsS -u "${GERRIT_USER}:${GERRIT_HTTP_PASSWORD}" "${base_url}/a${endpoint}")" || return $?
-
-  # Strip XSSI prefix if present
-  printf '%s\n' "$raw" | sed "1s/^)]}'//"
-}
-
+# Load helper function from reference (see go-gerrit-reference/REFERENCE.md)
 CHANGE_ID="<change-number>"  # e.g., 3965 (numeric) or go~master~I8473b95934b5732ac55d26311a706c9c2bde9940 (full format)
 
 # Get change details with labels, messages, and reviewer updates
@@ -94,6 +104,8 @@ gerrit_api "/changes/${CHANGE_ID}/revisions/current/patch?raw" | cat
 # Get commit message
 gerrit_api "/changes/${CHANGE_ID}/message" | jq '{subject, full_message, footers}'
 ```
+
+For complete API reference, see [go-gerrit-reference/REFERENCE.md](../go-gerrit-reference/REFERENCE.md).
 
 ### Step 2: Perform Analysis
 

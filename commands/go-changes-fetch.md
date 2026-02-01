@@ -69,10 +69,22 @@ Fetches Change (CL) list from Gerrit and outputs JSON. Does not perform analysis
 
 ```bash
 # Check curl command
-which curl || echo "ERROR: curl command not found. Please install curl."
+if ! command -v curl >/dev/null 2>&1; then
+  echo "ERROR: curl command not found. Please install curl."
+  exit 1
+fi
 
 # Check jq command
-which jq || echo "ERROR: jq command not found. Please install jq."
+if ! command -v jq >/dev/null 2>&1; then
+  echo "ERROR: jq command not found. Please install jq."
+  exit 1
+fi
+
+# Check sed command
+if ! command -v sed >/dev/null 2>&1; then
+  echo "ERROR: sed command not found. Please install sed."
+  exit 1
+fi
 
 # Check Gerrit environment variables
 if [ -z "$GERRIT_USER" ] || [ -z "$GERRIT_HTTP_PASSWORD" ]; then

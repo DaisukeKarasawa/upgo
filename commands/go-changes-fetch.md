@@ -111,7 +111,7 @@ fi
 QUERY="${QUERY}+-age:${DAYS}d"
 
 # Fetch changes
-gerrit_api "/changes/?q=${QUERY}&n=${LIMIT}&o=LABELS&o=DETAILED_ACCOUNTS&o=CURRENT_REVISION&o=CURRENT_COMMIT" | jq '.[] | {_number, subject, owner, submitted, updated, labels}'
+gerrit_api "/changes/?q=${QUERY}&n=${LIMIT}&o=LABELS&o=DETAILED_ACCOUNTS&o=CURRENT_REVISION&o=CURRENT_COMMIT" | jq '[.[] | {_number, subject, owner, submitted, updated, labels}]'
 ```
 
 ## Usage Examples
@@ -134,7 +134,7 @@ gerrit_api "/changes/?q=${QUERY}&n=${LIMIT}&o=LABELS&o=DETAILED_ACCOUNTS&o=CURRE
 
 # Extract change numbers and analyze each
 # Note: /go-change-analyze requires change-id as argument, not stdin
-/go-changes-fetch | jq -r '._number' | while read id; do /go-change-analyze "$id"; done
+/go-changes-fetch | jq -r '.[]._number' | while read id; do /go-change-analyze "$id"; done
 ```
 
 ## Related Commands

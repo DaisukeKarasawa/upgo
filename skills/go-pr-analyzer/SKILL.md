@@ -13,8 +13,8 @@ Analyzes golang/go Changes (CLs) to extract Go design philosophy, best practices
 
 ## Side Effects
 
-- **Network Access**: Makes API calls to Gerrit server (default: `https://go-review.googlesource.com`) to fetch Change data
-- **Authentication Required**: Requires `GERRIT_USER` and `GERRIT_HTTP_PASSWORD` environment variables
+- **Network Access**: Makes API calls to Gerrit server (default: `https://go-review.googlesource.com`) to fetch Change data using anonymous access
+- **Anonymous Access**: Uses anonymous API access (no authentication required). Some Gerrit instances may not support anonymous access and may return 401/403 errors. Rate limits may be stricter for anonymous access.
 - **No Local File Changes**: Does not create or modify local files
 
 ## Prerequisites
@@ -25,18 +25,13 @@ Analyzes golang/go Changes (CLs) to extract Go design philosophy, best practices
 - `jq`: JSON processor for parsing responses
 - `sed`: Text processing for XSSI prefix removal
 
-### Required Environment Variables
-
-- `GERRIT_USER`: Gerrit username
-- `GERRIT_HTTP_PASSWORD`: Gerrit HTTP password (obtain from [Gerrit HTTP Credentials](https://go-review.googlesource.com/settings/#HTTPCredentials))
-
 ### Optional Environment Variables
 
 - `GERRIT_BASE_URL`: Gerrit server URL (default: `https://go-review.googlesource.com`)
 
 ## Quick Start
 
-Use the `gerrit_api()` helper function from `go-gerrit-reference` skill to fetch Change data. See [go-gerrit-reference/REFERENCE.md](../go-gerrit-reference/REFERENCE.md) for complete helper function and authentication setup.
+Use the `gerrit_api()` helper function from `go-gerrit-reference` skill to fetch Change data. See [go-gerrit-reference/REFERENCE.md](../go-gerrit-reference/REFERENCE.md) for complete helper function.
 
 ## Analysis Perspectives
 

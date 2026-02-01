@@ -10,21 +10,17 @@ Complete reference for Gerrit REST API usage with golang/go repository.
 - `jq`: JSON processor for parsing responses
 - `sed`: Text processing for XSSI prefix removal
 
-### Required Environment Variables
-
-- `GERRIT_USER`: Gerrit username
-- `GERRIT_HTTP_PASSWORD`: Gerrit HTTP password (obtain from [Gerrit HTTP Credentials](https://go-review.googlesource.com/settings/#HTTPCredentials))
-
 ### Optional Environment Variables
 
 - `GERRIT_BASE_URL`: Gerrit server URL (default: `https://go-review.googlesource.com`)
 
 ## Helper Function
 
-All Gerrit API responses start with `)]}'` (XSSI protection). This helper function strips the prefix and handles authentication:
+All Gerrit API responses start with `)]}'` (XSSI protection). This helper function strips the prefix and uses anonymous access:
 
 ```bash
 # Helper function to fetch Gerrit API and strip XSSI prefix
+# Uses anonymous access (no authentication required)
 gerrit_api() {
   local endpoint="$1"
   local base_url="${GERRIT_BASE_URL:-https://go-review.googlesource.com}"
@@ -32,7 +28,8 @@ gerrit_api() {
 
   # Capture curl output first, preserving exit status
   # -S flag shows errors even in silent mode for better diagnostics
-  raw="$(curl -fsS -u "${GERRIT_USER}:${GERRIT_HTTP_PASSWORD}" "${base_url}/a${endpoint}")" || return $?
+  # Note: Uses anonymous API (no /a prefix, no authentication)
+  raw="$(curl -fsS "${base_url}${endpoint}")" || return $?
 
   # Strip XSSI prefix if present
   printf '%s\n' "$raw" | sed "1s/^)]}'//"
@@ -57,13 +54,6 @@ fi
 
 if ! command -v sed >/dev/null 2>&1; then
   echo "ERROR: sed command not found. Please install sed."
-  exit 1
-fi
-
-# Check Gerrit environment variables
-if [ -z "$GERRIT_USER" ] || [ -z "$GERRIT_HTTP_PASSWORD" ]; then
-  echo "ERROR: GERRIT_USER and GERRIT_HTTP_PASSWORD must be set"
-  echo "Visit https://go-review.googlesource.com/settings/#HTTPCredentials to get HTTP password"
   exit 1
 fi
 ```
@@ -158,9 +148,9 @@ For the `go` project, you can use:
 ### Common Errors and Solutions
 
 - **`curl` command not found**: Guide user to install curl
-- **Authentication error (401)**: Guide user to set `GERRIT_USER` and `GERRIT_HTTP_PASSWORD`
+- **Authentication error (401/403)**: This Gerrit server may not allow anonymous API access. Some Gerrit instances require authentication. If you encounter this error, this plugin cannot access that Gerrit instance without authentication. However, `go-review.googlesource.com` currently supports anonymous access.
 - **Change not found (404)**: Verify change ID format and that change exists
-- **Rate limit (429)**: Advise to wait and retry with exponential backoff
+- **Rate limit (429)**: Anonymous access may have stricter rate limits. Wait and retry with exponential backoff, or reduce the number of requests (limit parameter, fewer concurrent requests)
 - **XSSI prefix error**: Ensure `)]}'` is stripped before JSON parsing (handled by `gerrit_api()` function)
 
 ### Error Handling Pattern
@@ -183,5 +173,5 @@ fi
 ## Side Effects
 
 - **Network Access**: All API calls require network access to Gerrit server
-- **Authentication**: Requires valid Gerrit credentials (HTTP password, not account password)
+- **Anonymous Access**: Uses anonymous API access (no authentication required). Some Gerrit instances may not support anonymous access and may return 401/403 errors. Rate limits may be stricter for anonymous access.
 - **No Local File Changes**: This reference does not modify local files

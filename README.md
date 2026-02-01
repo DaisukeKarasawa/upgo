@@ -10,11 +10,11 @@ golang/go の Change (CL) を Claude Code で自動取得・分析し、Go の�
 
 ## 重要な注意事項
 
-### ネットワークアクセスと認証
+### ネットワークアクセス
 
 - **ネットワークアクセス**: すべてのスキルとコマンドは Gerrit サーバー（`https://go-review.googlesource.com`）へのネットワークアクセスを必要とします
-- **認証必須**: `GERRIT_USER` と `GERRIT_HTTP_PASSWORD` 環境変数の設定が必須です
-- **自動起動**: スキル（`go-pr-fetcher`, `go-pr-analyzer`）は Claude が会話の流れから自動的に起動する可能性があります。ネットワークアクセスと認証情報の準備を事前に行ってください
+- **匿名アクセス**: プラグインは認証なしで動作します（匿名 API アクセスを使用）。`go-review.googlesource.com` は現在匿名アクセスをサポートしていますが、一部の Gerrit インスタンスでは匿名アクセスが許可されていない場合があります（401/403 エラーが返る可能性）。また、匿名アクセスではレート制限がより厳しい場合があります。
+- **自動起動**: スキル（`go-pr-fetcher`, `go-pr-analyzer`）は Claude が会話の流れから自動的に起動する可能性があります。ネットワークアクセスを事前に確認してください
 
 ### 必要なコマンド
 
@@ -45,11 +45,6 @@ cp -r upgo/commands/* ~/.claude/commands/
 - `curl`: HTTP クライアント
 - `jq`: JSON 処理
 - `sed`: テキスト処理
-
-### 必須環境変数
-
-- `GERRIT_USER`: Gerrit ユーザー名
-- `GERRIT_HTTP_PASSWORD`: Gerrit HTTP パスワード（[設定ページ](https://go-review.googlesource.com/settings/#HTTPCredentials)から取得）
 
 ### オプション環境変数
 
@@ -85,11 +80,11 @@ golang/go の Change #3965 を分析して、Go の思想を教えて
 
 ### Skills（ユーザー向け）
 
-| スキル                | 説明                                          | 自動起動 |
-| --------------------- | --------------------------------------------- | -------- |
-| `go-pr-fetcher`       | Gerrit REST API で Change を取得              | あり     |
-| `go-pr-analyzer`      | Change を分析し Go 思想を抽出                 | あり     |
-| `go-gerrit-reference` | Gerrit API の共通参照（ヘルパー関数・認証等） | なし     |
+| スキル                | 説明                                                        | 自動起動 |
+| --------------------- | ----------------------------------------------------------- | -------- |
+| `go-pr-fetcher`       | Gerrit REST API で Change を取得                            | あり     |
+| `go-pr-analyzer`      | Change を分析し Go 思想を抽出                               | あり     |
+| `go-gerrit-reference` | Gerrit API の共通参照（ヘルパー関数・エラーハンドリング等） | なし     |
 
 ### Commands（ユーザー向け）
 
@@ -128,10 +123,10 @@ golang/go の Change #3965 を分析して、Go の思想を教えて
 
 ### Gerrit との統合
 
-- **Change 情報取得**: Gerrit REST API（`curl` + 認証）で Change 一覧・詳細・コメント・パッチを取得
-- **共通参照**: `go-gerrit-reference` スキルが `gerrit_api()` ヘルパー関数、認証設定、エラーハンドリングパターンを提供
-- **認証**: `GERRIT_USER` と `GERRIT_HTTP_PASSWORD` を設定（[設定ページ](https://go-review.googlesource.com/settings/#HTTPCredentials)）
-- **エラーハンドリング**: `curl` または認証情報が未設定の場合はエラーメッセージを表示
+- **Change 情報取得**: Gerrit REST API（`curl` + 匿名アクセス）で Change 一覧・詳細・コメント・パッチを取得
+- **共通参照**: `go-gerrit-reference` スキルが `gerrit_api()` ヘルパー関数、エラーハンドリングパターンを提供
+- **匿名アクセス**: 認証なしで動作します。`go-review.googlesource.com` は現在匿名アクセスをサポートしていますが、一部の Gerrit インスタンスでは匿名アクセスが許可されていない場合があります（401/403 エラーが返る可能性）
+- **エラーハンドリング**: `curl` が見つからない場合や、Gerrit サーバーが匿名アクセスを許可していない場合はエラーメッセージを表示
 
 ### SkillsとCommandsの関係
 

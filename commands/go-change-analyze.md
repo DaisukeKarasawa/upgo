@@ -37,16 +37,12 @@ Analyzes a single Change (CL) by fetching its details, comments, and patch, then
   - Category classification
   - Key learnings
 - **Side Effects**:
-  - Makes API calls to Gerrit (default: `https://go-review.googlesource.com`) over the network
-  - Requires authentication via `GERRIT_USER` and `GERRIT_HTTP_PASSWORD` environment variables
+  - Makes API calls to Gerrit (default: `https://go-review.googlesource.com`) over the network using anonymous access
   - Does not create or update local files (paste the output if you want to save it)
 
 ## Prerequisites (Required State / Permissions / Files)
 
 - **Required Commands**: `curl`, `jq`, `sed`
-- **Environment Variables (Required)**:
-  - `GERRIT_USER`: Gerrit username
-  - `GERRIT_HTTP_PASSWORD`: Gerrit HTTP password (obtain from `https://go-review.googlesource.com/settings/#HTTPCredentials`)
 - **Environment Variables (Optional)**:
   - `GERRIT_BASE_URL`: Gerrit server URL (default: `https://go-review.googlesource.com`)
 - **Prerequisites**: Network access to Gerrit must be available
@@ -60,7 +56,7 @@ Analyzes a single Change (CL) by fetching its details, comments, and patch, then
 
 ### 1. Environment Check
 
-Use the environment check pattern from `go-gerrit-reference` skill. See `skills/go-gerrit-reference/REFERENCE.md` for complete helper function and authentication setup.
+Use the environment check pattern from `go-gerrit-reference` skill. See `skills/go-gerrit-reference/REFERENCE.md` for complete helper function.
 
 ```bash
 # Check required commands
@@ -79,13 +75,6 @@ if ! command -v sed >/dev/null 2>&1; then
   exit 1
 fi
 
-# Check Gerrit environment variables
-if [ -z "$GERRIT_USER" ] || [ -z "$GERRIT_HTTP_PASSWORD" ]; then
-  echo "ERROR: GERRIT_USER and GERRIT_HTTP_PASSWORD must be set"
-  echo "Visit https://go-review.googlesource.com/settings/#HTTPCredentials to get HTTP password"
-  exit 1
-fi
-
 # Check change-id argument
 if [ -z "$1" ]; then
   echo "ERROR: Change ID is required"
@@ -101,7 +90,8 @@ gerrit_api() {
   local base_url="${GERRIT_BASE_URL:-https://go-review.googlesource.com}"
   local raw
 
-  raw="$(curl -fsS -u "${GERRIT_USER}:${GERRIT_HTTP_PASSWORD}" "${base_url}/a${endpoint}")" || return $?
+  # Uses anonymous access (no authentication required)
+  raw="$(curl -fsS "${base_url}${endpoint}")" || return $?
   printf '%s\n' "$raw" | sed "1s/^)]}'//"
 }
 ```

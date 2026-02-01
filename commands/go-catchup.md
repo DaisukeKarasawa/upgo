@@ -155,8 +155,18 @@ Create report in the following format:
 /go-catchup compiler
 ```
 
+## Related Commands
+
+This command orchestrates the following primitive commands:
+
+- `/go-changes-fetch`: Fetches Change list from Gerrit
+- `/go-change-analyze`: Analyzes individual Changes
+
+For more granular control, use the primitive commands directly.
+
 ## Notes
 
 - Changes are fetched from Gerrit (go-review.googlesource.com), not GitHub
 - Use Change numbers (e.g., 3965) or full Change IDs (e.g., go~master~I8473b95934b5732ac55d26311a706c9c2bde9940)
 - Analysis includes patch set evolution, which shows how changes were refined through review
+- This is an **orchestrator command** that combines fetch + analyze + report. See `commands/NAMING.md` for design principles.

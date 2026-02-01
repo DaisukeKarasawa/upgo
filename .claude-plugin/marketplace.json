@@ -1,0 +1,30 @@
+{
+  "name": "daisukekarasawa-upgo",
+  "owner": {
+    "name": "DaisukeKarasawa",
+    "email": null
+  },
+  "plugins": [
+    {
+      "name": "go-pr-insights",
+      "source": "./",
+      "description": "Automatically fetch and analyze golang/go Changes (CLs) via Gerrit with Claude Code to learn Go design philosophy",
+      "version": "1.0.0",
+      "author": {
+        "name": "DaisukeKarasawa",
+        "url": "https://github.com/DaisukeKarasawa"
+      },
+      "repository": "https://github.com/DaisukeKarasawa/upgo",
+      "license": "MIT",
+      "keywords": [
+        "claude-code",
+        "go",
+        "golang",
+        "gerrit",
+        "code-review",
+        "code-analysis",
+        "learning"
+      ]
+    }
+  ]
+}

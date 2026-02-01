@@ -8,6 +8,20 @@ golang/go の Change (CL) を Claude Code で自動取得・分析し、Go の�
 - **議論の分析**: レビューコメント・議論のポイントを抽出
 - **Go 思想の学習**: 変更の背景から Go の設計思想を学ぶ
 
+## 重要な注意事項
+
+### ネットワークアクセスと認証
+
+- **ネットワークアクセス**: すべてのスキルとコマンドは Gerrit サーバー（`https://go-review.googlesource.com`）へのネットワークアクセスを必要とします
+- **認証必須**: `GERRIT_USER` と `GERRIT_HTTP_PASSWORD` 環境変数の設定が必須です
+- **自動起動**: スキル（`go-pr-fetcher`, `go-pr-analyzer`）は Claude が会話の流れから自動的に起動する可能性があります。ネットワークアクセスと認証情報の準備を事前に行ってください
+
+### 必要なコマンド
+
+- `curl`: HTTP クライアント
+- `jq`: JSON 処理
+- `sed`: テキスト処理（XSSI プレフィックス除去用）
+
 ## インストール
 
 ### 方法1: プラグインとしてインストール（推奨）
@@ -26,11 +40,20 @@ cp -r upgo/commands/* ~/.claude/commands/
 
 ## 必要な環境
 
-- `curl` がインストールされていること
-- Gerrit の認証情報が設定されていること:
-  - `GERRIT_USER`: Gerrit ユーザー名
-  - `GERRIT_HTTP_PASSWORD`: Gerrit HTTP パスワード（[設定ページ](https://go-review.googlesource.com/settings/#HTTPCredentials)から取得）
-  - `GERRIT_BASE_URL`: Gerrit サーバーURL（オプション、デフォルト: `https://go-review.googlesource.com`）
+### 必須コマンド
+
+- `curl`: HTTP クライアント
+- `jq`: JSON 処理
+- `sed`: テキスト処理
+
+### 必須環境変数
+
+- `GERRIT_USER`: Gerrit ユーザー名
+- `GERRIT_HTTP_PASSWORD`: Gerrit HTTP パスワード（[設定ページ](https://go-review.googlesource.com/settings/#HTTPCredentials)から取得）
+
+### オプション環境変数
+
+- `GERRIT_BASE_URL`: Gerrit サーバーURL（デフォルト: `https://go-review.googlesource.com`）
 
 ## 使い方
 
@@ -56,14 +79,17 @@ Claude Code に直接依頼：
 golang/go の Change #3965 を分析して、Go の思想を教えて
 ```
 
+スキルは自動的に起動され、Change 情報を取得・分析します。
+
 ## 含まれるコンポーネント
 
 ### Skills（ユーザー向け）
 
-| スキル           | 説明                             |
-| ---------------- | -------------------------------- |
-| `go-pr-fetcher`  | Gerrit REST API で Change を取得 |
-| `go-pr-analyzer` | Change を分析し Go 思想を抽出    |
+| スキル                | 説明                                          | 自動起動 |
+| --------------------- | --------------------------------------------- | -------- |
+| `go-pr-fetcher`       | Gerrit REST API で Change を取得              | あり     |
+| `go-pr-analyzer`      | Change を分析し Go 思想を抽出                 | あり     |
+| `go-gerrit-reference` | Gerrit API の共通参照（ヘルパー関数・認証等） | なし     |
 
 ### Commands（ユーザー向け）
 
@@ -102,7 +128,8 @@ golang/go の Change #3965 を分析して、Go の思想を教えて
 
 ### Gerrit との統合
 
-- **Change 情報取得**: Gerrit REST API（`curl` + 認証）で Change 一覧・詳細・コメント・パッチを取得。`go-pr-fetcher` スキル内の `gerrit_api` ヘルパーを参照
+- **Change 情報取得**: Gerrit REST API（`curl` + 認証）で Change 一覧・詳細・コメント・パッチを取得
+- **共通参照**: `go-gerrit-reference` スキルが `gerrit_api()` ヘルパー関数、認証設定、エラーハンドリングパターンを提供
 - **認証**: `GERRIT_USER` と `GERRIT_HTTP_PASSWORD` を設定（[設定ページ](https://go-review.googlesource.com/settings/#HTTPCredentials)）
 - **エラーハンドリング**: `curl` または認証情報が未設定の場合はエラーメッセージを表示
 
@@ -112,6 +139,7 @@ golang/go の Change #3965 を分析して、Go の思想を教えて
 - **Skills**: Commandsから呼び出される再利用可能な機能モジュール
   - `go-pr-fetcher`: Change 情報の取得を担当
   - `go-pr-analyzer`: Change の分析と Go 思想の抽出を担当
+  - `go-gerrit-reference`: Gerrit API の共通参照（他のスキルから参照される）
 - **役割分担**: Commandsがワークフローを定義し、Skillsが具体的な処理を実行する構造
 
 ## 分析で得られる情報
@@ -133,17 +161,22 @@ golang/go の Change #3965 を分析して、Go の思想を教えて
 
 ```plaintext
 upgo/
-├── .claude-plugin/       # プラグインマニフェスト
+├── .claude-plugin/              # プラグインマニフェスト
 │   └── plugin.json
-├── skills/               # ユーザー向け Skills
-│   ├── go-pr-fetcher/    # Change 取得
-│   └── go-pr-analyzer/   # Change 分析
-└── commands/             # ユーザー向け Commands
-    ├── CLAUDE.md         # エージェント向けドキュメント
-    ├── NAMING.md         # 命名規則ガイド
-    ├── go-catchup.md     # キャッチアップコマンド
-    ├── go-change-analyze.md  # Change 分析コマンド
-    └── go-changes-fetch.md   # Change 取得コマンド
+├── skills/                       # ユーザー向け Skills
+│   ├── go-pr-fetcher/            # Change 取得
+│   │   └── SKILL.md
+│   ├── go-pr-analyzer/           # Change 分析
+│   │   └── SKILL.md
+│   └── go-gerrit-reference/      # Gerrit API 共通参照
+│       ├── SKILL.md
+│       └── REFERENCE.md
+└── commands/                     # ユーザー向け Commands
+    ├── CLAUDE.md                 # エージェント向けドキュメント
+    ├── NAMING.md                 # 命名規則ガイド
+    ├── go-catchup.md             # キャッチアップコマンド
+    ├── go-change-analyze.md      # Change 分析コマンド
+    └── go-changes-fetch.md       # Change 取得コマンド
 ```
 
 ## ライセンス

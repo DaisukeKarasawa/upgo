@@ -1,6 +1,6 @@
 ---
 description: Catch up on recent golang/go Changes (CLs) and learn Go philosophy
-allowed-tools: Bash, WebFetch, Read
+allowed-tools: Bash
 argument-hint: [category]
 ---
 
@@ -31,16 +31,17 @@ Fetches merged Changes (CLs) updated in the last 30 days from Gerrit, analyzes r
 - **Output**: Displays a Markdown-formatted "Go Change Catchup Report" in chat
 - **Side Effects**:
   - Makes API calls to Gerrit (default: `https://go-review.googlesource.com`) over the network
+  - Requires authentication via `GERRIT_USER` and `GERRIT_HTTP_PASSWORD` environment variables
   - Does not create or update local files (paste the output if you want to save it)
 
 ## Prerequisites (Required State / Permissions / Files)
 
 - **Required Commands**: `curl`, `jq`, `sed`
 - **Environment Variables (Required)**:
-  - `GERRIT_USER`
-  - `GERRIT_HTTP_PASSWORD` (obtain from `https://go-review.googlesource.com/settings/#HTTPCredentials`)
+  - `GERRIT_USER`: Gerrit username
+  - `GERRIT_HTTP_PASSWORD`: Gerrit HTTP password (obtain from `https://go-review.googlesource.com/settings/#HTTPCredentials`)
 - **Environment Variables (Optional)**:
-  - `GERRIT_BASE_URL` (default: `https://go-review.googlesource.com`)
+  - `GERRIT_BASE_URL`: Gerrit server URL (default: `https://go-review.googlesource.com`)
 - **Prerequisites**: Network access to Gerrit must be available
 
 ## Expected State After Execution
@@ -52,12 +53,24 @@ Fetches merged Changes (CLs) updated in the last 30 days from Gerrit, analyzes r
 
 ### 1. Environment Check
 
-```bash
-# Check curl command
-which curl || echo "ERROR: curl command not found. Please install curl."
+Use the environment check pattern from `go-gerrit-reference` skill. See `skills/go-gerrit-reference/REFERENCE.md` for complete helper function and authentication setup.
 
-# Check jq command
-which jq || echo "ERROR: jq command not found. Please install jq."
+```bash
+# Check required commands
+if ! command -v curl >/dev/null 2>&1; then
+  echo "ERROR: curl command not found. Please install curl."
+  exit 1
+fi
+
+if ! command -v jq >/dev/null 2>&1; then
+  echo "ERROR: jq command not found. Please install jq."
+  exit 1
+fi
+
+if ! command -v sed >/dev/null 2>&1; then
+  echo "ERROR: sed command not found. Please install sed."
+  exit 1
+fi
 
 # Check Gerrit environment variables
 if [ -z "$GERRIT_USER" ] || [ -z "$GERRIT_HTTP_PASSWORD" ]; then
@@ -66,17 +79,13 @@ if [ -z "$GERRIT_USER" ] || [ -z "$GERRIT_HTTP_PASSWORD" ]; then
   exit 1
 fi
 
-# Helper function to fetch Gerrit API and strip XSSI prefix
+# Load gerrit_api() helper function (see skills/go-gerrit-reference/REFERENCE.md)
 gerrit_api() {
   local endpoint="$1"
   local base_url="${GERRIT_BASE_URL:-https://go-review.googlesource.com}"
   local raw
 
-  # Capture curl output first, preserving exit status
-  # -S flag shows errors even in silent mode for better diagnostics
   raw="$(curl -fsS -u "${GERRIT_USER}:${GERRIT_HTTP_PASSWORD}" "${base_url}/a${endpoint}")" || return $?
-
-  # Strip XSSI prefix if present
   printf '%s\n' "$raw" | sed "1s/^)]}'//"
 }
 ```
@@ -96,6 +105,8 @@ For each fetched Change:
 2. Review change messages and inline comments
 3. Analyze patch set evolution
 4. Extract Go philosophy insights
+
+Use `go-pr-analyzer` skill for detailed analysis patterns. See `skills/go-pr-analyzer/SKILL.md` for analysis perspectives and output format.
 
 ### 4. Generate Report
 
@@ -170,3 +181,4 @@ For more granular control, use the primitive commands directly.
 - Use Change numbers (e.g., 3965) or full Change IDs (e.g., go~master~I8473b95934b5732ac55d26311a706c9c2bde9940)
 - Analysis includes patch set evolution, which shows how changes were refined through review
 - This is an **orchestrator command** that combines fetch + analyze + report. See `commands/NAMING.md` for design principles.
+- For Gerrit API helper function and common patterns, see `skills/go-gerrit-reference/REFERENCE.md`

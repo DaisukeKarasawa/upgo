@@ -1,6 +1,6 @@
 ---
 description: Fetch golang/go Changes (CLs) from Gerrit
-allowed-tools: Bash, WebFetch
+allowed-tools: Bash
 argument-hint: [days] [status] [limit]
 ---
 
@@ -45,6 +45,7 @@ Fetches Change (CL) list from Gerrit and outputs JSON. Does not perform analysis
   - Each object contains: `_number`, `subject`, `owner`, `submitted`, `updated`, `labels`
 - **Side Effects**:
   - Makes API calls to Gerrit (default: `https://go-review.googlesource.com`) over the network
+  - Requires authentication via `GERRIT_USER` and `GERRIT_HTTP_PASSWORD` environment variables
   - Does not create or update local files
   - Does not perform analysis or generate reports
 
@@ -52,10 +53,10 @@ Fetches Change (CL) list from Gerrit and outputs JSON. Does not perform analysis
 
 - **Required Commands**: `curl`, `jq`, `sed`
 - **Environment Variables (Required)**:
-  - `GERRIT_USER`
-  - `GERRIT_HTTP_PASSWORD` (obtain from `https://go-review.googlesource.com/settings/#HTTPCredentials`)
+  - `GERRIT_USER`: Gerrit username
+  - `GERRIT_HTTP_PASSWORD`: Gerrit HTTP password (obtain from `https://go-review.googlesource.com/settings/#HTTPCredentials`)
 - **Environment Variables (Optional)**:
-  - `GERRIT_BASE_URL` (default: `https://go-review.googlesource.com`)
+  - `GERRIT_BASE_URL`: Gerrit server URL (default: `https://go-review.googlesource.com`)
 - **Prerequisites**: Network access to Gerrit must be available
 
 ## Expected State After Execution
@@ -67,20 +68,20 @@ Fetches Change (CL) list from Gerrit and outputs JSON. Does not perform analysis
 
 ### 1. Environment Check
 
+Use the environment check pattern from `go-gerrit-reference` skill. See `skills/go-gerrit-reference/REFERENCE.md` for complete helper function and authentication setup.
+
 ```bash
-# Check curl command
+# Check required commands
 if ! command -v curl >/dev/null 2>&1; then
   echo "ERROR: curl command not found. Please install curl."
   exit 1
 fi
 
-# Check jq command
 if ! command -v jq >/dev/null 2>&1; then
   echo "ERROR: jq command not found. Please install jq."
   exit 1
 fi
 
-# Check sed command
 if ! command -v sed >/dev/null 2>&1; then
   echo "ERROR: sed command not found. Please install sed."
   exit 1
@@ -93,17 +94,13 @@ if [ -z "$GERRIT_USER" ] || [ -z "$GERRIT_HTTP_PASSWORD" ]; then
   exit 1
 fi
 
-# Helper function to fetch Gerrit API and strip XSSI prefix
+# Load gerrit_api() helper function (see skills/go-gerrit-reference/REFERENCE.md)
 gerrit_api() {
   local endpoint="$1"
   local base_url="${GERRIT_BASE_URL:-https://go-review.googlesource.com}"
   local raw
 
-  # Capture curl output first, preserving exit status
-  # -S flag shows errors even in silent mode for better diagnostics
   raw="$(curl -fsS -u "${GERRIT_USER}:${GERRIT_HTTP_PASSWORD}" "${base_url}/a${endpoint}")" || return $?
-
-  # Strip XSSI prefix if present
   printf '%s\n' "$raw" | sed "1s/^)]}'//"
 }
 ```
@@ -159,4 +156,5 @@ gerrit_api "/changes/?q=${QUERY}&n=${LIMIT}&o=LABELS&o=DETAILED_ACCOUNTS&o=CURRE
 - This command focuses on **fetching only**. Use `/go-change-analyze` for analysis.
 - Changes are fetched from Gerrit (go-review.googlesource.com), not GitHub
 - Output is JSON, suitable for piping to other commands or saving to files
+- For Gerrit API helper function and common patterns, see `skills/go-gerrit-reference/REFERENCE.md`
 - See `skills/go-pr-fetcher/SKILL.md` for detailed Gerrit API usage patterns

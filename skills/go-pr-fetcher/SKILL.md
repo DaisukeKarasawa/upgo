@@ -1,56 +1,44 @@
 ---
 name: go-pr-fetcher
 description: |
-  Fetches Change (CL) information from golang/go repository via Gerrit.
+  Fetches Change (CL) information from golang/go repository via Gerrit REST API.
   Use when user says "fetch Go changes", "latest CLs from golang/go", "check Go changes", etc.
 allowed-tools:
   - Bash
-  - WebFetch
 ---
 
 # Go Change Fetcher
 
 Fetches Change (CL) information from golang/go repository using Gerrit REST API.
 
+## Side Effects
+
+- **Network Access**: Makes API calls to Gerrit server (default: `https://go-review.googlesource.com`)
+- **Authentication Required**: Requires `GERRIT_USER` and `GERRIT_HTTP_PASSWORD` environment variables
+- **No Local File Changes**: Does not create or modify local files
+
 ## Prerequisites
 
-Environment variables for Gerrit authentication must be set:
+### Required Commands
+
+- `curl`: HTTP client for API requests
+- `jq`: JSON processor for parsing responses
+- `sed`: Text processing for XSSI prefix removal
+
+### Required Environment Variables
+
+- `GERRIT_USER`: Gerrit username
+- `GERRIT_HTTP_PASSWORD`: Gerrit HTTP password (obtain from [Gerrit HTTP Credentials](https://go-review.googlesource.com/settings/#HTTPCredentials))
+
+### Optional Environment Variables
 
 - `GERRIT_BASE_URL`: Gerrit server URL (default: `https://go-review.googlesource.com`)
-- `GERRIT_USER`: Gerrit username
-- `GERRIT_HTTP_PASSWORD`: Gerrit HTTP password (from Settings > HTTP Password)
 
-```bash
-echo $GERRIT_BASE_URL
-echo $GERRIT_USER
-echo $GERRIT_HTTP_PASSWORD
-```
+If environment variables are not set, prompt the user to set them.
 
-If not set, prompt the user to set them. To get HTTP password:
+## Quick Start
 
-1. Visit [Gerrit HTTP Credentials](https://go-review.googlesource.com/settings/#HTTPCredentials)
-2. Generate HTTP password
-3. Set it as `GERRIT_HTTP_PASSWORD`
-
-## Helper Function
-
-All Gerrit API responses start with `)]}'` (XSSI protection). Strip it before parsing JSON:
-
-```bash
-# Helper function to fetch Gerrit API and strip XSSI prefix
-gerrit_api() {
-  local endpoint="$1"
-  local base_url="${GERRIT_BASE_URL:-https://go-review.googlesource.com}"
-  local raw
-
-  # Capture curl output first, preserving exit status
-  # -S flag shows errors even in silent mode for better diagnostics
-  raw="$(curl -fsS -u "${GERRIT_USER}:${GERRIT_HTTP_PASSWORD}" "${base_url}/a${endpoint}")" || return $?
-
-  # Strip XSSI prefix if present
-  printf '%s\n' "$raw" | sed "1s/^)]}'//"
-}
-```
+Use the `gerrit_api()` helper function from `go-gerrit-reference` skill. See [go-gerrit-reference/REFERENCE.md](../go-gerrit-reference/REFERENCE.md) for complete helper function and authentication setup.
 
 ## Fetching Change List
 
@@ -85,13 +73,13 @@ gerrit_api "/changes/?q=project:go+-age:30d&n=50&o=LABELS&o=DETAILED_ACCOUNTS" |
 
 ## Fetching Individual Change Details
 
+For complete API reference including helper function, change ID formats, and error handling, see [go-gerrit-reference/REFERENCE.md](../go-gerrit-reference/REFERENCE.md).
+
 ### Change basic info
 
 ```bash
-# Get change detail with labels, messages, and reviewer updates
-# Change ID format: go~master~I<change-id> or just <change-number>
-CHANGE_ID="go~master~I<change-id>"  # or use change number: <change-number>
-gerrit_api "/changes/${CHANGE_ID}/detail?o=LABELS&o=DETAILED_LABELS&o=MESSAGES&o=REVIEWER_UPDATES" | jq '{_number, subject, status, owner, created, updated, labels, messages}'
+CHANGE_ID="<change-number>"  # e.g., 3965 or go~master~I8473b95934b5732ac55d26311a706c9c2bde9940
+gerrit_api "/changes/${CHANGE_ID}/detail?o=LABELS&o=DETAILED_LABELS&o=MESSAGES&o=REVIEWER_UPDATES&o=CURRENT_REVISION&o=CURRENT_COMMIT&o=CURRENT_FILES" | jq '{_number, subject, status, owner, created, updated, labels, messages}'
 ```
 
 ### Change comments and discussions
@@ -148,21 +136,8 @@ Format fetched Change information as follows:
 
 ## Change ID Formats
 
-Gerrit supports multiple change ID formats:
-
-- Full format: `go~master~I<change-id>` (e.g., `go~master~I8473b95934b5732ac55d26311a706c9c2bde9940`)
-- Change number: `<number>` (e.g., `3965`)
-- Change-Id only: `I<change-id>` (if unique)
-
-For the `go` project, you can use:
-
-- Change number: `3965`
-- Full format: `go~master~I8473b95934b5732ac55d26311a706c9c2bde9940`
+For supported Change ID formats, see [go-gerrit-reference/REFERENCE.md](../go-gerrit-reference/REFERENCE.md).
 
 ## Error Handling
 
-- `curl` command not found: Guide user to install curl
-- Authentication error (401): Guide user to set `GERRIT_USER` and `GERRIT_HTTP_PASSWORD`
-- Change not found (404): Verify change ID format and that change exists
-- Rate limit (429): Advise to wait and retry with exponential backoff
-- XSSI prefix error: Ensure `)]}'` is stripped before JSON parsing
+For common errors and handling patterns, see [go-gerrit-reference/REFERENCE.md](../go-gerrit-reference/REFERENCE.md).

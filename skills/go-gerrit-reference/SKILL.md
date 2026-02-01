@@ -9,7 +9,7 @@ user-invocable: false
 
 # Gerrit API Reference
 
-Shared reference for Gerrit REST API usage with golang/go repository. This skill provides common patterns, helper functions, and error handling guidance.
+Shared reference for Gerrit REST API usage with golang/go repository. This skill provides common patterns, helper functions, and error-handling guidance.
 
 ## Quick Start
 

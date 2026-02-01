@@ -4,13 +4,49 @@ allowed-tools: Bash, WebFetch, Read
 argument-hint: [category]
 ---
 
-# Go Change Catchup
+# /go-catchup
 
 Fetches and analyzes Changes (CLs) updated in the last month from golang/go repository to learn Go design philosophy.
 
+## Command Name
+
+`/go-catchup [category]`
+
+## One-Line Description
+
+Fetches merged Changes (CLs) updated in the last 30 days from Gerrit, analyzes review discussions, and reports key insights and Go philosophy.
+
 ## Arguments
 
-- `$1`: Category filter (optional: error-handling, performance, api-design, testing, runtime, compiler)
+- `$1` (`category`): Category filter (optional)
+  - **Type**: string
+  - **Required**: No (optional)
+  - **Default**: None (all categories)
+  - **Constraints**: Recommended category strings (not strictly enforced):
+    - `error-handling`, `performance`, `api-design`, `testing`, `runtime`, `compiler`
+  - **Description**: Prioritizes extraction and summarization of Changes from the specified category perspective (e.g., specifying `compiler` focuses on compiler-related Changes).
+
+## Output / Side Effects
+
+- **Output**: Displays a Markdown-formatted "Go Change Catchup Report" in chat
+- **Side Effects**:
+  - Makes API calls to Gerrit (default: `https://go-review.googlesource.com`) over the network
+  - Does not create or update local files (paste the output if you want to save it)
+
+## Prerequisites (Required State / Permissions / Files)
+
+- **Required Commands**: `curl`, `jq`, `sed`
+- **Environment Variables (Required)**:
+  - `GERRIT_USER`
+  - `GERRIT_HTTP_PASSWORD` (obtain from `https://go-review.googlesource.com/settings/#HTTPCredentials`)
+- **Environment Variables (Optional)**:
+  - `GERRIT_BASE_URL` (default: `https://go-review.googlesource.com`)
+- **Prerequisites**: Network access to Gerrit must be available
+
+## Expected State After Execution
+
+- A report containing a list and key points of Changes (CLs) from the last 30 days, category trends, detailed analysis of notable Changes, and Go philosophy insights
+- Local files/settings are not modified
 
 ## Execution Steps
 
@@ -114,6 +150,9 @@ Create report in the following format:
 
 # Filter by performance category
 /go-catchup performance
+
+# Filter by compiler category
+/go-catchup compiler
 ```
 
 ## Notes

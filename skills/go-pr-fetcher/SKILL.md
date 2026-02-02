@@ -96,6 +96,71 @@ FILE_PATH="src/example.go"  # URL encode if needed
 gerrit_api "/changes/${CHANGE_ID}/revisions/current/files/${FILE_PATH}/diff" | jq '.'
 ```
 
+### Deep Dive: Patch Set Evolution
+
+For analyzing how code evolved through review:
+
+```bash
+# Get all revisions for a change
+gerrit_api "/changes/${CHANGE_ID}/detail?o=ALL_REVISIONS" | jq '.revisions | keys'
+
+# Get list of all revisions
+REVISIONS=$(gerrit_api "/changes/${CHANGE_ID}/detail?o=ALL_REVISIONS" | jq -r '.revisions | keys[]')
+
+# Compare two specific revisions
+REV1="<revision-hash-1>"
+REV2="<revision-hash-2>"
+gerrit_api "/changes/${CHANGE_ID}/revisions/${REV2}/files?base=${REV1}" | jq '.'
+
+# Get diff between consecutive revisions
+# First, get revision list
+REV_LIST=$(gerrit_api "/changes/${CHANGE_ID}/detail?o=ALL_REVISIONS" | jq -r '.revisions | keys | sort')
+# Then compare each pair (requires bash loop)
+```
+
+### Deep Dive: Review Comments with Thread Structure
+
+For detailed review analysis:
+
+```bash
+# Get all comments (includes inline comments with file:line)
+gerrit_api "/changes/${CHANGE_ID}/comments" | jq '.'
+
+# Get comments for a specific revision
+REV="<revision-hash>"
+gerrit_api "/changes/${CHANGE_ID}/revisions/${REV}/comments" | jq '.'
+
+# Extract comment threads (comments with in_reply_to)
+gerrit_api "/changes/${CHANGE_ID}/comments" | jq 'to_entries[] | select(.value[].in_reply_to != null)'
+
+# Get comment count per file
+gerrit_api "/changes/${CHANGE_ID}/comments" | jq 'to_entries | map({file: .key, count: (.value | length)})'
+```
+
+### Deep Dive: Rate Limiting Considerations
+
+When fetching data for multiple Changes or deep dive analysis:
+
+1. **Batch Requests**: Group related API calls when possible
+2. **Caching**: Cache Change details if analyzing multiple times
+3. **Progressive Loading**: Fetch lite data first, then deep dive data for selected Changes
+4. **Error Handling**: Implement retry logic with exponential backoff for rate limit errors (HTTP 429)
+
+```bash
+# Example: Fetch lite data for all Changes first
+for change_id in "${change_ids[@]}"; do
+  # Lite: detail + comments count only
+  gerrit_api "/changes/${change_id}/detail?o=MESSAGES&o=CURRENT_REVISION" | jq '{_number, subject, messages: (.messages | length)}'
+done
+
+# Then deep dive for selected Changes
+for change_id in "${selected_change_ids[@]}"; do
+  # Full: all revisions, comments, diff
+  gerrit_api "/changes/${change_id}/detail?o=ALL_REVISIONS&o=MESSAGES&o=CURRENT_FILES" | jq '.'
+  gerrit_api "/changes/${change_id}/comments" | jq '.'
+done
+```
+
 ### Change commit message
 
 ```bash
@@ -134,3 +199,40 @@ For supported Change ID formats, see [go-gerrit-reference/REFERENCE.md](../go-ge
 ## Error Handling
 
 For common errors and handling patterns, see [go-gerrit-reference/REFERENCE.md](../go-gerrit-reference/REFERENCE.md).
+
+### Rate Limiting
+
+When performing deep dive analysis on multiple Changes:
+
+- **Anonymous Access Limits**: Anonymous API access may have stricter rate limits
+- **429 Too Many Requests**: If you receive HTTP 429, implement exponential backoff:
+
+  ```bash
+  # Simple retry with backoff
+  retry_with_backoff() {
+    local max_attempts=3
+    local delay=1
+    local attempt=1
+
+    while [ $attempt -le $max_attempts ]; do
+      if result=$(gerrit_api "$1" 2>&1); then
+        echo "$result"
+        return 0
+      fi
+
+      if echo "$result" | grep -q "429"; then
+        echo "Rate limited, waiting ${delay}s..." >&2
+        sleep $delay
+        delay=$((delay * 2))
+        attempt=$((attempt + 1))
+      else
+        return 1
+      fi
+    done
+
+    return 1
+  }
+  ```
+
+- **Progressive Fetching**: Fetch lite data for all Changes first, then deep dive data for selected Changes only
+- **Caching**: Cache Change details to avoid redundant API calls

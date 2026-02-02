@@ -30,7 +30,7 @@ golang/go の Change (CL) を Claude Code で自動取得・分析し、Go の�
 
 ```bash
 # 1. マーケットプレイスを追加
-/plugin marketplace add DaisukeKarasawa/upgo
+/plugin marketplace add daisukekarasawa/upgo
 
 # 2. プラグインをインストール
 /plugin install go-pr-insights@daisukekarasawa-upgo

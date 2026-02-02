@@ -26,9 +26,21 @@ golang/go の Change (CL) を Claude Code で自動取得・分析し、Go の�
 
 ### 方法1: プラグインとしてインストール（推奨）
 
+マーケットプレイスを追加してプラグインをインストールします：
+
 ```bash
+# 1. マーケットプレイスを追加
 /plugin marketplace add DaisukeKarasawa/upgo
+
+# 2. プラグインをインストール
+/plugin install go-pr-insights@daisukekarasawa-upgo
 ```
+
+または、`/plugin` コマンドを実行してインタラクティブUIからインストールすることもできます：
+
+1. `/plugin` を実行
+2. **Discover** タブで `go-pr-insights` を検索
+3. プラグインを選択してインストール
 
 ### 方法2: 手動コピー
 
@@ -157,7 +169,8 @@ golang/go の Change #3965 を分析して、Go の思想を教えて
 ```plaintext
 upgo/
 ├── .claude-plugin/              # プラグインマニフェスト
-│   └── plugin.json
+│   ├── plugin.json
+│   └── marketplace.json
 ├── skills/                       # ユーザー向け Skills
 │   ├── go-pr-fetcher/            # Change 取得
 │   │   └── SKILL.md

@@ -4,13 +4,13 @@ allowed-tools: Bash
 argument-hint: [category]
 ---
 
-# /go-catchup
+# /go-changes-catchup
 
 Fetches and analyzes Changes (CLs) updated in the last month from golang/go repository to learn Go design philosophy.
 
 ## Command Name
 
-`/go-catchup [category] [--days=N] [--status=STATUS] [--limit=N] [--review=lite|full] [--deep-dives=N] [--deep-criteria=CRITERIA] [--format=md|json]`
+`/go-changes-catchup [category] [--days=N] [--status=STATUS] [--limit=N] [--review=lite|full] [--deep-dives=N] [--deep-criteria=CRITERIA] [--format=md|json]`
 
 ## One-Line Description
 
@@ -309,25 +309,25 @@ How review discussions reflect Go design principles:
 
 ```bash
 # Catch up on all Changes from the last month (default: 30 days, merged, limit 50)
-/go-catchup
+/go-changes-catchup
 
 # Filter by error-handling category
-/go-catchup error-handling
+/go-changes-catchup error-handling
 
 # Filter by compiler category with custom deep dive count
-/go-catchup compiler --deep-dives=10
+/go-changes-catchup compiler --deep-dives=10
 
 # Fetch changes from last 7 days with full review analysis
-/go-catchup --days=7 --review=full
+/go-changes-catchup --days=7 --review=full
 
 # Custom limit and deep dive criteria
-/go-catchup --limit=30 --deep-dives=5 --deep-criteria=review
+/go-changes-catchup --limit=30 --deep-dives=5 --deep-criteria=review
 
 # Output as JSON for further processing
-/go-catchup --format=json > catchup-report.json
+/go-changes-catchup --format=json > catchup-report.json
 
 # Filter by runtime category with specific review depth
-/go-catchup runtime --review=lite --deep-dives=6
+/go-changes-catchup runtime --review=lite --deep-dives=6
 ```
 
 ## Output Examples

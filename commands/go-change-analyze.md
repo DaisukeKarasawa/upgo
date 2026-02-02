@@ -176,7 +176,7 @@ Create report in the following format:
 ## Related Commands
 
 - `/go-changes-fetch`: Fetches Change list
-- `/go-catchup`: Orchestrates fetch + analyze + report workflow for multiple Changes
+- `/go-changes-catchup`: Orchestrates fetch + analyze + report workflow for multiple Changes
 
 ## Notes
 

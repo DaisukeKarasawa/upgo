@@ -94,13 +94,13 @@ cp -r upgo/commands/* ~/.claude/commands/
 ### Change キャッチアップ
 
 ```bash
-/go-catchup
+/go-changes-catchup
 ```
 
 直近 30 日間のマージ済み Change を取得・分析し、Go の設計思想をレポートします。
 
 ```bash
-/go-catchup compiler
+/go-changes-catchup compiler
 ```
 
 カテゴリフィルタを指定して取得できます(例: compiler, runtime など)。
@@ -129,9 +129,9 @@ golang/go の Change #3965 を分析して、Go の思想を教えて
 
 #### オーケストレーターコマンド（ワークフロー）
 
-| コマンド                 | 説明                                                         |
-| ------------------------ | ------------------------------------------------------------ |
-| `/go-catchup [カテゴリ]` | 直近 30 日間の Change をキャッチアップ（取得→分析→レポート） |
+| コマンド                         | 説明                                                         |
+| -------------------------------- | ------------------------------------------------------------ |
+| `/go-changes-catchup [カテゴリ]` | 直近 30 日間の Change をキャッチアップ（取得→分析→レポート） |
 
 #### プリミティブコマンド（単一目的）
 
@@ -148,7 +148,7 @@ golang/go の Change #3965 を分析して、Go の思想を教えて
 
 #### オーケストレーターコマンド（推奨）
 
-1. **コマンド実行**: ユーザーが `/go-catchup` コマンドを実行
+1. **コマンド実行**: ユーザーが `/go-changes-catchup` コマンドを実行
 2. **Change 取得**: `go-pr-fetcher` スキルが Gerrit REST API を使用して golang/go リポジトリから Change 情報を取得
 3. **分析処理**: `go-pr-analyzer` スキルが取得した Change 情報を分析し、Goの設計思想を抽出
 4. **レポート生成**: 分析結果をまとめたレポートを生成
@@ -169,7 +169,7 @@ golang/go の Change #3965 を分析して、Go の思想を教えて
 
 ### SkillsとCommandsの関係
 
-- **Commands**: ユーザーが直接実行するスラッシュコマンド（例: `/go-catchup`）
+- **Commands**: ユーザーが直接実行するスラッシュコマンド（例: `/go-changes-catchup`）
 - **Skills**: Commandsから呼び出される再利用可能な機能モジュール
   - `go-pr-fetcher`: Change 情報の取得を担当
   - `go-pr-analyzer`: Change の分析と Go 思想の抽出を担当
@@ -209,7 +209,7 @@ upgo/
 └── commands/                     # ユーザー向け Commands
     ├── CLAUDE.md                 # エージェント向けドキュメント
     ├── NAMING.md                 # 命名規則ガイド
-    ├── go-catchup.md             # キャッチアップコマンド
+    ├── go-changes-catchup.md     # キャッチアップコマンド
     ├── go-change-analyze.md      # Change 分析コマンド
     └── go-changes-fetch.md       # Change 取得コマンド
 ```

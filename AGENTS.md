@@ -42,7 +42,7 @@ Before starting work, proceed with the assumption that the following have been "
 ### 2.1 Responsibility Separation: Commands and Skills
 
 - **Commands** (`commands/*.md`): Slash commands that users execute directly
-  - Orchestrator: Orchestrates entire workflows (e.g., `/go-catchup`)
+  - Orchestrator: Orchestrates entire workflows (e.g., `/go-changes-catchup`)
   - Primitive: Single-purpose commands (e.g., `/go-changes-fetch`, `/go-change-analyze`)
 - **Skills** (`skills/*/SKILL.md`): Reusable functional modules called from Commands
   - `go-pr-fetcher`: Handles Change information fetching
@@ -53,7 +53,7 @@ Before starting work, proceed with the assumption that the following have been "
 
 Follow `commands/NAMING.md`:
 
-- Pattern: `domain-subject-action` (e.g., `go-changes-fetch`, `go-change-analyze`)
+- Pattern: `domain-subject-action` (e.g., `go-changes-fetch`, `go-change-analyze`, `go-changes-catchup`)
 - Namespacing: Use `go-` prefix for namespacing
 - Separation: Separate Primitive (`*-fetch`, `*-analyze`) from Orchestrator (`*-catchup`)
 

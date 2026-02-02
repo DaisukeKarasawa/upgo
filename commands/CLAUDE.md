@@ -12,8 +12,8 @@ See `commands/NAMING.md` for naming conventions, responsibility separation, and 
 
 ### Orchestrator Commands (Workflow)
 
-- `/go-catchup [category] [--days=N] [--status=STATUS] [--limit=N] [--review=lite|full] [--deep-dives=N] [--deep-criteria=CRITERIA] [--format=md|json]`: Fetches and analyzes golang/go Changes (CLs) from the last 30 days and generates a comprehensive report with full index of all Changes and deep dive analysis
-  - Definition: `commands/go-catchup.md`
+- `/go-changes-catchup [category] [--days=N] [--status=STATUS] [--limit=N] [--review=lite|full] [--deep-dives=N] [--deep-criteria=CRITERIA] [--format=md|json]`: Fetches and analyzes golang/go Changes (CLs) from the last 30 days and generates a comprehensive report with full index of all Changes and deep dive analysis
+  - Definition: `commands/go-changes-catchup.md`
   - **Status**: Active (orchestrates fetch + analyze + report)
   - **Features**:
     - **Full Index**: All fetched Changes (up to limit) organized by category with 1-2 line summaries and review-lite metrics
@@ -55,13 +55,13 @@ When adding a new command, fill in the following required sections in each comma
 
 Following the naming convention defined in `commands/NAMING.md`:
 
-- **Pattern**: `domain-subject-action` (e.g., `go-changes-fetch`, `go-change-analyze`)
+- **Pattern**: `domain-subject-action` (e.g., `go-changes-fetch`, `go-change-analyze`, `go-changes-catchup`)
 - **Namespacing**: Use `go-` prefix for Go-related commands to avoid collisions
 - **Separation**: Primitive commands (`*-fetch`, `*-analyze`) are separated from orchestrator commands (`*-catchup`)
 
 ### Breaking Changes
 
-None. Existing `/go-catchup` command remains available and functional.
+None. Commands follow the `domain-subject-action` naming convention.
 
 ### New Commands
 

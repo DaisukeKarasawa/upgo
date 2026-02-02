@@ -104,8 +104,8 @@ For analyzing how code evolved through review:
 # Get all revisions for a change
 gerrit_api "/changes/${CHANGE_ID}/detail?o=ALL_REVISIONS" | jq '.revisions | keys'
 
-# Get list of all revisions
-REVISIONS=$(gerrit_api "/changes/${CHANGE_ID}/detail?o=ALL_REVISIONS" | jq -r '.revisions | keys[]')
+# Get list of all revisions sorted by patch set number
+REVISIONS=$(gerrit_api "/changes/${CHANGE_ID}/detail?o=ALL_REVISIONS" | jq -r '.revisions | to_entries | sort_by(.value._number) | .[].key')
 
 # Compare two specific revisions
 REV1="<revision-hash-1>"
@@ -113,8 +113,8 @@ REV2="<revision-hash-2>"
 gerrit_api "/changes/${CHANGE_ID}/revisions/${REV2}/files?base=${REV1}" | jq '.'
 
 # Get diff between consecutive revisions
-# First, get revision list
-REV_LIST=$(gerrit_api "/changes/${CHANGE_ID}/detail?o=ALL_REVISIONS" | jq -r '.revisions | keys | sort')
+# First, get revision list sorted by patch set number
+REV_LIST=$(gerrit_api "/changes/${CHANGE_ID}/detail?o=ALL_REVISIONS" | jq -r '.revisions | to_entries | sort_by(.value._number) | .[].key')
 # Then compare each pair (requires bash loop)
 ```
 

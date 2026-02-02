@@ -42,6 +42,33 @@ golang/go の Change (CL) を Claude Code で自動取得・分析し、Go の�
 2. **Discover** タブで `go-pr-insights` を検索
 3. プラグインを選択してインストール
 
+#### トラブルシューティング
+
+マーケットプレイス追加時に以下のエラーが発生した場合：
+
+```
+Error: Failed to finalize marketplace cache. Please manually delete the directory at
+/Users/daisuke/.claude/plugins/marketplaces/daisukekarasawa-upgo if it exists and try again.
+
+Technical details: ENOENT: no such file or directory, rename
+'/Users/daisuke/.claude/plugins/marketplaces/DaisukeKarasawa-upgo' ->
+'/Users/daisuke/.claude/plugins/marketplaces/daisukekarasawa-upgo'
+```
+
+**原因**: macOSのデフォルトファイルシステム（APFS）は大文字小文字を区別しないため、大小文字のみが異なるディレクトリ名への `rename` 操作が失敗することがあります。
+
+**解決方法**:
+
+1. キャッシュディレクトリを削除：
+   ```bash
+   rm -rf ~/.claude/plugins/marketplaces/daisukekarasawa-upgo
+   rm -rf ~/.claude/plugins/marketplaces/DaisukeKarasawa-upgo
+   ```
+2. 小文字のowner名で再実行（推奨）：
+   ```bash
+   /plugin marketplace add daisukekarasawa/upgo
+   ```
+
 ### 方法2: 手動コピー
 
 ```bash

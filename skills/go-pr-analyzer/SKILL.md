@@ -104,6 +104,8 @@ Classify Changes into categories:
 - `tooling`: Toolchain improvements
 - `runtime`: Runtime changes
 - `compiler`: Compiler improvements
+- `standard-library`: Standard library changes
+- `language-spec`: Language specification changes
 
 ## Analysis Steps
 

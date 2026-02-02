@@ -39,7 +39,7 @@ Commands that are "multi-purpose", "produce many outputs", or "have strong side 
 
 ### Orchestrator Commands (Aggregator Commands)
 
-Commands like `/go-catchup` that are "single-purpose workflows" are OK to keep, but must satisfy:
+Commands like `/go-changes-catchup` that are "single-purpose workflows" follow the `domain-subject-action` pattern and must satisfy:
 
 - **One-Line Description clearly focuses on a single purpose**
 - **Output / Side Effects lists all side effects**

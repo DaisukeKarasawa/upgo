@@ -124,7 +124,7 @@ Analyze fetched information for:
 1. **Change Background & Motivation**: Extract from commit message and change messages
 2. **Review Discussion Points**: Extract from review comments and change messages
 3. **Go Design Philosophy Alignment**: Map to Go principles (Simplicity, Explicitness, Orthogonality, Practicality)
-4. **Category Classification**: Classify into categories (error-handling, performance, api-design, testing, documentation, tooling, runtime, compiler)
+4. **Category Classification**: Classify into categories (error-handling, performance, api-design, testing, documentation, tooling, runtime, compiler, standard-library, language-spec)
 
 Use `go-pr-analyzer` skill for detailed analysis patterns. See `skills/go-pr-analyzer/SKILL.md` for analysis perspectives and output format.
 
@@ -176,7 +176,7 @@ Create report in the following format:
 ## Related Commands
 
 - `/go-changes-fetch`: Fetches Change list
-- `/go-catchup`: Orchestrates fetch + analyze + report workflow for multiple Changes
+- `/go-changes-catchup`: Orchestrates fetch + analyze + report workflow for multiple Changes
 
 ## Notes
 

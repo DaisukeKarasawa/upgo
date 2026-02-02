@@ -52,6 +52,37 @@ Extract from review comments and change messages:
 - What quality criteria did reviewers emphasize?
 - How did labels (Code-Review, Verified) evolve?
 
+#### 2.1. Review Comment Classification
+
+Classify review comments by type:
+
+- **Code Quality**: Readability, maintainability, performance concerns
+- **Go Conventions**: Go idioms, naming, error handling patterns
+- **Design Decisions**: Approach selection, design pattern discussions
+- **Testing**: Test coverage, test quality, edge cases
+- **Documentation**: Comments, doc strings, API documentation
+- **Must-Fix**: Required changes before approval
+- **Suggestion**: Optional improvements
+- **Question**: Clarifications or discussions
+
+#### 2.2. Comment Thread Analysis
+
+Map comment threads using `in_reply_to` field:
+
+- **Thread Structure**: Follow `in_reply_to` to build thread trees
+- **Issue → Response → Resolution**: Map the flow from initial concern to final resolution
+- **Reviewer Engagement**: Track who responded and when
+- **Discussion Depth**: Count thread depth and back-and-forth exchanges
+
+#### 2.3. Patch Set Evolution Tracking
+
+Track how code evolved through review:
+
+- **Revision Comparison**: Compare consecutive patch sets to identify changes
+- **Review Comment Mapping**: Map specific review comments to code changes in subsequent patch sets
+- **Improvement Patterns**: Identify common patterns of improvement (e.g., error handling, naming, test coverage)
+- **Iteration Count**: Track number of iterations before approval
+
 ### 3. Go Design Philosophy Alignment
 
 Map changes to Go design principles:
@@ -73,6 +104,8 @@ Classify Changes into categories:
 - `tooling`: Toolchain improvements
 - `runtime`: Runtime changes
 - `compiler`: Compiler improvements
+- `standard-library`: Standard library changes
+- `language-spec`: Language specification changes
 
 ## Analysis Steps
 
@@ -113,6 +146,70 @@ Analyze fetched information for:
 5. **Label evolution**: How Code-Review and Verified labels changed across patch sets
 6. **Reviewer engagement**: Who reviewed, when, and what they emphasized
 
+#### Step 2.1: Review Comment Analysis (Deep Dive)
+
+For detailed review analysis:
+
+1. **Fetch All Comments**:
+
+   ```bash
+   # Get all comments with thread structure
+   gerrit_api "/changes/${CHANGE_ID}/comments" | jq '.'
+   ```
+
+2. **Build Thread Trees**:
+
+   - Parse `in_reply_to` field to build comment thread hierarchy
+   - Group comments by file and line number
+   - Identify root comments (no `in_reply_to`) vs replies
+
+3. **Classify Comments**:
+
+   - Categorize by type (code quality, Go conventions, design, testing, documentation)
+   - Identify must-fix vs suggestions vs questions
+   - Extract file:line references for inline comments
+
+4. **Map to Code Changes**:
+   - Compare patch sets to see how comments were addressed
+   - Track which comments led to code changes
+   - Identify patterns in how code improved
+
+#### Step 2.2: Patch Set Evolution Analysis
+
+For tracking code evolution:
+
+1. **Get All Revisions**:
+
+   ```bash
+   # Get all revisions for comparison
+   gerrit_api "/changes/${CHANGE_ID}/detail?o=ALL_REVISIONS" | jq '.revisions'
+   ```
+
+2. **Compare Consecutive Revisions**:
+
+   ```bash
+   # Compare two revisions
+   REV1="<revision-hash-1>"
+   REV2="<revision-hash-2>"
+   gerrit_api "/changes/${CHANGE_ID}/revisions/${REV2}/files?base=${REV1}" | jq '.'
+   ```
+
+3. **Map Review Comments to Changes**:
+   - Identify which review comments correspond to code changes
+   - Track the evolution: initial code → review comment → revised code
+   - Extract improvement patterns
+
+#### Step 2.3: Review Metrics Extraction
+
+Extract quantitative metrics:
+
+- **Patch Set Count**: Total number of revisions
+- **Comment Count**: Total comments (inline + cover messages)
+- **Thread Count**: Number of distinct discussion threads
+- **Reviewer Count**: Number of unique reviewers
+- **Review Duration**: Time from first patch set to approval
+- **Label Changes**: Number of Code-Review/Verified label changes
+
 ### Step 3: Extract Insights
 
 Articulate Go philosophy from analysis:
@@ -134,6 +231,8 @@ This Change embodies "<Go principle>".
 ```
 
 ## Output Format
+
+### Standard Format
 
 ```markdown
 # Change #<number> Analysis: <subject>
@@ -164,4 +263,100 @@ This Change embodies "<Go principle>".
 ## Key Learnings
 
 <Practical insights from this Change>
+```
+
+### Deep Dive Format (Review Analysis)
+
+For detailed review analysis, use this extended format:
+
+```markdown
+# Change #<number> Analysis: <subject>
+
+## Summary
+
+<Change purpose and summary>
+
+## Background
+
+<Why this change was needed>
+
+## Review Process
+
+### Reviewers
+
+- <reviewer-name-1>: <role/contribution>
+- <reviewer-name-2>: <role/contribution>
+
+### Review Rounds
+
+<number> patch sets, showing iterative refinement
+
+### Key Review Comments
+
+#### Inline Comments
+
+- `<file>:<line>` - `<reviewer-name>`: "<comment-content>"
+
+  - **Type**: <code-quality|go-conventions|design|testing|documentation>
+  - **Priority**: <must-fix|suggestion|question>
+  - **Addressed**: <how it was addressed in subsequent patch sets>
+
+- `<file>:<line>` - `<reviewer-name>`: "<comment-content>"
+  ...
+
+#### Cover Letter Comments
+
+- `<reviewer-name>`: "<comment-content>"
+  - **Discussion**: <thread discussion if applicable>
+  - **Resolution**: <how it was resolved>
+
+### Comment Threads
+
+#### Thread 1: <topic>
+
+- **Root**: `<reviewer-name>`: "<initial-concern>"
+- **Response**: `<author-name>`: "<response>"
+- **Follow-up**: `<reviewer-name>`: "<follow-up>"
+- **Resolution**: <final resolution>
+
+### Code Evolution
+
+#### PS1 → PS2
+
+- **Changes**: <what changed>
+- **Triggered by**: <which review comments>
+- **Improvement**: <how code improved>
+
+#### PS2 → PS3
+
+- **Changes**: <what changed>
+- **Triggered by**: <which review comments>
+- **Improvement**: <how code improved>
+
+### Review Metrics
+
+- **Patch Sets**: <count>
+- **Total Comments**: <count>
+- **Threads**: <count>
+- **Reviewers**: <count>
+- **Review Duration**: <duration>
+- **Label Evolution**: <Code-Review/Verified changes>
+
+## Go Philosophy Alignment
+
+<Go design principles this change embodies>
+- **Simplicity**: <how simplicity was emphasized>
+- **Explicitness**: <how explicitness was emphasized>
+- **Orthogonality**: <how orthogonality was emphasized>
+- **Practicality**: <how practicality was emphasized>
+
+## Category
+
+<primary-category> (tags: <tag1>, <tag2>)
+
+## Key Learnings
+
+<Practical insights from review culture>
+- <learning-1>: <explanation>
+- <learning-2>: <explanation>
 ```

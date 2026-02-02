@@ -139,7 +139,7 @@ gerrit_api "/changes/?q=${QUERY}&n=${LIMIT}&o=LABELS&o=DETAILED_ACCOUNTS&o=CURRE
 ## Related Commands
 
 - `/go-change-analyze`: Analyzes fetched Change data
-- `/go-catchup`: Orchestrates fetch + analyze + report workflow
+- `/go-changes-catchup`: Orchestrates fetch + analyze + report workflow
 
 ## Notes
 

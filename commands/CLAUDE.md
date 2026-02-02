@@ -12,9 +12,14 @@ See `commands/NAMING.md` for naming conventions, responsibility separation, and 
 
 ### Orchestrator Commands (Workflow)
 
-- `/go-catchup [category]`: Fetches and analyzes golang/go Changes (CLs) from the last 30 days and generates a report
+- `/go-catchup [category] [--days=N] [--status=STATUS] [--limit=N] [--review=lite|full] [--deep-dives=N] [--deep-criteria=CRITERIA] [--format=md|json]`: Fetches and analyzes golang/go Changes (CLs) from the last 30 days and generates a comprehensive report with full index of all Changes and deep dive analysis
   - Definition: `commands/go-catchup.md`
   - **Status**: Active (orchestrates fetch + analyze + report)
+  - **Features**:
+    - **Full Index**: All fetched Changes (up to limit) organized by category with 1-2 line summaries and review-lite metrics
+    - **Deep Dives**: Selected Changes with detailed review analysis (file:line comments, thread discussions, patch set evolution)
+    - **Review Patterns**: Cross-cutting patterns from review comments and Go coding culture insights
+    - **Category Support**: error-handling, performance, api-design, testing, documentation, tooling, runtime, compiler, standard-library, language-spec
 
 ### Primitive Commands (Single Purpose)
 

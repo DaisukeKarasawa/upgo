@@ -14,7 +14,7 @@ Fetches and analyzes Changes (CLs) updated in the last month from golang/go repo
 
 ## One-Line Description
 
-Fetches merged Changes (CLs) updated in the last 30 days from Gerrit, analyzes review discussions with detailed comment analysis, and generates a comprehensive report covering all Changes with deep dives into Go design philosophy and review culture.
+Fetches Changes (CLs) updated in the last 30 days from Gerrit (default: merged), analyzes review discussions with detailed comment analysis, and generates a comprehensive report covering all Changes with deep dives into Go design philosophy and review culture.
 
 ## Arguments
 
